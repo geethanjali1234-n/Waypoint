@@ -1,0 +1,150 @@
+.wp-events-page__logo {
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-lg);
+  font-weight: 700;
+  color: var(--wp-color-primary);
+  letter-spacing: -0.02em;
+}
+
+/* Search bar */
+.wp-events-page__search-row {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-sm);
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-control);
+  padding: var(--wp-space-sm);
+  margin-bottom: var(--wp-space-lg);
+}
+
+.wp-events-page__search-row .wp-field__control {
+  border: none;
+  padding: var(--wp-space-sm) var(--wp-space-sm);
+}
+
+.wp-events-page__search-row .wp-field__control:focus {
+  box-shadow: none;
+}
+
+.wp-events-page__search-keyword {
+  flex: 1;
+  margin: 0;
+}
+
+.wp-events-page__search-location {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-xs);
+  flex: 1;
+  border-left: 1px solid var(--wp-color-border);
+  padding-left: var(--wp-space-sm);
+  color: var(--wp-color-text-muted);
+}
+
+.wp-events-page__search-location-icon {
+  flex-shrink: 0;
+}
+
+.wp-events-page__search-location-input {
+  flex: 1;
+  margin: 0;
+}
+
+/* Filter dropdowns — override wp-field margin so they sit flush in FilterBar */
+.wp-events-page__filter-dropdown {
+  margin-bottom: 0;
+  min-width: 140px;
+}
+
+
+/* Clear all link */
+.wp-events-page__clear-all {
+  background: none;
+  border: none;
+  padding: 0 var(--wp-space-xs);
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.wp-events-page__clear-all:hover {
+  color: var(--wp-color-text);
+}
+
+/* Results count */
+.wp-events-page__results-count {
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-md);
+  color: var(--wp-color-text-muted);
+  margin: 0 0 var(--wp-space-md);
+}
+
+.wp-events-page__results-count strong {
+  color: var(--wp-color-text);
+}
+
+/* Split layout */
+.wp-events-page__split {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: var(--wp-space-xl);
+  align-items: start;
+}
+
+.wp-events-page__list {
+  max-height: 680px;
+  overflow-y: auto;
+  padding-right: var(--wp-space-xs);
+}
+
+/* Subtle scrollbar for the list */
+.wp-events-page__list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.wp-events-page__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.wp-events-page__list::-webkit-scrollbar-thumb {
+  background-color: var(--wp-color-border);
+  border-radius: var(--wp-radius-pill);
+}
+
+/* Detail pane sticks to top while scrolling the list */
+.wp-events-page__detail {
+  position: sticky;
+  top: var(--wp-space-lg);
+}
+
+/* Toast position */
+.wp-events-page__toast-container {
+  position: fixed;
+  bottom: var(--wp-space-xl);
+  right: var(--wp-space-xl);
+  z-index: 100;
+}
+
+@media (max-width: 900px) {
+  .wp-events-page__split {
+    grid-template-columns: 1fr;
+  }
+
+  .wp-events-page__detail {
+    position: static;
+  }
+
+  .wp-events-page__search-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.wp-events-page__clear-all { min-height: 44px; padding-inline: 8px; }
+
+#workspace-content .wp-events-page__filter-dropdown select, #workspace-content .wp-events-page__search-row input { background-color: var(--wp-color-surface); color: var(--wp-color-text); border-color: var(--wp-color-border); }

@@ -1,0 +1,114 @@
+# Render Blueprint for Waypoint. See docs/DEPLOY_RENDER.md for setup steps.
+# Values marked `sync: false` are secrets or per-environment URLs: Render asks
+# for them when the Blueprint is first created and never stores them in git.
+services:
+  - type: web
+    name: waypoint-backend
+    runtime: docker
+    plan: free
+    branch: release/production
+    autoDeployTrigger: commit
+    # MongoDB Atlas runs in AWS us-east-1, so keep the API close to it.
+    region: virginia
+    healthCheckPath: /health
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    buildFilter:
+      paths:
+        - backend/**
+    envVars:
+      # Secrets
+      - key: JWT_SECRET
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DATABASE
+        sync: false
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: CLAUDE_API_KEY
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_ENDPOINT
+        sync: false
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM_ADDRESS
+        sync: false
+      # Set in Render after the static site receives its onrender.com URL.
+      - key: APP_FRONTEND_URL
+        sync: false
+      # Same URL (comma-separate extra origins if needed)
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+      # Fixed production settings
+      - key: R2_ENABLED
+        value: "true"
+      - key: MAIL_ENABLED
+        value: "true"
+      - key: MAIL_PORT
+        value: "587"
+      - key: MONGODB_AUTO_INDEX_CREATION
+        value: "false"
+      - key: DATABASE_INITIALIZER_ENABLED
+        value: "false"
+      - key: RESUME_STORAGE_MIGRATION_ENABLED
+        value: "false"
+      - key: FILE_STORAGE_MIGRATION_ENABLED
+        value: "false"
+      - key: OBJECT_STORAGE_MIGRATION_ENABLED
+        value: "false"
+      - key: DOCUMENT_STORAGE_MIGRATION_ENABLED
+        value: "false"
+      - key: EVENT_LOCATION_MIGRATION_ENABLED
+        value: "false"
+      - key: JOB_LOCATION_MIGRATION_ENABLED
+        value: "false"
+      - key: MYHR_DEV_CREDENTIALS_ENABLED
+        value: "false"
+      - key: MYHR_DEV_CREDENTIALS_OPEN_TERMINAL
+        value: "false"
+      - key: MYHR_DEV_PROVISIONING_ENABLED
+        value: "false"
+      - key: EXPOSE_DEV_OTP
+        value: "false"
+      - key: ORGANIZATION_REGISTRATION_DEV_OTP_ENABLED
+        value: "false"
+      # Off until the service points at a production database, so scheduled
+      # reminder emails never go out to people in the shared dev database.
+      - key: PAYROLL_READINESS_AUTOMATIC_REMINDERS_ENABLED
+        value: "false"
+
+  - type: web
+    name: waypoint-frontend
+    runtime: static
+    branch: release/production
+    autoDeployTrigger: commit
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      # Single-page app: let React Router handle every path.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      # Set in Render after the backend receives its onrender.com URL.
+      - key: VITE_API_BASE_URL
+        sync: false
+      - key: VITE_GEOAPIFY_API_KEY
+        sync: false

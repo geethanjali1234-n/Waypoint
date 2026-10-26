@@ -1,0 +1,8 @@
+.wp-organization-registration .wp-auth-layout__content { max-width:42rem; }
+.wp-organization-registration__form { display:grid; gap:1rem; margin-top:1.25rem; }
+.wp-organization-registration__form h2 { color:#173f33; font-size:1rem; margin:1rem 0 0; }
+.wp-organization-registration__row { display:grid; gap:1rem; grid-template-columns:2fr 1fr 1fr; }
+.wp-organization-registration__pair { display:grid; gap:1rem; grid-template-columns:1fr 1fr; }
+.wp-organization-registration__login { margin:1.25rem 0 0; text-align:center; }
+.wp-organization-registration__login a { color:#2f6f57; font-weight:600; }
+@media (max-width:760px) { .wp-organization-registration__row, .wp-organization-registration__pair { grid-template-columns:1fr; } }

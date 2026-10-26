@@ -1,0 +1,14 @@
+.wp-validation-message {
+  margin: var(--wp-space-xs) 0 0;
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-sm);
+  line-height: 1.4;
+}
+
+.wp-validation-message--hint {
+  color: var(--wp-color-text-muted);
+}
+
+.wp-validation-message--error {
+  color: var(--wp-color-error);
+}

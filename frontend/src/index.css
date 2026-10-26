@@ -1,0 +1,134 @@
+@import "./components/styles/tokens.css";
+@import "./components/styles/fonts.css";
+
+:root {
+  font: 16px/150% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 15px;
+  }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: var(--wp-color-bg);
+  color: var(--wp-color-text);
+}
+
+[data-theme="dark"] { color-scheme: dark; }
+[data-theme="light"] { color-scheme: light; }
+
+/* Remove spin buttons / stepper arrows on number inputs globally */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  display: none !important;
+  margin: 0 !important;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+
+#root {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+h1,
+h2 {
+  font-family: var(--wp-font-sans);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
+
+/* Global Accessible Focus States (Principle 16 & 17) */
+:focus-visible {
+  outline: 2px solid var(--wp-color-accent-cyan, #059669);
+  outline-offset: 2px;
+}
+
+/* Consistent readable placeholders in both themes. */
+:root body input::placeholder,
+:root body textarea::placeholder {
+  color: var(--wp-color-text-muted);
+  opacity: 1;
+}
+
+/* Prevent iOS focus zoom on application controls without changing document previews. */
+@media (max-width: 768px) {
+  #root :is(.wp-field__control, .wp-search-input input, .wp-command-palette__input, .wp-chatbot-input,
+    .wp-prototype-jobs__toolbar input, .wp-prototype-events__toolbar input,
+    .workspace-dashboard input, .myhr-feature select, .wp-prototype-jobs__toolbar select,
+    .wp-prototype-events__toolbar select) {
+    font-size: 16px;
+  }
+}
+
+/* Accessible Reduced Motion Support (Principle 33) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

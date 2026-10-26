@@ -1,0 +1,26 @@
+.wp-job-seeker-applications__card {
+  padding: 0;
+}
+
+.wp-job-seeker-applications__row {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: var(--wp-space-lg);
+  border: none;
+  border-radius: var(--wp-radius-card);
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wp-job-seeker-applications__row:hover,
+.wp-job-seeker-applications__row:focus-visible {
+  background-color: var(--wp-color-neutral-bg);
+}
+
+.wp-job-seeker-applications__row p {
+  margin: 0 0 4px;
+}

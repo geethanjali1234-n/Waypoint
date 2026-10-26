@@ -1,0 +1,6 @@
+.wp-page-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:24px; color:var(--wp-color-text); }
+.wp-page-header__text { min-width:0; }
+.wp-page-header__title { margin:0; font-family:var(--wp-font-display); font-weight:500; font-size:clamp(1.75rem,3vw,2.25rem); line-height:1.2; }
+.wp-page-header__eyebrow { margin:0 0 8px; font-family:var(--wp-font-sans); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.14em; color:var(--wp-color-text-muted); }
+.wp-page-header__subtitle { margin:8px 0 0; font-size:var(--wp-font-size-md); color:var(--wp-color-text-muted); }
+.wp-page-header__action { flex-shrink:0; }

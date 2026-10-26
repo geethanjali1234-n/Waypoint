@@ -1,0 +1,26 @@
+.wp-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-md);
+  padding: var(--wp-space-lg);
+}
+
+.wp-stat-card__icon {
+  color: var(--wp-color-text-muted);
+  font-size: 1.25rem;
+}
+
+.wp-stat-card__value {
+  font-family: var(--wp-font-sans);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--wp-color-text);
+}
+
+.wp-stat-card__label {
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+}

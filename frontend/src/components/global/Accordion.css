@@ -1,0 +1,36 @@
+.wp-accordion {
+  border-bottom: 1px solid var(--wp-color-border);
+}
+
+.wp-accordion__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wp-space-md);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--wp-space-md) 0;
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-md);
+  font-weight: 600;
+  color: var(--wp-color-text);
+  text-align: left;
+}
+
+.wp-accordion__icon {
+  transition: transform var(--wp-transition-fast);
+  color: var(--wp-color-text-muted);
+}
+
+.wp-accordion__icon--open {
+  transform: rotate(180deg);
+}
+
+.wp-accordion__content {
+  padding: 0 0 var(--wp-space-md);
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-md);
+  line-height: 1.5;
+}

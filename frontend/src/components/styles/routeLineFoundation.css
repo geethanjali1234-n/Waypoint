@@ -1,0 +1,96 @@
+/* Global visual foundation only. Layouts and shared primitives are handled later. */
+:root body {
+  background: var(--wp-color-bg) !important;
+  color: var(--wp-color-text);
+  font-family: var(--wp-font-sans);
+  --dashboard-background: var(--wp-color-bg);
+  --dashboard-card: var(--wp-color-surface);
+  --dashboard-text: var(--wp-color-text);
+  --dashboard-muted: var(--wp-color-text-muted);
+  --dashboard-border: var(--wp-color-border);
+  --dashboard-primary: var(--wp-color-primary);
+  --dashboard-link: var(--wp-color-primary);
+  --dashboard-success: var(--wp-color-success);
+  --exp-electric: var(--wp-color-primary);
+  --exp-electric-glow: var(--wp-color-primary);
+  --exp-cyan: var(--wp-color-primary);
+  --exp-emerald: var(--wp-color-success);
+  --exp-amber: var(--wp-color-warning);
+}
+:root body :is(*, *::before, *::after) {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+:root body :is(.myhr-shell, .waypoint-admin-shell, .employee-layout, .employer-layout, .job-seeker-layout, .wp-employer-layout, .wp-job-seeker-layout, .myhr-employee-layout, .job-seeker-shell, .employer-shell) {
+  background: var(--wp-color-bg) !important;
+  color: var(--wp-color-text);
+}
+:root body :is(.wp-card, .wp-stat-card, .wp-job-card, .wp-event-card,
+  .wp-modal__panel, .wp-confirmation-dialog, .wp-auth-layout__card,
+  [class$="__card"], [class$="__panel"], [class$="__detail-card"],
+  .workspace-dashboard__card, .employee-today__card,
+  .profile-changes__assigned, .profile-changes__history,
+  .document-requests__detail, .i983-panel, .i983-preview,
+  .timesheets__team-workspace, .timesheets__flow-panel, .timesheets__history-panel) {
+  background-color: var(--wp-color-surface) !important;
+  background-image: none !important;
+  border-color: var(--wp-color-border) !important;
+  border-radius: var(--wp-radius-card) !important;
+  color: var(--wp-color-text);
+}
+:root body :is(.wp-button, .wp-field__control, input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  border-radius: var(--wp-radius-control);
+}
+:root body :is(.wp-button, button, [role="button"], summary, input:not([type="checkbox"]):not([type="radio"]), select) {
+  min-height: var(--wp-control-height);
+}
+:root body :is(button, input, select, textarea, nav, label, th, td) {
+  font-family: var(--wp-font-sans);
+}
+/* Serif is restricted to page and card titles; utility headings stay sans. */
+:root body :is(h1, .wp-page-header__title, .wp-card__title,
+  .workspace-dashboard__card h2, .employee-today__card h2,
+  .employer-dashboard__heading h2, .job-seeker-dashboard__heading h2) {
+  font-family: var(--wp-font-display) !important;
+  font-weight: 500 !important;
+  font-optical-sizing: auto;
+}
+:root body :is(h1, h2, h3, h4, h5, h6, [class*="__title"], [class*="__heading"], .wp-waypoint-wordmark) {
+  text-shadow: none !important;
+  background-image: none !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+:root body :is(h1, h2, h3, h4, h5, h6) { color: var(--wp-color-text); }
+:root body :is([class*="eyebrow"], [class$="__group"]) {
+  font: var(--wp-font-eyebrow-weight) var(--wp-font-eyebrow-size)/1.5 var(--wp-font-sans) !important;
+  letter-spacing: var(--wp-font-eyebrow-spacing) !important;
+  text-transform: uppercase;
+  color: var(--wp-color-primary);
+}
+:root body :is(.wp-button--primary, .wp-button--danger) { background-image: none !important; }
+:root body .wp-button--primary { background-color: var(--wp-color-primary) !important; color: var(--wp-color-primary-contrast) !important; border-color: var(--wp-color-primary); }
+:root body .wp-button--secondary { background: var(--wp-color-surface); color: var(--wp-color-primary); border-color: var(--wp-color-border); }
+:root body :is(.wp-table-wrapper, .wp-modal__header, .myhr-shell__header, .waypoint-admin-shell__header) {
+  background: var(--wp-color-surface) !important;
+  border-color: var(--wp-color-border);
+}
+:root body :is(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--wp-color-primary);
+  outline-offset: 2px;
+}
+:root body :is(.myhr-navigation, .waypoint-admin-shell__sidebar) { background: var(--wp-color-bg) !important; }
+:root body .myhr-navigation nav a.is-active { background: var(--wp-color-primary-deep); color: #FBF9F3; }
+:root body .wp-modal__backdrop { background: rgb(11 21 18 / 65%); }
+
+:root body :is(h1, .wp-page-header__title, .wp-card__title) :is(span, strong, em) {
+  font-family: var(--wp-font-display) !important;
+  font-weight: 500 !important;
+}
+
+:root body :is([class$="__card"], [class$="__panel"], .wp-card) > :is(h2, h3) {
+  font-family: var(--wp-font-display) !important;
+  font-weight: 500 !important;
+}
+:root body .employee-today__card--past { background-color: var(--wp-color-neutral-bg) !important; }

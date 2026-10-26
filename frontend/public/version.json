@@ -1,0 +1,11 @@
+{
+  "versionName": "1.1.0",
+  "versionCode": 8,
+  "buildDate": "2026-10-08",
+  "downloadUrl": "/downloads/waypoint.apk",
+  "releaseNotes": [
+    "Seamless in-app updates: Install future fixes without uninstalling or losing data",
+    "Direct-report Timesheets: Responsive 3-segment grid shows Actions, Employees, and All at a glance",
+    "Android WebView: Automatic local HTTP network connection"
+  ]
+}

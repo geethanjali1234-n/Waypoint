@@ -1,0 +1,36 @@
+.wp-job-seeker-notifications__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-sm);
+}
+
+.wp-job-seeker-notifications__item-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: block;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.wp-job-seeker-notifications__card--unread {
+  background-color: var(--wp-color-info-bg);
+}
+
+.wp-job-seeker-notifications__title {
+  color: var(--wp-color-text);
+  font-weight: 600;
+  margin: 0;
+}
+
+.wp-job-seeker-notifications__message {
+  color: var(--wp-color-text-muted);
+  margin: var(--wp-space-xs) 0 0;
+}
+
+.wp-job-seeker-notifications__timestamp {
+  color: var(--wp-color-text-muted);
+  font-size: 0.75rem;
+  margin: var(--wp-space-xs) 0 0;
+}

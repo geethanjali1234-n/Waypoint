@@ -1,0 +1,17 @@
+.wp-route-line { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); list-style:none; padding:0; margin:0; gap:0; }
+.wp-route-line__stop { position:relative; display:grid; align-content:start; gap:12px; min-width:0; padding-right:12px; }
+.wp-route-line__stop:not(:last-child)::after { content:''; position:absolute; top:17px; left:36px; right:0; border-top:2px dashed var(--wp-color-future-stop); }
+.wp-route-line__stop--done:not(:last-child)::after { border-top-style:solid; border-color:var(--wp-color-primary-deep); }
+.wp-route-line__marker { display:grid; place-items:center; width:36px; height:36px; border:2px dashed var(--wp-color-future-stop); border-radius:50%; background:var(--wp-color-surface); z-index:1; }
+.wp-route-line__stop--done .wp-route-line__marker { border:2px solid var(--wp-color-primary-deep); background:var(--wp-color-primary-deep); color:#FBF9F3; }
+.wp-route-line__stop--current .wp-route-line__marker { border:3px solid var(--wp-color-signal); outline:1px solid var(--wp-color-warning); outline-offset:0; }
+.wp-route-line__copy { display:grid; gap:4px; padding-right:8px; min-width:0; }
+.wp-route-line__copy strong { color:var(--wp-color-text); font:600 .875rem/1.4 var(--wp-font-sans); overflow-wrap:anywhere; }
+.wp-route-line__copy small,.wp-route-line__state { color:var(--wp-color-text-muted); font:.75rem/1.5 var(--wp-font-sans); overflow-wrap:anywhere; }
+.wp-route-line__stop--current .wp-route-line__state { color:var(--wp-color-warning); font-weight:600; }
+.wp-route-line--vertical { grid-auto-flow:row; grid-auto-columns:auto; gap:0; }
+.wp-route-line--vertical .wp-route-line__stop { display:grid; grid-template-columns:36px minmax(0,1fr); gap:16px; padding:0 0 24px; }
+.wp-route-line--vertical .wp-route-line__stop:last-child { padding-bottom:0; }
+.wp-route-line--vertical .wp-route-line__stop:not(:last-child)::after { left:17px; top:36px; bottom:0; right:auto; border-top:0; border-left:2px dashed var(--wp-color-future-stop); }
+.wp-route-line--vertical .wp-route-line__stop--done:not(:last-child)::after { border-left-style:solid; border-left-color:var(--wp-color-primary-deep); }
+@media(max-width:480px) { .wp-route-line__copy strong { font-size:.8rem; } .wp-route-line__copy { padding-right:4px; } .wp-route-line__stop { padding-right:6px; } }

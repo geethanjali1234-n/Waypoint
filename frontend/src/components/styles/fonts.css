@@ -1,0 +1,15 @@
+/* Self-hosted Latin subsets; SIL Open Font License files live beside the fonts. */
+@font-face {
+  font-family: 'Fraunces';
+  src: url('../../assets/fonts/fraunces-latin.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Instrument Sans';
+  src: url('../../assets/fonts/instrument-sans-latin.woff2') format('woff2');
+  font-weight: 400 600;
+  font-style: normal;
+  font-display: swap;
+}

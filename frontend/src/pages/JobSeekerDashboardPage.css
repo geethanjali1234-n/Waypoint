@@ -1,0 +1,239 @@
+.job-seeker-dashboard {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--wp-space-xl);
+  background: var(--wp-color-bg);
+}
+
+.job-seeker-dashboard__card {
+  width: min(680px, 100%);
+  padding: clamp(var(--wp-space-xl), 5vw, 48px);
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-lg);
+  box-shadow: none;
+}
+
+.job-seeker-dashboard__eyebrow {
+  margin: 0 0 var(--wp-space-sm);
+  color: var(--wp-color-primary);
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.job-seeker-dashboard h1 {
+  margin: 0;
+  color: var(--wp-color-text);
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+.job-seeker-dashboard__intro {
+  margin: var(--wp-space-md) 0 0;
+  color: var(--wp-color-text-muted);
+  line-height: 1.6;
+}
+
+.job-seeker-dashboard__resume-form {
+  display: grid;
+  gap: var(--wp-space-sm);
+  margin-top: var(--wp-space-xl);
+}
+
+.job-seeker-dashboard__resume-form label {
+  color: var(--wp-color-text);
+  font-weight: 700;
+}
+
+.job-seeker-dashboard__resume-form input[type='file'] {
+  width: 100%;
+  padding: var(--wp-space-md);
+  color: var(--wp-color-text);
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-control);
+}
+
+.job-seeker-dashboard__hint,
+.job-seeker-dashboard__selected-file,
+.job-seeker-dashboard__message {
+  margin: 0;
+  font-size: var(--wp-font-size-sm);
+}
+
+.job-seeker-dashboard__hint,
+.job-seeker-dashboard__selected-file {
+  color: var(--wp-color-text-muted);
+}
+
+.job-seeker-dashboard__message--error {
+  color: var(--wp-color-error);
+}
+
+.job-seeker-dashboard__message--success {
+  color: var(--wp-color-text);
+}
+
+.job-seeker-dashboard__jobs-card {
+  width: min(980px, 100%);
+  margin-top: var(--wp-space-xl);
+  padding: clamp(var(--wp-space-xl), 5vw, 48px);
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-lg);
+  box-shadow: none;
+}
+
+.job-seeker-dashboard__jobs-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--wp-space-lg);
+}
+
+.job-seeker-dashboard__jobs-header .job-seeker-dashboard__eyebrow {
+  margin-bottom: var(--wp-space-xs);
+}
+
+.job-seeker-dashboard__jobs-header h2 {
+  margin: 0;
+  color: var(--wp-color-text);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
+.job-seeker-dashboard__jobs-header .job-seeker-dashboard__intro {
+  max-width: 680px;
+}
+
+.job-seeker-dashboard__jobs-list {
+  display: grid;
+  gap: var(--wp-space-md);
+  margin-top: var(--wp-space-xl);
+}
+
+.job-seeker-dashboard__job-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--wp-space-lg);
+  padding: var(--wp-space-lg);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-md);
+  background: var(--wp-color-bg);
+}
+
+.job-seeker-dashboard__job-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.job-seeker-dashboard__job-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--wp-space-md);
+}
+
+.job-seeker-dashboard__job-heading h3 {
+  margin: 0;
+  color: var(--wp-color-primary);
+  font-size: 1.3rem;
+}
+
+.job-seeker-dashboard__job-meta,
+.job-seeker-dashboard__job-description,
+.job-seeker-dashboard__job-details {
+  margin: var(--wp-space-xs) 0 0;
+  color: var(--wp-color-text-muted);
+  line-height: 1.5;
+}
+
+.job-seeker-dashboard__job-description {
+  color: var(--wp-color-text);
+}
+
+.job-seeker-dashboard__application-status {
+  flex-shrink: 0;
+  padding: 0.35rem 0.7rem;
+  color: var(--wp-color-accent-cyan, var(--wp-color-primary));
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: 999px;
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+}
+
+.job-seeker-dashboard__application-status--applied {
+  color: var(--wp-color-primary);
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+}
+
+.job-seeker-dashboard__job-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wp-space-md);
+  font-size: var(--wp-font-size-sm);
+}
+
+.job-seeker-dashboard__job-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wp-space-xs);
+  margin-top: var(--wp-space-md);
+}
+
+.job-seeker-dashboard__job-skills span {
+  padding: 0.3rem 0.6rem;
+  color: var(--wp-color-text, var(--wp-color-primary-contrast));
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: 999px;
+  font-size: var(--wp-font-size-sm);
+}
+
+[data-theme="light"] .job-seeker-dashboard__application-status {
+  color: var(--wp-color-primary);
+  background: var(--wp-color-primary-soft);
+  border-color: var(--wp-color-border);
+}
+
+[data-theme="light"] .job-seeker-dashboard__application-status--applied {
+  color: var(--wp-color-primary);
+  background: var(--wp-color-primary-soft);
+  border-color: var(--wp-color-border);
+}
+
+[data-theme="light"] .job-seeker-dashboard__job-skills span {
+  color: var(--wp-color-primary);
+  background: var(--wp-color-surface);
+  border-color: var(--wp-color-border);
+}
+
+@media (max-width: 700px) {
+  .job-seeker-dashboard__jobs-header,
+  .job-seeker-dashboard__job-card {
+    flex-direction: column;
+  }
+
+  .job-seeker-dashboard__job-card .wp-button {
+    width: 100%;
+  }
+
+  .job-seeker-dashboard__job-heading {
+    flex-direction: column;
+  }
+}
+
+/* Employer Dashboard's Georgia-serif greeting is an intentional employer-brand
+   style (see EmployerLayout.css). It leaks onto Job Seeker Dashboard because
+   JobSeekerDashboardPage.jsx reuses that CSS file's classes. Override back to
+   the standard sans-serif heading style used on every other job seeker page. */
+.job-seeker-dashboard__greeting.employer-dashboard__greeting h1 {
+  font-family: var(--wp-font-sans);
+  color: var(--wp-color-text);
+}
+
+.job-seeker-dashboard__greeting.employer-dashboard__greeting h1 { font-family: var(--wp-font-display); }

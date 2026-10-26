@@ -1,0 +1,23 @@
+.wp-two-column {
+  display: grid;
+  gap: var(--wp-space-lg);
+  align-items: start;
+}
+
+.wp-two-column--1-1 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.wp-two-column--2-1 {
+  grid-template-columns: 2fr 1fr;
+}
+
+.wp-two-column--3-1 {
+  grid-template-columns: 3fr 1fr;
+}
+
+@media (max-width: 768px) {
+  .wp-two-column {
+    grid-template-columns: 1fr;
+  }
+}

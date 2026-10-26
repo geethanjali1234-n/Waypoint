@@ -1,0 +1,44 @@
+.wp-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--wp-radius-pill);
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  color: var(--wp-color-text);
+  transition: background-color var(--wp-transition-fast);
+}
+
+.wp-icon-button--sm {
+  width: 28px;
+  height: 28px;
+}
+
+.wp-icon-button--md {
+  width: 36px;
+  height: 36px;
+}
+
+.wp-icon-button--lg {
+  width: 44px;
+  height: 44px;
+}
+
+.wp-icon-button--ghost:hover:not(:disabled) {
+  background-color: var(--wp-color-neutral-bg);
+}
+
+.wp-icon-button--filled {
+  background-color: var(--wp-color-primary);
+  color: var(--wp-color-primary-contrast);
+}
+
+.wp-icon-button--filled:hover:not(:disabled) {
+  background-color: var(--wp-color-primary-hover);
+}
+
+.wp-icon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

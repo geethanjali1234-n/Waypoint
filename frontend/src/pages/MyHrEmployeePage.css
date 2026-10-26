@@ -1,0 +1,1366 @@
+.my-hr-employee {
+  color: var(--wp-color-text);
+}
+
+/* Keep every employee-workspace action on one predictable control scale. */
+.my-hr-employee .wp-button {
+  align-items: center;
+  border-radius: 10px;
+  box-sizing: border-box;
+  font-size: 0.875rem;
+  font-weight: 750;
+  justify-content: center;
+  line-height: 1.2;
+  min-height: 48px;
+  padding: 12px 18px;
+  white-space: nowrap;
+}
+
+.my-hr-employee .wp-button--primary {
+  background: linear-gradient(135deg, #0b624f, #10b981);
+  border: 1px solid rgba(0, 255, 135, 0.4);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(11, 98, 79, 0.35);
+}
+
+.my-hr-employee .wp-button--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #084437, #003cd6);
+  border-color: #00ff87;
+  box-shadow: 0 0 24px rgba(0, 255, 135, 0.45);
+  transform: translateY(-1px);
+}
+
+.my-hr-employee .wp-button--secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(0, 255, 135, 0.25);
+  color: #f8fafc;
+  backdrop-filter: blur(10px);
+}
+
+.my-hr-employee .wp-button--secondary:hover:not(:disabled) {
+  background: rgba(0, 255, 135, 0.1);
+  border-color: #00ff87;
+  box-shadow: 0 0 16px rgba(0, 255, 135, 0.25);
+}
+
+.my-hr-employee__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.my-hr-employee__actions .wp-button {
+  flex: 0 0 auto;
+  min-width: 132px;
+}
+
+.my-hr-employee__landing-hero {
+  background: radial-gradient(120% 120% at 50% 0%, #0a2e23 0%, #040d09 100%);
+  border: 1px solid rgba(0, 255, 135, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 24px rgba(0, 255, 135, 0.08);
+  box-sizing: border-box;
+  color: #fff;
+  margin-bottom: clamp(26px, 4vw, 38px);
+  overflow: hidden;
+  padding: clamp(30px, 4vw, 46px) clamp(28px, 4vw, 54px) 0;
+  position: relative;
+}
+
+.my-hr-employee__landing-hero-copy h1 {
+  color: #fff;
+  font-family: var(--wp-font-sans);
+  font-size: clamp(2rem, 3.6vw, 3rem);
+  letter-spacing: -0.055em;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.my-hr-employee__landing-hero-copy p {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: clamp(1rem, 1.7vw, 1.2rem);
+  margin: 12px 0 0;
+}
+
+.my-hr-employee__landing-stats {
+  border-top: 1px solid rgba(0, 255, 135, 0.15);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: clamp(28px, 4vw, 42px);
+}
+
+.my-hr-employee__landing-stats > div {
+  min-width: 0;
+  padding: 27px 22px 30px 0;
+}
+
+.my-hr-employee__landing-stats > div + div {
+  border-left: 1px solid rgba(0, 255, 135, 0.15);
+  padding-left: clamp(20px, 3vw, 54px);
+}
+
+.my-hr-employee__landing-stats strong,
+.my-hr-employee__landing-stats span {
+  display: block;
+}
+
+.my-hr-employee__landing-stats strong {
+  color: #00ff87;
+  font-size: clamp(1.7rem, 3vw, 2.1rem);
+  line-height: 1;
+  text-shadow: 0 0 12px rgba(0, 255, 135, 0.4);
+}
+
+.my-hr-employee__landing-stats span {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  margin-top: 9px;
+  text-transform: uppercase;
+}
+
+.my-hr-employee__dashboard-actions {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.my-hr-employee__dashboard-action {
+  align-items: flex-start;
+  background: rgba(8, 24, 18, 0.85);
+  border: 1px solid rgba(0, 255, 135, 0.18);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  color: var(--wp-color-text);
+  cursor: pointer;
+  display: flex;
+  gap: 16px;
+  min-height: 188px;
+  padding: 28px;
+  text-align: left;
+  transition: all 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  width: 100%;
+}
+
+.my-hr-employee__dashboard-action:hover {
+  border-color: #00ff87;
+  box-shadow: 0 8px 30px rgba(0, 255, 135, 0.2);
+  transform: translateY(-2px);
+}
+
+.my-hr-employee__dashboard-action:focus-visible {
+  outline: 3px solid #00ff87;
+  outline-offset: 3px;
+}
+
+.my-hr-employee__dashboard-action-icon {
+  align-items: center;
+  background: rgba(0, 255, 135, 0.1);
+  border: 1px solid rgba(0, 255, 135, 0.3);
+  border-radius: 50%;
+  color: #00ff87;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 52px;
+  justify-content: center;
+  width: 52px;
+}
+
+.my-hr-employee__dashboard-action-icon svg {
+  fill: none;
+  height: 24px;
+  stroke: currentColor;
+  stroke-width: 1.45;
+  width: 24px;
+}
+
+.my-hr-employee__dashboard-action-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.my-hr-employee__dashboard-action-title {
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.my-hr-employee__dashboard-action-description {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin-top: 10px;
+}
+
+.my-hr-employee__dashboard-action-link {
+  align-items: center;
+  color: #00ff87;
+  display: inline-flex;
+  font-size: 0.88rem;
+  font-weight: 750;
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 18px;
+}
+
+.my-hr-employee__dashboard-action-link .my-hr-employee__inline-icon {
+  height: 16px;
+  width: 16px;
+}
+
+.my-hr-employee__identity-card {
+  align-items: center;
+  background: rgba(8, 24, 18, 0.85);
+  border: 1px solid rgba(0, 255, 135, 0.2);
+  border-radius: 14px;
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--wp-space-sm);
+  padding: 10px 12px;
+}
+
+.my-hr-employee__identity-card > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 104px;
+}
+
+.my-hr-employee__identity-card strong {
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-sm);
+}
+
+.my-hr-employee__identity-card div span {
+  color: var(--wp-color-text-muted);
+  font-size: 0.72rem;
+}
+
+.my-hr-employee__avatar {
+  align-items: center;
+  background: linear-gradient(135deg, #0b624f, #10b981);
+  border: 1px solid rgba(0, 255, 135, 0.35);
+  border-radius: 50%;
+  color: #fff;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 800;
+  height: 38px;
+  justify-content: center;
+  width: 38px;
+  box-shadow: 0 0 12px rgba(11, 98, 79, 0.35);
+}
+
+.my-hr-employee__avatar--light {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(0, 255, 135, 0.3);
+}
+
+.my-hr-employee__stat-card {
+  min-height: 142px;
+}
+
+.my-hr-employee__stat-card .wp-stat-card__icon {
+  align-items: center;
+  background: var(--wp-color-primary-soft);
+  border-radius: 10px;
+  color: var(--wp-color-primary);
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  margin-bottom: var(--wp-space-sm);
+  width: 34px;
+}
+
+.my-hr-employee__stat-card .wp-stat-card__icon svg,
+.my-hr-employee__card-title svg,
+.my-hr-employee__inline-icon {
+  fill: none;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  width: 18px;
+}
+
+.my-hr-employee__stat-card .wp-stat-card__value {
+  font-size: clamp(1.15rem, 2vw, 1.55rem);
+  line-height: 1.25;
+}
+
+.my-hr-employee__manager-copy {
+  min-width: 0;
+}
+
+.my-hr-employee__manager-person {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--wp-space-sm);
+}
+
+.my-hr-employee__card-title {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--wp-space-sm);
+}
+
+.my-hr-employee__card-title svg {
+  color: var(--wp-color-primary);
+  height: 19px;
+  width: 19px;
+}
+
+.my-hr-employee__inline-icon {
+  flex: 0 0 auto;
+  height: 16px;
+  width: 16px;
+}
+
+.my-hr-employee__calendar-nav .my-hr-employee__inline-icon {
+  height: 17px;
+  width: 17px;
+}
+
+.my-hr-employee__actions .wp-button .my-hr-employee__inline-icon {
+  height: 15px;
+  width: 15px;
+}
+
+.my-hr-employee__summary {
+  margin-top: var(--wp-space-xl);
+}
+
+.my-hr-employee__summary .wp-stat-card {
+  min-width: 0;
+}
+
+.my-hr-employee__summary .wp-stat-card__value {
+  font-size: clamp(1.2rem, 2vw, 1.75rem);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.my-hr-employee__manager-banner {
+  align-items: center;
+  background: linear-gradient(135deg, rgba(13, 21, 56, 0.9) 0%, rgba(9, 14, 36, 0.9) 100%);
+  border: 1px solid rgba(0, 255, 135, 0.2);
+  border-radius: var(--wp-radius-lg);
+  color: #f8fafc;
+  display: flex;
+  gap: var(--wp-space-lg);
+  justify-content: space-between;
+  margin-top: var(--wp-space-xl);
+  padding: var(--wp-space-lg) var(--wp-space-xl);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.my-hr-employee__manager-banner > div {
+  min-width: 0;
+}
+
+.my-hr-employee__banner-label {
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0 0 var(--wp-space-xs);
+  opacity: 0.72;
+  text-transform: uppercase;
+}
+
+.my-hr-employee__manager-banner h2 {
+  font-family: var(--wp-font-sans);
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  margin: 0 0 var(--wp-space-xs);
+}
+
+.my-hr-employee__manager-banner p:last-child {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: var(--wp-font-size-sm);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.my-hr-employee__grid {
+  align-items: start;
+}
+
+.my-hr-employee__grid--feature-page {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.my-hr-employee__grid > .wp-card {
+  min-width: 0;
+  scroll-margin-top: var(--wp-space-lg);
+}
+
+.my-hr-employee__profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--wp-space-md);
+}
+
+.my-hr-employee__profile-grid .wp-field {
+  margin-bottom: var(--wp-space-md);
+}
+
+.my-hr-employee__intro,
+.my-hr-employee__message,
+.my-hr-employee__routing-note {
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+  line-height: 1.5;
+  margin: 0 0 var(--wp-space-lg);
+}
+
+.my-hr-employee__message {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wp-space-xs);
+}
+
+.my-hr-employee__error {
+  color: var(--wp-color-error);
+  font-size: var(--wp-font-size-sm);
+  line-height: 1.45;
+  margin: calc(var(--wp-space-sm) * -1) 0 var(--wp-space-md);
+}
+
+.my-hr-employee__timesheet,
+.my-hr-employee__request {
+  display: grid;
+  gap: var(--wp-space-md);
+  margin-top: var(--wp-space-lg);
+}
+
+.my-hr-employee__payroll-period {
+  align-items: center;
+  background: rgba(8, 24, 18, 0.8);
+  border: 1px solid rgba(0, 255, 135, 0.15);
+  border-radius: var(--wp-radius-md);
+  display: flex;
+  gap: var(--wp-space-md);
+  justify-content: space-between;
+  padding: var(--wp-space-md);
+}
+
+.my-hr-employee__payroll-period div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+  min-width: 0;
+}
+
+.my-hr-employee__payroll-period strong {
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-sm);
+}
+
+.my-hr-employee__payroll-period span,
+.my-hr-employee__payroll-period small {
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+}
+
+.my-hr-employee__payroll-period small {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.my-hr-employee__period-meta {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+  min-width: 0;
+}
+
+.my-hr-employee__history-table {
+  overflow-x: auto;
+}
+
+.my-hr-employee__calendar {
+  background: rgba(8, 24, 18, 0.75);
+  border: 1px solid rgba(0, 255, 135, 0.18);
+  border-radius: var(--wp-radius-lg);
+  backdrop-filter: blur(16px);
+  padding: var(--wp-space-md);
+}
+
+.my-hr-employee__calendar-toolbar {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--wp-space-lg);
+  justify-content: space-between;
+  margin-bottom: var(--wp-space-md);
+}
+
+.my-hr-employee__calendar-heading,
+.my-hr-employee__calendar-controls {
+  display: flex;
+}
+
+.my-hr-employee__calendar-heading {
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+  min-width: 0;
+}
+
+.my-hr-employee__calendar-eyebrow {
+  color: #00ff87;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0, 255, 135, 0.3);
+}
+
+.my-hr-employee__calendar-toolbar strong {
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-md);
+}
+
+.my-hr-employee__calendar-hint {
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+}
+
+.my-hr-employee__calendar-selected-date {
+  color: #00ff87;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-top: var(--wp-space-xs);
+}
+
+.my-hr-employee__calendar-controls {
+  align-items: end;
+  flex-wrap: wrap;
+  gap: var(--wp-space-sm);
+  justify-content: flex-end;
+}
+
+.my-hr-employee__calendar-select {
+  display: grid;
+  gap: var(--wp-space-xs);
+  min-width: 150px;
+}
+
+.my-hr-employee__calendar-select--year {
+  min-width: 96px;
+}
+
+.my-hr-employee__calendar-select > span {
+  color: var(--wp-color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.my-hr-employee__calendar-select .wp-field__control {
+  min-width: 0;
+  padding: var(--wp-space-sm) var(--wp-space-md);
+}
+
+.my-hr-employee__calendar-navigation {
+  align-items: center;
+  border-bottom: 1px solid var(--wp-color-border);
+  border-top: 1px solid var(--wp-color-border);
+  display: flex;
+  gap: var(--wp-space-md);
+  justify-content: space-between;
+  margin-bottom: var(--wp-space-md);
+  padding: var(--wp-space-sm) 0;
+}
+
+.my-hr-employee__calendar-nav {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(0, 255, 135, 0.2);
+  border-radius: var(--wp-radius-sm);
+  color: #00ff87;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+  gap: var(--wp-space-xs);
+  padding: var(--wp-space-xs) var(--wp-space-sm);
+  transition: all 160ms ease;
+}
+
+.my-hr-employee__calendar-nav:hover:not(:disabled) {
+  background: rgba(0, 255, 135, 0.12);
+  border-color: #00ff87;
+  box-shadow: 0 0 12px rgba(0, 255, 135, 0.25);
+}
+
+.my-hr-employee__calendar-nav:focus-visible,
+.my-hr-employee__calendar-day-select:focus-visible {
+  outline: 3px solid rgba(0, 255, 135, 0.4);
+  outline-offset: 2px;
+}
+
+.my-hr-employee__calendar-nav:disabled {
+  color: var(--wp-color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.my-hr-employee__calendar-nav > span:first-child,
+.my-hr-employee__calendar-nav > span:last-child {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.my-hr-employee__calendar-page {
+  color: var(--wp-color-text);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+  text-align: center;
+}
+
+.my-hr-employee__calendar-page small {
+  color: var(--wp-color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.my-hr-employee__calendar-notice {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--wp-radius-md);
+  display: flex;
+  font-size: var(--wp-font-size-sm);
+  gap: var(--wp-space-sm);
+  line-height: 1.4;
+  margin-bottom: var(--wp-space-md);
+  padding: var(--wp-space-sm) var(--wp-space-md);
+}
+
+.my-hr-employee__calendar-notice--open {
+  background: rgba(0, 255, 135, 0.12);
+  border-color: rgba(0, 255, 135, 0.35);
+  color: #00ff87;
+}
+
+.my-hr-employee__calendar-notice--closed {
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+}
+
+.my-hr-employee__calendar-notice--upcoming {
+  background: rgba(255, 184, 0, 0.12);
+  border-color: rgba(255, 184, 0, 0.35);
+  color: #ffb800;
+}
+
+.my-hr-employee__calendar-grid {
+  display: grid;
+  gap: var(--wp-space-sm);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.my-hr-employee__calendar-day {
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-md);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--wp-space-md);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.my-hr-employee__calendar-day--selected {
+  background: rgba(11, 98, 79, 0.25);
+  border-color: #00ff87;
+  box-shadow: inset 0 0 0 1px #00ff87, 0 0 14px rgba(0, 255, 135, 0.25);
+}
+
+.my-hr-employee__calendar-day:focus-within {
+  border-color: #00ff87;
+  box-shadow: 0 0 0 3px rgba(0, 255, 135, 0.25);
+  transform: translateY(-1px);
+}
+
+.my-hr-employee__calendar-day-select {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: block;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.my-hr-employee__calendar-day-select:hover .my-hr-employee__calendar-weekday {
+  color: #00ff87;
+}
+
+.my-hr-employee__calendar-day-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--wp-space-sm);
+  justify-content: space-between;
+}
+
+.my-hr-employee__calendar-weekday {
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+  padding-top: var(--wp-space-xs);
+}
+
+.my-hr-employee__calendar-date {
+  align-items: center;
+  background: linear-gradient(135deg, #084437 0%, #0b624f 100%);
+  border: 1px solid rgba(0, 255, 135, 0.3);
+  border-radius: var(--wp-radius-sm);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  min-width: 42px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(11, 98, 79, 0.3);
+}
+
+.my-hr-employee__calendar-date small {
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 6px;
+  text-align: center;
+  width: 100%;
+}
+
+.my-hr-employee__calendar-date strong {
+  font-size: 1.35rem;
+  line-height: 1;
+  padding: 6px 8px 8px;
+}
+
+.my-hr-employee__calendar-date-label {
+  color: var(--wp-color-text-muted);
+  font-size: 0.78rem;
+  margin-top: var(--wp-space-sm);
+}
+
+.my-hr-employee__calendar-lock-note {
+  color: var(--wp-color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  margin-top: var(--wp-space-xs);
+  text-transform: uppercase;
+}
+
+.my-hr-employee__calendar-hours {
+  display: grid;
+  gap: var(--wp-space-xs);
+  margin-top: var(--wp-space-lg);
+}
+
+.my-hr-employee__calendar-hours > span {
+  color: var(--wp-color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.my-hr-employee__hours-input {
+  margin: 0;
+  min-width: 0;
+  padding: var(--wp-space-sm) var(--wp-space-md);
+  text-align: center;
+}
+
+.my-hr-employee__hours-input:disabled {
+  background: rgba(255, 255, 255, 0.03);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.my-hr-employee__timesheet-total {
+  align-items: center;
+  border-top: 1px solid var(--wp-color-border);
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--wp-space-md);
+  padding-top: var(--wp-space-md);
+}
+
+.my-hr-employee__timesheet-total span {
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+}
+
+.my-hr-employee__timesheet-total strong {
+  color: #00ff87;
+  font-size: var(--wp-font-size-md);
+  text-shadow: 0 0 10px rgba(0, 255, 135, 0.4);
+}
+
+.my-hr-employee__routing-note {
+  margin: calc(var(--wp-space-sm) * -1) 0 0;
+}
+
+.my-hr-employee__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.my-hr-employee__history {
+  border-top: 1px solid var(--wp-color-border);
+  margin-top: var(--wp-space-xl);
+  padding-top: var(--wp-space-lg);
+}
+
+.my-hr-employee__history h4 {
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-md);
+  margin: 0;
+}
+
+.my-hr-employee__history-heading {
+  align-items: flex-end;
+  display: flex;
+  gap: var(--wp-space-lg);
+  justify-content: space-between;
+  margin-bottom: var(--wp-space-md);
+}
+
+.my-hr-employee__history-heading-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+}
+
+.my-hr-employee__history-heading-copy span {
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+  font-weight: 600;
+}
+
+.my-hr-employee__history-filter {
+  display: grid;
+  gap: var(--wp-space-xs);
+  min-width: 276px;
+}
+
+.my-hr-employee__history-filter > span {
+  color: var(--wp-color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.my-hr-employee__history-calendar {
+  background: rgba(8, 24, 18, 0.95);
+  border: 1px solid rgba(0, 255, 135, 0.2);
+  border-radius: var(--wp-radius-md);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  min-width: 276px;
+  margin-top: var(--wp-space-xs);
+  padding: var(--wp-space-sm);
+}
+
+.my-hr-employee__history-calendar-toggle {
+  align-items: center;
+  background: rgba(8, 24, 18, 0.8);
+  border: 1px solid rgba(0, 255, 135, 0.2);
+  border-radius: var(--wp-radius-md);
+  color: var(--wp-color-text);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+  justify-content: space-between;
+  min-height: 44px;
+  min-width: 276px;
+  padding: var(--wp-space-sm) var(--wp-space-md);
+  text-align: left;
+  width: 100%;
+}
+
+.my-hr-employee__history-calendar-toggle:hover,
+.my-hr-employee__history-calendar-toggle:focus-visible,
+.my-hr-employee__history-calendar-toggle--open {
+  border-color: #00ff87;
+  box-shadow: 0 0 0 3px rgba(0, 255, 135, 0.25);
+  outline: none;
+}
+
+.my-hr-employee__history-calendar-chevron {
+  color: #00ff87;
+  font-size: 1.2rem;
+  line-height: 1;
+  transform: translateY(-2px);
+  transition: transform 160ms ease;
+}
+
+.my-hr-employee__history-calendar-toggle--open .my-hr-employee__history-calendar-chevron {
+  transform: rotate(180deg) translateY(2px);
+}
+
+.my-hr-employee__history-calendar-heading {
+  align-items: center;
+  display: flex;
+  gap: var(--wp-space-sm);
+  justify-content: space-between;
+  margin-bottom: var(--wp-space-sm);
+}
+
+.my-hr-employee__history-calendar-month-navigation {
+  align-items: center;
+  display: flex;
+  gap: var(--wp-space-xs);
+  min-width: 0;
+}
+
+.my-hr-employee__history-calendar-heading strong {
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-sm);
+  min-width: 88px;
+  text-align: center;
+}
+
+.my-hr-employee__history-calendar-nav {
+  align-items: center;
+  background: transparent;
+  border: 1px solid rgba(0, 255, 135, 0.2);
+  border-radius: var(--wp-radius-sm);
+  color: #00ff87;
+  cursor: pointer;
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  padding: 0;
+  width: 28px;
+}
+
+.my-hr-employee__history-calendar-nav:hover,
+.my-hr-employee__history-calendar-nav:focus-visible {
+  background: rgba(0, 255, 135, 0.12);
+  border-color: #00ff87;
+  outline: none;
+}
+
+.my-hr-employee__history-calendar-nav .my-hr-employee__inline-icon {
+  height: 15px;
+  width: 15px;
+}
+
+.my-hr-employee__history-calendar-weekdays,
+.my-hr-employee__history-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.my-hr-employee__history-calendar-weekdays {
+  color: var(--wp-color-text-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.my-hr-employee__history-calendar-day {
+  align-items: center;
+  aspect-ratio: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--wp-radius-sm);
+  color: var(--wp-color-text);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: var(--wp-font-size-sm);
+  justify-content: center;
+  min-height: 30px;
+  padding: 0;
+}
+
+.my-hr-employee__history-calendar-day:hover,
+.my-hr-employee__history-calendar-day:focus-visible {
+  background: rgba(0, 255, 135, 0.12);
+  border-color: #00ff87;
+  outline: none;
+}
+
+.my-hr-employee__history-calendar-day--selected {
+  background: linear-gradient(135deg, #0b624f, #10b981);
+  border-color: #00ff87;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(0, 255, 135, 0.4);
+}
+
+.my-hr-employee__history-calendar-day--selected:hover,
+.my-hr-employee__history-calendar-day--selected:focus-visible {
+  background: linear-gradient(135deg, #084437, #003cd6);
+  border-color: #00ff87;
+}
+
+.my-hr-employee__history-calendar-day--empty {
+  cursor: default;
+}
+
+.my-hr-employee__history-reset {
+  background: transparent;
+  border: 0;
+  color: #00ff87;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+  padding: var(--wp-space-xs) 0;
+  white-space: nowrap;
+}
+
+.my-hr-employee__history-reset:hover,
+.my-hr-employee__history-reset:focus-visible {
+  color: #fff;
+  text-shadow: 0 0 8px rgba(0, 255, 135, 0.5);
+  text-decoration: underline;
+}
+
+.my-hr-employee__history-reset--active {
+  color: var(--wp-color-text-muted);
+}
+
+.my-hr-employee__history-reset--active:hover,
+.my-hr-employee__history-reset--active:focus-visible {
+  color: var(--wp-color-text-muted);
+}
+
+.my-hr-employee__history-empty {
+  border-bottom: 1px solid var(--wp-color-border);
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+  margin: 0;
+  padding: var(--wp-space-md) 0;
+}
+
+.my-hr-employee__history-row {
+  align-items: center;
+  border-bottom: 1px solid var(--wp-color-border);
+  display: grid;
+  gap: var(--wp-space-md);
+  grid-template-columns: minmax(150px, 1.2fr) minmax(60px, 0.5fr) minmax(190px, 1.4fr) minmax(145px, 0.9fr);
+  min-width: 620px;
+  padding: var(--wp-space-sm) 0;
+}
+
+.my-hr-employee__history-row--header {
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+}
+
+.my-hr-employee__history-row:not(.my-hr-employee__history-row--header) {
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-sm);
+}
+
+.my-hr-employee__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-sm);
+  margin-top: var(--wp-space-lg);
+}
+
+.my-hr-employee__list-row {
+  align-items: center;
+  border-bottom: 1px solid var(--wp-color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wp-space-sm);
+  justify-content: space-between;
+  padding: var(--wp-space-sm) 0;
+}
+
+.my-hr-employee__list-row:last-child {
+  border-bottom: 0;
+}
+
+.my-hr-employee__list-row > div:first-child {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+  min-width: 0;
+}
+
+.my-hr-employee__list-row strong {
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-sm);
+}
+
+.my-hr-employee__list-row span:not(.wp-status-tag) {
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+}
+
+.my-hr-employee__paystub-actions {
+  margin: 0;
+}
+
+.my-hr-employee__paystub-actions .wp-button {
+  font-size: 0.875rem;
+  min-height: 48px;
+  min-width: 132px;
+  padding: 12px 18px;
+}
+
+.my-hr-employee__paystub-paper {
+  background: rgba(8, 24, 18, 0.92);
+  border: 1px solid rgba(0, 255, 135, 0.2);
+  border-radius: var(--wp-radius-md);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  padding: var(--wp-space-lg);
+}
+
+.my-hr-employee__paystub-paper-heading {
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(0, 255, 135, 0.15);
+  display: flex;
+  gap: var(--wp-space-md);
+  justify-content: space-between;
+  padding-bottom: var(--wp-space-md);
+}
+
+.my-hr-employee__paystub-paper-heading div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+}
+
+.my-hr-employee__paystub-paper-heading strong {
+  color: #00ff87;
+  font-size: var(--wp-font-size-lg);
+  text-shadow: 0 0 10px rgba(0, 255, 135, 0.35);
+}
+
+.my-hr-employee__paystub-paper-heading span,
+.my-hr-employee__paystub-note {
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+}
+
+.my-hr-employee__paystub-details {
+  display: grid;
+  gap: var(--wp-space-sm);
+  margin: var(--wp-space-lg) 0;
+}
+
+.my-hr-employee__paystub-details div {
+  display: flex;
+  gap: var(--wp-space-sm);
+  justify-content: space-between;
+}
+
+.my-hr-employee__paystub-details dt,
+.my-hr-employee__paystub-details dd {
+  font-size: var(--wp-font-size-sm);
+  margin: 0;
+}
+
+.my-hr-employee__paystub-details dt {
+  color: var(--wp-color-text-muted);
+}
+
+.my-hr-employee__paystub-details dd {
+  color: var(--wp-color-text);
+  font-weight: 600;
+  text-align: right;
+}
+
+.my-hr-employee__paystub-summary {
+  border-top: 1px solid var(--wp-color-border);
+  display: grid;
+  gap: var(--wp-space-sm);
+  grid-template-columns: repeat(3, 1fr);
+  padding-top: var(--wp-space-md);
+}
+
+.my-hr-employee__paystub-summary div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+}
+
+.my-hr-employee__paystub-summary span {
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+}
+
+.my-hr-employee__paystub-summary strong {
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-md);
+}
+
+.my-hr-employee__paystub-note {
+  line-height: 1.5;
+  margin: var(--wp-space-lg) 0 0;
+}
+
+.my-hr-employee__paystub-modal {
+  max-width: 620px;
+}
+
+@media (max-width: 768px) {
+  .my-hr-employee__dashboard-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .my-hr-employee__identity-card {
+    width: 100%;
+  }
+
+  .my-hr-employee__manager-banner {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: var(--wp-space-lg);
+  }
+
+  .my-hr-employee__manager-person {
+    width: 100%;
+  }
+
+  .my-hr-employee__payroll-period {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .my-hr-employee__payroll-period small {
+    text-align: left;
+  }
+
+  .my-hr-employee__period-meta {
+    align-items: flex-start;
+  }
+
+  .my-hr-employee__history-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--wp-space-md);
+  }
+
+  .my-hr-employee__history-filter {
+    min-width: 0;
+  }
+
+  .my-hr-employee__history-calendar,
+  .my-hr-employee__history-calendar-toggle {
+    width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .my-hr-employee__dashboard-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .my-hr-employee__actions:not(.my-hr-employee__paystub-actions) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .my-hr-employee__actions:not(.my-hr-employee__paystub-actions) .wp-button {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .my-hr-employee__calendar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .my-hr-employee__calendar-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .my-hr-employee__calendar-hint {
+    text-align: left;
+  }
+
+  .my-hr-employee__calendar-controls {
+    align-items: stretch;
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .my-hr-employee__calendar-select {
+    flex: 1 1 180px;
+  }
+
+  .my-hr-employee__profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .my-hr-employee__list-row {
+    align-items: flex-start;
+  }
+
+  .my-hr-employee__paystub-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .my-hr-employee__paystub-actions .wp-button {
+    flex: 1;
+  }
+
+  .my-hr-employee__paystub-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .my-hr-employee__landing-hero {
+    border-radius: 14px;
+    padding-inline: 22px;
+  }
+
+  .my-hr-employee__landing-stats > div {
+    padding-right: 14px;
+  }
+
+  .my-hr-employee__landing-stats > div + div {
+    padding-left: 14px;
+  }
+
+  .my-hr-employee__landing-stats span {
+    font-size: 0.63rem;
+  }
+
+  .my-hr-employee__calendar {
+    padding: var(--wp-space-sm);
+  }
+
+  .my-hr-employee__calendar-grid {
+    grid-template-columns: 1fr;
+  }
+}

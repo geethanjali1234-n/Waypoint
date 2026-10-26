@@ -1,0 +1,35 @@
+.wp-employer-profile { background: transparent; color: var(--wp-color-text); min-width: 0; }
+.wp-employer-profile__workspace { background: var(--wp-color-surface); box-sizing: border-box; margin: 0 auto; max-width: 1360px; min-height: calc(100vh - 76px); padding: 44px 54px 80px; width: calc(100% - 40px); }
+.wp-employer-profile__heading { margin-bottom: 24px; }
+.wp-employer-profile__heading h1 { color: var(--wp-color-primary); font: 500 2.25rem/1.1 var(--wp-font-display); letter-spacing: -.025em; margin: 0 0 6px; }
+.wp-employer-profile__heading p { color: var(--wp-color-text-muted); font-size: 1rem; line-height: 1.5; margin: 0; }
+.wp-employer-profile__summary, .wp-employer-profile__details { background: var(--wp-color-surface); border: 1px solid var(--wp-color-border); border-radius: var(--wp-radius-card); box-shadow: none; }
+.wp-employer-profile__summary { align-items: center; display: flex; gap: 22px; padding: 28px; }
+.wp-employer-profile__logo-fallback { background: var(--wp-color-primary); border-radius: 10px; color: var(--wp-color-primary-contrast); display: grid; flex: 0 0 auto; font-family: var(--wp-font-sans); font-size: 1.45rem; font-weight: 600; height: 64px; place-items: center; width: 64px; }
+.wp-employer-profile__logo { border: 1px solid var(--wp-color-border); border-radius: 10px; flex: 0 0 auto; height: 64px; object-fit: cover; width: 64px; }
+.wp-employer-profile__summary-copy { flex: 1; min-width: 0; }
+.wp-employer-profile__summary h2, .wp-employer-profile__details h2 { color: var(--wp-color-primary-deep); font: 700 1.45rem/1.2 var(--wp-font-sans); margin: 0 0 7px; }
+.wp-employer-profile__summary p { color: var(--wp-color-text-muted); margin: 0; }
+.wp-employer-profile__details { margin-top: 16px; overflow: hidden; }
+.wp-employer-profile__form { background: var(--wp-color-surface); border: 1px solid var(--wp-color-border); border-radius: var(--wp-radius-card); box-shadow: none; margin-top: 24px; overflow: hidden; }
+.wp-employer-profile__card-heading { align-items: center; border-bottom: 1px solid var(--wp-color-border); display: flex; gap: 20px; justify-content: space-between; padding: 26px 28px 20px; }
+.wp-employer-profile__card-heading p { color: var(--wp-color-text-muted); font-size: .72rem; font-weight: 750; letter-spacing: .08em; margin: 0 0 5px; text-transform: uppercase; }
+.wp-employer-profile__card-heading h2 { margin: 0; }
+.wp-employer-profile__details dl { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); margin: 0; }
+.wp-employer-profile__details dl div { border-bottom: 1px solid var(--wp-color-border); border-right: 1px solid var(--wp-color-border); min-width: 0; padding: 24px 28px; }
+.wp-employer-profile__details dl div:nth-child(3n) { border-right: 0; }
+.wp-employer-profile__details dt { color: var(--wp-color-text-muted); font-size: .76rem; font-weight: 650; margin-bottom: 8px; }
+.wp-employer-profile__details dd { color: var(--wp-color-text); font-size: .95rem; margin: 0; overflow-wrap: anywhere; }
+.wp-employer-profile__details a { color: var(--wp-color-primary); overflow-wrap: anywhere; }
+.wp-employer-profile__form-grid { display: grid; gap: var(--wp-space-lg); grid-template-columns: repeat(2,minmax(0,1fr)); padding: 28px; }
+.wp-employer-profile__description-field { grid-column: 1 / -1; }
+.wp-employer-profile__form-actions { display: flex; gap: 12px; justify-content: flex-end; padding: 20px 28px 28px; }
+.wp-employer-profile__workspace > .wp-loader, .wp-employer-profile__workspace > .wp-empty-state { justify-content: center; min-height: 260px; }
+@media (max-width:900px) { .wp-employer-profile__details dl { grid-template-columns: repeat(2,minmax(0,1fr)); } .wp-employer-profile__details dl div:nth-child(3n) { border-right: 1px solid var(--wp-color-border); } .wp-employer-profile__details dl div:nth-child(2n) { border-right: 0; } }
+@media (max-width:760px) { .wp-employer-profile__workspace { padding: 30px 18px 60px; width: 100%; } .wp-employer-profile__summary { align-items: flex-start; flex-direction: column; } .wp-employer-profile__summary .wp-button { width: 100%; } .wp-employer-profile__form-grid { grid-template-columns: 1fr; padding: 22px; } .wp-employer-profile__description-field { grid-column: auto; } .wp-employer-profile__form-actions { flex-direction: column-reverse; padding: 18px 22px 22px; } .wp-employer-profile__form-actions .wp-button { width: 100%; } .wp-employer-profile__card-heading { align-items: flex-start; flex-direction: column; } .wp-employer-profile__details dl { grid-template-columns: 1fr; } .wp-employer-profile__details dl div, .wp-employer-profile__details dl div:nth-child(2n), .wp-employer-profile__details dl div:nth-child(3n) { border-right: 0; } }
+
+.wp-employer-profile h1, .wp-employer-profile h2 { font-family: var(--wp-font-display); font-weight: 500; color: var(--wp-color-text); }
+.wp-employer-profile button, .wp-employer-profile select, .wp-employer-profile input:not([type="checkbox"]):not([type="radio"]) { min-height: 44px; }
+
+.wp-employer-profile__summary h2, .wp-employer-profile__details h2 { color: var(--wp-color-text); }
+.wp-employer-profile__workspace { background: transparent; }

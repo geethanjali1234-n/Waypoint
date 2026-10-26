@@ -1,0 +1,37 @@
+.wp-login-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.wp-login-form__links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--wp-space-sm);
+  margin-top: var(--wp-space-lg);
+  font-size: var(--wp-font-size-sm);
+}
+
+.wp-login-form__link {
+  color: var(--wp-color-accent-cyan, #00ff87);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color var(--wp-transition-fast);
+}
+
+.wp-login-form__link:hover {
+  color: #34d399;
+  text-decoration: underline;
+}
+
+[data-theme="light"] .wp-login-form__link {
+  color: #0b624f;
+}
+
+[data-theme="light"] .wp-login-form__link:hover {
+  color: #047857;
+}
+
+.wp-login-form__divider {
+  color: var(--wp-color-text-dim, #94a3b8);
+}

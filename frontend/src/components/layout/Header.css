@@ -1,0 +1,45 @@
+.wp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wp-space-lg);
+  padding: var(--wp-space-md) var(--wp-space-xl);
+  background-color: var(--wp-color-surface);
+  border-bottom: 1px solid var(--wp-color-border);
+}
+
+.wp-header__nav {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+}
+
+.wp-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-sm);
+}
+
+/* Keep each role's three primary destinations centered in the viewport. */
+@media (min-width: 961px) {
+  .job-seeker-shell__header,
+  .employer-dashboard__header {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
+  }
+
+  .job-seeker-shell__header .wp-header__logo,
+  .employer-dashboard__header .wp-header__logo {
+    justify-self: start;
+  }
+
+  .job-seeker-shell__header .wp-header__nav,
+  .employer-dashboard__header .wp-header__nav {
+    justify-self: center;
+  }
+
+  .job-seeker-shell__header .wp-header__actions,
+  .employer-dashboard__header .wp-header__actions {
+    justify-self: end;
+  }
+}

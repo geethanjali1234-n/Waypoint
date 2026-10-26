@@ -1,0 +1,73 @@
+/**
+ * Shared base styling for form controls (inputs, textareas, selects).
+ * Imported by individual field components to keep control appearance consistent.
+ */
+.wp-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--wp-space-lg);
+}
+
+.wp-field__control {
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-md);
+  color: var(--wp-color-text);
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-control);
+  padding: var(--wp-space-md) var(--wp-space-md);
+  transition: border-color var(--wp-transition-fast), background-color var(--wp-transition-fast);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.wp-field__control:focus {
+  outline: 2px solid var(--wp-color-primary);
+  outline-offset: 2px;
+  border-color: var(--wp-color-primary);
+  box-shadow: none;
+  background-color: var(--wp-color-surface);
+}
+
+.wp-field__control::placeholder {
+  color: var(--wp-color-text-muted);
+  opacity: 1;
+}
+
+.wp-field__control:disabled {
+  background-color: var(--wp-color-neutral-bg);
+  cursor: not-allowed;
+}
+
+.wp-field__control--error {
+  border-color: var(--wp-color-error);
+}
+
+.wp-field__row {
+  display: flex;
+  gap: var(--wp-space-md);
+}
+
+.wp-field__row .wp-field {
+  flex: 1;
+}
+
+/* Hide spin buttons / stepper arrows on number inputs */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button,
+.wp-field__control[type='number']::-webkit-inner-spin-button,
+.wp-field__control[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  display: none !important;
+  margin: 0 !important;
+}
+
+input[type='number'],
+.wp-field__control[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.wp-field__control:disabled {
+  color: var(--wp-color-text-muted);
+}

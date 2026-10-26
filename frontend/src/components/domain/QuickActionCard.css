@@ -1,0 +1,42 @@
+.wp-quick-action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--wp-space-sm);
+  width: 100%;
+  text-align: left;
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-md);
+  padding: var(--wp-space-lg);
+  cursor: pointer;
+  transition: box-shadow var(--wp-transition-fast);
+}
+
+.wp-quick-action-card:hover {
+  box-shadow: var(--wp-shadow-sm);
+}
+
+.wp-quick-action-card__icon {
+  color: var(--wp-color-primary);
+  font-size: 1.25rem;
+}
+
+.wp-quick-action-card__title {
+  margin: 0;
+  font-family: var(--wp-font-sans);
+  font-weight: 600;
+  color: var(--wp-color-text);
+}
+
+.wp-quick-action-card__description {
+  margin: 0;
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+}
+
+.wp-quick-action-card__link {
+  font-size: var(--wp-font-size-sm);
+  font-weight: 600;
+  color: var(--wp-color-primary);
+}

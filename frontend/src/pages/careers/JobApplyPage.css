@@ -1,0 +1,158 @@
+.wp-job-apply__content {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--wp-space-lg) var(--wp-space-xl) var(--wp-space-2xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-md);
+}
+
+.wp-job-apply__content > .wp-toast {
+  align-self: flex-start;
+}
+
+.wp-job-apply__facts-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--wp-space-md) var(--wp-space-lg);
+}
+
+@media (max-width: 900px) {
+  .wp-job-apply__facts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.wp-job-apply__k {
+  margin: 0 0 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wp-color-text-muted);
+}
+
+.wp-job-apply__v {
+  margin: 0;
+  font-size: var(--wp-font-size-sm);
+  font-weight: 500;
+  color: var(--wp-color-text);
+}
+
+.wp-job-apply__description {
+  white-space: pre-line;
+  color: var(--wp-color-text);
+  margin: 0;
+  line-height: 1.65;
+}
+
+.wp-job-apply__skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wp-space-sm);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wp-job-apply__skillmatch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-sm);
+}
+
+.wp-job-apply__sm-item {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-sm);
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+}
+
+.wp-job-apply__sm-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: var(--wp-color-primary-soft);
+  color: var(--wp-color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+}
+
+.wp-job-apply__sm-item--miss .wp-job-apply__sm-dot {
+  background-color: var(--wp-color-warning-soft, var(--wp-color-surface));
+  color: var(--wp-color-warning, var(--wp-color-text-muted));
+}
+
+.wp-job-apply__sm-label {
+  font-weight: 500;
+  color: var(--wp-color-text);
+}
+
+.wp-job-apply__sm-src {
+  font-size: 0.75rem;
+  color: var(--wp-color-text-muted);
+  margin-left: auto;
+}
+
+.wp-job-apply__sm-note {
+  margin: var(--wp-space-md) 0 0;
+  font-size: 0.75rem;
+  color: var(--wp-color-text-muted);
+}
+
+.wp-job-apply__panel {
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-md);
+  padding: var(--wp-space-lg);
+  position: sticky;
+  top: var(--wp-space-lg);
+}
+
+.wp-job-apply__panel-title {
+  margin: 0 0 4px;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--wp-color-text);
+}
+
+.wp-job-apply__panel-lede {
+  margin: 0 0 var(--wp-space-md);
+  font-size: 0.75rem;
+  color: var(--wp-color-text-muted);
+}
+
+.wp-job-apply__grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 var(--wp-space-sm);
+}
+
+.wp-job-apply__submit {
+  margin-top: var(--wp-space-sm);
+}
+
+.wp-job-apply__view-status {
+  margin-top: var(--wp-space-sm);
+}
+
+.wp-job-apply__deadline-note {
+  font-size: 0.75rem;
+  color: var(--wp-color-text-muted);
+  text-align: center;
+  margin: var(--wp-space-sm) 0 0;
+}
+
+@media (max-width: 768px) {
+  .wp-job-apply__content {
+    padding: var(--wp-space-md);
+  }
+
+  .wp-job-apply__panel {
+    position: static;
+  }
+}

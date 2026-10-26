@@ -1,0 +1,37 @@
+.wp-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--wp-space-sm);
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-md);
+}
+
+.wp-pagination__pages {
+  display: flex;
+  list-style: none;
+  gap: var(--wp-space-xs);
+  margin: 0;
+  padding: 0;
+}
+
+.wp-pagination__page,
+.wp-pagination__control {
+  border: 1px solid var(--wp-color-border);
+  background-color: var(--wp-color-surface);
+  border-radius: var(--wp-radius-sm);
+  padding: 6px 12px;
+  cursor: pointer;
+  color: var(--wp-color-text);
+}
+
+.wp-pagination__page--active {
+  background-color: var(--wp-color-primary);
+  border-color: var(--wp-color-primary);
+  color: var(--wp-color-primary-contrast);
+}
+
+.wp-pagination__control:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

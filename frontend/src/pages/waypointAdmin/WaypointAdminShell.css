@@ -1,0 +1,2 @@
+/* Platform admin uses WorkspaceFrame, including its theme and safe areas. */
+.waypoint-admin-shell__main { min-width:0; }

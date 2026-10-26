@@ -1,0 +1,16 @@
+.myhr-layout__brand {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--wp-color-text);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--wp-font-size-md);
+  font-weight: 700;
+  gap: var(--wp-space-sm);
+}
+
+.myhr-layout__brand-mark {
+  height: 28px;
+  width: 28px;
+}

@@ -1,0 +1,44 @@
+/* Sign-in entry: a quiet split canvas, with authentication first. */
+.wp-login-page.wp-auth-layout { height: auto; min-height: 100svh; }
+.wp-login-page .wp-auth-layout__columns { min-height: 100svh; height: auto; }
+.wp-login-page .wp-auth-layout__columns.wp-two-column--1-1 { grid-template-columns: 51% 49%; }
+.wp-login-page .wp-auth-layout__main { position: relative; height: auto; min-height: 100svh; min-width: 0; padding: 88px clamp(24px, 4vw, 64px) 48px; background: var(--wp-color-bg); }
+.wp-login-page .wp-auth-layout__card { max-width: 480px; padding: 32px; }
+.wp-login-theme { position: absolute; top: max(24px, env(safe-area-inset-top)); right: max(24px, env(safe-area-inset-right)); }
+.wp-login-page .wp-page-header { margin-bottom: 28px; padding: 0; }
+.wp-login-page .wp-page-header__title { font-size: 36px; line-height: 1.15; letter-spacing: -.025em; }
+.wp-login-page .wp-page-header__subtitle { margin-top: 8px; color: var(--wp-color-text-muted); }
+.wp-login-page input:is([name='loginId'], [name='password']) { background-image: none; padding-left: 14px; color: var(--wp-color-text); min-height: 48px; }
+.wp-login-page .wp-login-form > .wp-button { min-height: 48px; margin-top: 8px; }
+.wp-login-page .wp-login-form__links { margin-top: 12px; }
+.wp-login-page .wp-login-form__link { display: inline-flex; align-items: center; min-height: 44px; color: var(--wp-color-primary); }
+.wp-login-destinations { display: grid; gap: 10px; border-top: 1px solid var(--wp-color-border); padding-top: 24px; margin-top: 20px; }
+.wp-login-destination { display: grid; grid-template-columns: 32px minmax(0, 1fr) 18px; align-items: center; gap: 12px; min-height: 56px; padding: 10px 12px; border: 1px solid var(--wp-color-border); border-radius: 10px; color: var(--wp-color-text); text-decoration: none; font-size: 13px; font-weight: 500; line-height: 1.4; }
+.wp-login-destination:hover { background: var(--wp-color-hover); border-color: var(--wp-color-primary); }
+.wp-login-destination__icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: var(--wp-color-primary-soft); color: var(--wp-color-primary); }
+.wp-login-page .wp-auth-side-panel { min-height: 100%; height: 100%; padding: clamp(32px, 4vw, 64px); background: var(--wp-color-primary-soft); color: var(--wp-color-text); }
+.wp-login-page .wp-auth-side-panel__zones { min-height: 100%; gap: 0; }
+.wp-login-page .wp-auth-side-panel__logo { color: var(--wp-color-primary); }
+.wp-login-page .wp-auth-side-panel__logo-text { color: var(--wp-color-text); -webkit-text-fill-color: currentColor; font-size: 24px; font-weight: 600; letter-spacing: -.03em; }
+.wp-login-page .wp-auth-side-panel__workspace-label { margin-top: 20px; background: var(--wp-color-surface); color: var(--wp-color-primary); border-color: var(--wp-color-border); font-size: 11px; font-weight: 600; letter-spacing: .14em; }
+.wp-login-page .wp-auth-side-panel__content { margin-top: clamp(48px, 10vh, 112px); }
+.wp-login-page .wp-auth-side-panel__heading { color: var(--wp-color-text); font-size: clamp(36px, 3.65vw, 56px); line-height: 1.12; letter-spacing: -.035em; }
+.wp-login-page .wp-auth-side-panel__description { max-width: 440px; color: var(--wp-color-text-muted); font-size: 16px; line-height: 1.65; margin-top: 24px; }
+.wp-login-page .wp-auth-side-panel__watermark,
+.wp-login-page .wp-auth-side-panel__pattern,
+.wp-login-page .wp-auth-side-panel::after { display: none; }
+.wp-login-page .wp-workspace-explorer { margin-top: auto; margin-bottom: 0; max-width: 480px; background: var(--wp-color-surface); padding: 24px; }
+.wp-login-page .wp-auth-side-panel__content + .wp-workspace-explorer { margin-top: 48px; }
+.wp-login-page .wp-workspace-explorer__label { color: var(--wp-color-text); font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.wp-login-page .wp-workspace-explorer summary { min-height: 44px; box-sizing: border-box; padding: 12px 0; font-size: 14px; }
+@media (max-width: 900px) {
+  .wp-login-page .wp-auth-layout__columns.wp-two-column--1-1 { grid-template-columns: 1fr; }
+  .wp-login-page .wp-auth-layout__side { min-height: 0; }
+  .wp-login-page .wp-auth-side-panel { height: auto; padding: 32px 24px; border-right: 0; border-bottom: 1px solid var(--wp-color-border); }
+  .wp-login-page .wp-auth-side-panel__content { margin-top: 32px; }
+  .wp-login-page .wp-auth-side-panel__heading { font-size: 36px; }
+  .wp-login-page .wp-auth-side-panel__description { font-size: 15px; }
+  .wp-login-page .wp-auth-side-panel__content + .wp-workspace-explorer { margin-top: 24px; max-width: none; padding: 16px; }
+  .wp-login-page .wp-auth-layout__main { min-height: 0; padding: 80px 16px max(32px, env(safe-area-inset-bottom)); }
+  .wp-login-page .wp-auth-layout__card { padding: 24px; }
+}

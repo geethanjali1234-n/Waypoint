@@ -1,0 +1,31 @@
+.wp-process-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+}
+
+.wp-process-step__number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: var(--wp-color-neutral-bg);
+  color: var(--wp-color-text);
+  font-weight: 700;
+  font-size: var(--wp-font-size-sm);
+}
+
+.wp-process-step__title {
+  margin: var(--wp-space-xs) 0 0;
+  font-family: var(--wp-font-sans);
+  font-weight: 600;
+  color: var(--wp-color-text);
+}
+
+.wp-process-step__description {
+  margin: 0;
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+}

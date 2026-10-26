@@ -1,0 +1,59 @@
+.audit-history { display:grid; gap:24px; min-width:0; color:var(--wp-color-text); }
+.audit-history__toolbar { display:flex; flex-wrap:wrap; align-items:end; gap:16px; }
+.audit-history__toolbar .phase-six__search { flex:1 1 280px; }
+.audit-history__toolbar .wp-field { flex:1 1 160px; }
+.audit-history__toolbar .wp-filter-pills { flex-basis:100%; }
+.audit-history__summary { margin:0; color:var(--wp-color-text-muted); font-size:.875rem; }
+.audit-history__view-toggle { display:flex; flex-wrap:wrap; gap:8px; }
+.audit-history__view-toggle-btn { display:flex; align-items:center; gap:8px; min-height:44px; padding:8px 16px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-surface); color:var(--wp-color-text); font:inherit; cursor:pointer; }
+.audit-history__view-toggle-btn.is-active { background:var(--wp-color-primary); color:var(--wp-color-primary-contrast); }
+.audit-history__cards-grid { display:grid; gap:24px; padding:0 0 0 32px; margin:0 0 0 12px; border-left:2px solid var(--wp-color-border); list-style:none; }
+.audit-history__card { position:relative; display:grid; gap:16px; padding:24px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card); background:var(--wp-color-surface); min-width:0; }
+.audit-history__card::before { content:''; position:absolute; left:-41px; top:32px; width:12px; height:12px; border:3px solid var(--wp-color-bg); border-radius:50%; background:var(--wp-color-primary); }
+.audit-history__card-header { display:flex; flex-wrap:wrap; align-items:start; justify-content:space-between; gap:16px; border-bottom:1px solid var(--wp-color-border); padding-bottom:16px; }
+.audit-history__card-action-wrap,.audit-history__card-row,.audit-history__cell-actor,.audit-history__cell-action { display:grid; gap:8px; min-width:0; }
+.audit-history__card-category,.audit-history__card-label { color:var(--wp-color-text-muted); font:600 11px var(--wp-font-sans); text-transform:uppercase; letter-spacing:.14em; }
+.audit-history__card-action-title { min-height:44px; padding:0; border:0; background:transparent; color:var(--wp-color-primary); font:500 1.25rem var(--wp-font-display); text-align:left; cursor:pointer; }
+.audit-history__card-body { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.audit-history__card-row--full { grid-column:1 / -1; }
+.audit-history__card-row span { overflow-wrap:anywhere; line-height:1.5; }
+.audit-history__card-row small,.audit-history__cell-actor small,.audit-history__cell-action small { color:var(--wp-color-text-muted); }
+.audit-history__card-footer { display:flex; justify-content:flex-end; }
+.audit-history__row-link { min-height:44px; padding:8px 0; border:0; color:var(--wp-color-primary); background:transparent; text-align:left; font:inherit; cursor:pointer; }
+.audit-history__pagination { display:flex; justify-content:flex-end; }
+.audit-history__modal { width:min(720px,100%); }
+.audit-history__detail { color:var(--wp-color-text); line-height:1.5; }
+.audit-history__detail dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:0; }
+.audit-history__detail dl div { display:grid; gap:8px; min-width:0; }
+.audit-history__detail dt,.audit-history__diff-label { color:var(--wp-color-text-muted); font-size:.875rem; }
+.audit-history__detail dd { margin:0; overflow-wrap:anywhere; }
+.audit-history__detail h4 { font:600 1rem var(--wp-font-sans); margin-block:24px 16px; }
+.audit-history__diff { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.audit-history__diff > div { padding:16px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-bg); min-width:0; }
+.audit-history__diff > div:last-child { background:var(--wp-color-primary-soft); }
+.audit-history__diff-field,.audit-history__diff-fields { display:grid; gap:8px; }
+.audit-history__detail dl.audit-history__diff-fields { grid-template-columns:minmax(0,1fr); }
+.audit-history__diff-empty,.audit-history__participant-context,.audit-history__derived-note { color:var(--wp-color-text-muted); }
+.audit-history__derived-note { border-left:3px solid var(--wp-color-border); padding-left:16px; }
+@media(max-width:600px) { .audit-history__toolbar { align-items:stretch; } .audit-history__toolbar .wp-field { flex-basis:100%; } .audit-history__card { padding:16px; } .audit-history__card-body,.audit-history__detail dl,.audit-history__diff { grid-template-columns:minmax(0,1fr); } }
+
+/* Release polish: hover/active/disabled feedback for buttons on this page. The route-line foundation pins the primary
+   background with !important (so Button.css hover never showed) and the dark-theme secondary hover turned text white. */
+:root .audit-history-page .wp-button--primary:hover:not(:disabled) { background-color:color-mix(in srgb,var(--wp-color-primary) 82%,var(--wp-color-text))!important; border-color:var(--wp-color-primary); box-shadow:none; transform:none; }
+:root .audit-history-page .wp-button--secondary:hover:not(:disabled) { background:var(--wp-color-primary-soft); color:var(--wp-color-primary); border-color:var(--wp-color-primary); box-shadow:none; transform:none; }
+:root .audit-history-page .wp-button:active:not(:disabled) { transform:none; }
+:root .audit-history-page .wp-button:disabled { opacity:.55; cursor:not-allowed; }
+:root .phase-six .audit-history__view-toggle-btn:not(.is-active):hover { background:var(--wp-color-hover)!important; }
+.audit-history__view-toggle-btn { transition:background-color var(--wp-transition-fast),color var(--wp-transition-fast); }
+.audit-history__card-action-title:hover,.audit-history__row-link:hover { text-decoration:underline; text-underline-offset:3px; }
+.audit-history__card:focus-within { border-color:var(--wp-color-primary); }
+
+/* Category pills: the shared FilterPills hover rule (0,3,1) outranks its own selected rule (0,2,1), so hovering the selected
+   pill painted the light hover background under the selected pill's cream text. Pin each state's background AND text together. */
+:root .audit-history-page .wp-filter-pills button:hover:not(:disabled):not([aria-pressed='true']) { background:var(--wp-color-hover); color:var(--wp-color-text); border-color:var(--wp-color-primary); }
+:root .audit-history-page .wp-filter-pills button[aria-pressed='true'],
+:root .audit-history-page .wp-filter-pills button[aria-pressed='true']:hover:not(:disabled) { background:var(--wp-color-primary-deep); color:#FBF9F3; border-color:var(--wp-color-primary-deep); }
+:root .audit-history-page .wp-filter-pills button[aria-pressed='true'] .wp-filter-pills__count { color:inherit; }
+/* Table / Timeline toggle: the selected view keeps its filled state and readable text while hovered or focused. */
+:root .audit-history-page .audit-history__view-toggle-btn.is-active,
+:root .audit-history-page .audit-history__view-toggle-btn.is-active:hover:not(:disabled) { background:var(--wp-color-primary)!important; color:var(--wp-color-primary-contrast); border-color:var(--wp-color-primary); }

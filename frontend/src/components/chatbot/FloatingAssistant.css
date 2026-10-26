@@ -1,0 +1,10 @@
+body .wp-floating-assistant { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: calc(var(--wp-assistant-bottom-offset, 16px) + env(safe-area-inset-bottom)); z-index: 1100; display: grid; place-items: center; width: 52px; height: 52px; padding: 0; border: 1px solid var(--wp-color-border); border-radius: 50%; background: var(--wp-color-primary-deep); color: #FBF9F3; cursor: pointer; }
+body .wp-floating-assistant:hover { background: var(--wp-color-primary-hover); color: var(--wp-color-primary-contrast); }
+body .wp-floating-assistant:focus-visible { outline: 2px solid var(--wp-color-primary); outline-offset: 2px; }
+#root:has(.wp-floating-assistant, .wp-chatbot-window) { padding-bottom: calc(84px + var(--wp-assistant-bottom-offset, 16px) + env(safe-area-inset-bottom)); }
+/* The mobile dock reserves a fifth slot so the launcher cannot cover content. */
+@media (max-width: 768px) {
+  body:has(.wp-mobile-bottom-nav) .wp-floating-assistant { --wp-assistant-bottom-offset: 8px; }
+  body:has(.wp-floating-assistant, .wp-chatbot-window) .wp-mobile-bottom-nav__dock { padding-right: 68px; }
+  #root:has(.wp-workspace .wp-floating-assistant, .wp-workspace .wp-chatbot-window) { padding-bottom: 0; }
+}

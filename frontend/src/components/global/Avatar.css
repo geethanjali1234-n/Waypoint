@@ -1,0 +1,30 @@
+.wp-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: var(--wp-color-primary);
+  color: var(--wp-color-primary-contrast);
+  font-family: var(--wp-font-sans);
+  font-weight: 700;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.wp-avatar--sm {
+  width: 28px;
+  height: 28px;
+  font-size: var(--wp-font-size-sm);
+}
+
+.wp-avatar--md {
+  width: 40px;
+  height: 40px;
+  font-size: var(--wp-font-size-md);
+}
+
+.wp-avatar--lg {
+  width: 56px;
+  height: 56px;
+  font-size: var(--wp-font-size-lg);
+}

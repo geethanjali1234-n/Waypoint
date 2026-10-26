@@ -1,0 +1,154 @@
+/* Signed I-983 review panel (request detail) and signing editor. */
+.i983-panel { display:grid; gap:1rem; margin-top:1.25rem; padding:1.25rem; background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius:1rem; }
+.i983-panel__header { display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:.75rem; }
+.i983-panel__header h3 { margin:0; color:var(--wp-color-text); font-size:1.15rem; }
+.i983-panel__header p { margin:.2rem 0 0; color:var(--wp-color-text); font-size:.9rem; }
+.i983-panel__notice { margin:0; padding:.65rem .85rem; color:var(--wp-color-text); background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius:.6rem; }
+.i983-panel__toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; padding:.75rem; background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius:.75rem; }
+.i983-panel__toolbar .wp-button, .i983-panel__row-actions .wp-button { min-height:0; padding:.5rem .8rem; font-size:.88rem; white-space:nowrap; }
+.i983-panel__toolbar-divider { width:1px; align-self:stretch; margin:0 .25rem; background:var(--wp-color-surface); }
+.i983-panel__reject:not(:disabled) { color:var(--wp-color-error); border-color:var(--wp-color-error); }
+.i983-panel__file-input { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.i983-panel__hint { margin:0; color:var(--wp-color-text-muted); font-size:.9rem; }
+.i983-panel__reason { margin:0; padding:.65rem .85rem; color:var(--wp-color-text); background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius:.6rem; }
+.i983-panel__block h4 { margin:0 0 .5rem; color:var(--wp-color-text); font-size:1rem; }
+.i983-panel__table-wrap { overflow-x:auto; }
+.i983-panel__table-wrap table { width:100%; border-collapse:collapse; font-size:.9rem; }
+.i983-panel__table-wrap th, .i983-panel__table-wrap td { padding:.55rem .6rem; text-align:left; vertical-align:top; border-bottom:1px solid var(--wp-color-border); }
+.i983-panel__table-wrap th { color:var(--wp-color-text); font-weight:600; white-space:nowrap; }
+.i983-panel__table-wrap td small { display:block; margin-top:.15rem; color:var(--wp-color-text); }
+.i983-panel__row-actions { display:flex; flex-wrap:wrap; gap:.4rem; }
+.i983-panel__history { display:grid; gap:.55rem; margin:0; padding:0 0 0 1.1rem; }
+.i983-panel__history li { display:grid; gap:.1rem; }
+.i983-panel__history-action { color:var(--wp-color-text); font-weight:600; }
+.i983-panel__history-meta { color:var(--wp-color-text); font-size:.85rem; }
+.i983-panel__history-detail { color:var(--wp-color-text); font-size:.9rem; overflow-wrap:anywhere; }
+.i983-panel__documents { display:grid; gap:.6rem; }
+.i983-panel__documents > div { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.6rem; padding:.7rem .85rem; border:1px solid var(--wp-color-border); border-radius:.6rem; }
+.i983-panel__documents > div > span { color:var(--wp-color-text); font-weight:600; }
+.i983-panel__correction { display:grid; gap:.75rem; justify-items:start; }
+.i983-panel__correction .wp-file-upload { width:100%; max-width:34rem; }
+
+.employee-document-request__upload-actions { display:flex; gap:.5rem; margin-top:.5rem; }
+
+/* Employee "Sign Document" on their own I-983 */
+.i983-employee-sign { display:grid; gap:.6rem; padding:.85rem; background:#f6faf8; border:1px solid #dce8e2; border-radius:.75rem; }
+.i983-employee-sign__summary { margin:0; color:#34473f; }
+.i983-employee-sign--open { background:#fff; }
+.i983-panel__correction-sign { display:grid; gap:.5rem; width:100%; }
+.i983-panel__correction-sign > strong { color:var(--wp-color-text); }
+
+.i983-signing { display:grid; grid-template-columns:minmax(15rem,19rem) minmax(0,1fr); gap:1.25rem; align-items:start; }
+.i983-signing__sidebar { display:grid; gap:1rem; position:sticky; top:1rem; }
+.i983-signing__card { padding:1rem; background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius:.9rem; }
+.i983-signing__card h3 { margin:0 0 .6rem; color:var(--wp-color-text); font-size:1rem; }
+.i983-signing__card dl { display:grid; gap:.35rem; margin:.6rem 0 0; }
+.i983-signing__card dl div { display:flex; justify-content:space-between; gap:.5rem; font-size:.9rem; }
+.i983-signing__card dt { color:var(--wp-color-text); }
+.i983-signing__card dd { margin:0; color:var(--wp-color-text); font-weight:600; text-align:right; }
+.i983-signing__signature-preview { display:block; max-width:100%; max-height:5rem; margin:0 auto; padding:.4rem; background:#fafcfb; border:1px dashed #cbdcd4; border-radius:.5rem; }
+.i983-signing__source { margin:.6rem 0 0; color:var(--wp-color-text); font-size:.8rem; }
+.i983-signing__steps { display:grid; gap:.4rem; margin:0; padding-left:1.1rem; color:var(--wp-color-text); font-size:.9rem; }
+.i983-signing__actions { display:grid; gap:.5rem; }
+.i983-signing__placement { margin:0; color:var(--wp-color-text); font-size:.88rem; }
+.i983-signing__viewer { display:grid; gap:.75rem; min-width:0; }
+.i983-signing__pager { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:.75rem; color:var(--wp-color-text); font-weight:600; }
+.i983-signing__page { position:relative; justify-self:center; line-height:0; background:var(--wp-color-surface); box-shadow:none; }
+.i983-signing__page canvas { display:block; }
+.i983-signing__surface { position:absolute; inset:0 auto auto 0; touch-action:none; }
+.i983-signing__page--placeable .i983-signing__surface { cursor:crosshair; }
+.i983-signing__box { position:absolute; box-sizing:border-box; border:2px dashed var(--wp-color-border); background:var(--wp-color-surface); cursor:move; touch-action:none; }
+.i983-signing__box:focus-visible { outline:3px solid #7cc2a4; outline-offset:2px; }
+.i983-signing__box img { display:block; width:100%; height:100%; object-fit:contain; pointer-events:none; user-select:none; }
+.i983-signing__handle { position:absolute; right:-7px; bottom:-7px; width:14px; height:14px; background:var(--wp-color-surface); border:2px solid var(--wp-color-border); border-radius:50%; cursor:nwse-resize; touch-action:none; }
+.i983-signing__page--preview .i983-signing__surface { cursor:default; }
+.i983-signing__page--preview .i983-signing__box { border-color:transparent; background:transparent; cursor:default; }
+
+@media (max-width:900px) {
+  .i983-signing { grid-template-columns:1fr; }
+  .i983-signing__sidebar { position:static; }
+}
+.i983-signing__remove { position:absolute; top:-10px; right:-10px; display:grid; place-items:center; width:20px; height:20px; padding:0; color:var(--wp-color-text); font-size:14px; line-height:1; background:var(--wp-color-surface); border:2px solid var(--wp-color-border); border-radius:50%; cursor:pointer; }
+.i983-signing__page--preview .i983-signing__remove { display:none; }
+.i983-signing__page-link { padding:0; color:var(--wp-color-text); font:inherit; font-weight:600; text-decoration:underline; background:none; border:0; cursor:pointer; }
+
+/* Dark Theme Enforcements for I-983 */
+[data-theme="dark"] .i983-panel {
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  color: var(--wp-color-text);
+}
+
+[data-theme="dark"] .i983-panel__header h3 {
+  color: var(--wp-color-text);
+}
+
+[data-theme="dark"] .i983-panel__header p {
+  color: var(--wp-color-text);
+}
+
+[data-theme="dark"] .i983-panel__toolbar {
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+}
+
+[data-theme="dark"] .i983-employee-sign {
+  background: rgba(8, 24, 18, 0.88);
+  border: 1px solid rgba(0, 255, 135, 0.2);
+}
+
+[data-theme="dark"] .i983-employee-sign--open {
+  background: rgba(8, 24, 18, 0.95);
+}
+
+[data-theme="dark"] .i983-employee-sign__summary {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .i983-signing__card {
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  color: var(--wp-color-text);
+}
+
+[data-theme="dark"] .i983-signing__card h3 {
+  color: var(--wp-color-text);
+}
+
+[data-theme="dark"] .i983-signing__card dt {
+  color: var(--wp-color-text);
+}
+
+[data-theme="dark"] .i983-signing__card dd {
+  color: var(--wp-color-text);
+}
+
+[data-theme="dark"] .i983-signing__signature-preview {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(0, 255, 135, 0.25);
+}
+
+/* Review workspace with an honest workflow timeline and optional live PDF preview. */
+.i983-panel { background:var(--wp-color-surface); border-color:var(--wp-color-border); padding:18px; gap:16px; }
+.i983-panel__workspace { display:grid; grid-template-columns:minmax(200px,26%) minmax(0,1fr); gap:18px; align-items:start; }
+.i983-panel__review-content { display:grid; gap:14px; min-width:0; }
+.i983-panel__progress,.i983-preview { padding:18px; border:1px solid var(--wp-color-border); border-radius:12px; background:var(--wp-color-surface); }
+.i983-panel__progress h4,.i983-preview h4 { margin:0 0 14px; color:var(--wp-color-text); font-size:1rem; }
+.i983-panel__progress strong { font-size:.85rem; color:var(--wp-color-text); }
+.i983-panel__progress small { font-size:.75rem; color:var(--wp-color-text-muted); line-height:1.5; }
+.i983-preview header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.i983-preview header span,.i983-preview__note { font-size:.75rem; color:var(--wp-color-text-muted); }
+.i983-preview iframe { width:100%; height:500px; border:1px solid var(--wp-color-border); border-radius:8px; background:var(--wp-color-bg); }
+.i983-preview__empty { display:grid; place-content:center; justify-items:center; text-align:center; min-height:220px; padding:20px; border:1px dashed var(--wp-color-border); border-radius:8px; color:var(--wp-color-text-muted); font-size:.85rem; }
+.i983-preview__note { margin:12px 0 0; line-height:1.5; }
+.i983-panel__header h3,.i983-panel__block h4 { color:var(--wp-color-text); }
+.i983-panel__toolbar { background:var(--wp-color-bg); border-color:var(--wp-color-border); }
+.i983-panel__hint,.i983-panel__header p,.i983-panel__history-meta { color:var(--wp-color-text-muted); }
+.i983-panel__history-action,.i983-panel__history-detail { color:var(--wp-color-text); }
+:root[data-theme='light'] .i983-panel { background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+@media(max-width:1000px) { .i983-panel__workspace { grid-template-columns:1fr; } }
+@media(max-width:600px) { .i983-panel { padding:12px; } .i983-preview iframe { height:380px; } }
+
+.i983-signing__card { background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+.i983-signing__card h3,.i983-signing__card dd { color:var(--wp-color-text); }
+.i983-signing__card dt,.i983-signing__source { color:var(--wp-color-text-muted); }

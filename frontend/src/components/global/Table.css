@@ -1,0 +1,211 @@
+.wp-table-outer {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.wp-table-scroll-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(8, 24, 18, 0.85);
+  border: 1px solid var(--wp-color-border, rgba(0, 255, 135, 0.2));
+  border-radius: var(--wp-radius-md, 12px);
+  color: var(--wp-color-text-muted, #94a3b8);
+  font-size: 0.78rem;
+  font-weight: 600;
+  backdrop-filter: blur(12px);
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .wp-table-scroll-hint {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.wp-table-scroll-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid var(--wp-color-border, rgba(255, 255, 255, 0.15));
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--wp-color-text, #ffffff);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.wp-table-scroll-btn:hover:not(:disabled) {
+  background: var(--wp-color-primary-soft, rgba(0, 255, 135, 0.15));
+  border-color: var(--wp-color-accent-cyan, #00ff87);
+  color: var(--wp-color-accent-cyan, #00ff87);
+}
+
+.wp-table-scroll-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+[data-theme="light"] .wp-table-scroll-btn {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .wp-table-scroll-btn:hover:not(:disabled) {
+  background: #ecfdf5;
+  border-color: #0b624f;
+  color: #0b624f;
+}
+
+.wp-table-scroll-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+  text-align: center;
+  flex: 1;
+  justify-content: center;
+}
+
+.wp-table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-md);
+  background: rgba(8, 24, 18, 0.75);
+  backdrop-filter: blur(16px);
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .wp-table-wrapper {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.wp-table {
+  width: 100%;
+  min-width: max-content;
+  border-collapse: collapse;
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-md);
+}
+
+.wp-table th {
+  text-align: left;
+  font-size: var(--wp-font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--wp-color-accent-cyan);
+  padding: var(--wp-space-sm) var(--wp-space-md);
+  background-color: rgba(6, 18, 14, 0.94);
+  border-bottom: 1px solid var(--wp-color-border);
+  white-space: nowrap;
+}
+
+[data-theme="light"] .wp-table th {
+  background-color: #f8fafc;
+  color: #0b624f;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 750;
+}
+
+.wp-table td {
+  padding: var(--wp-space-sm) var(--wp-space-md);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--wp-color-text);
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
+}
+
+[data-theme="light"] .wp-table td {
+  border-bottom-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.wp-table tbody tr:hover td {
+  background-color: rgba(0, 255, 135, 0.05);
+}
+
+[data-theme="light"] .wp-table tbody tr:hover td {
+  background-color: #f8fafc;
+}
+
+.wp-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.wp-table__empty {
+  text-align: center;
+  color: var(--wp-color-text-muted);
+  padding: var(--wp-space-lg);
+  white-space: normal;
+}
+
+[data-theme="light"] .wp-table__empty {
+  color: #64748b;
+}
+
+/* Scrollbar styles for table scrolling */
+.wp-table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.wp-table-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.wp-table-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 135, 0.25);
+  border-radius: 4px;
+}
+
+[data-theme="light"] .wp-table-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+.wp-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 135, 0.45);
+}
+
+[data-theme="light"] .wp-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .wp-table-scroll-hint {
+    padding: 6px 8px;
+    font-size: 0.74rem;
+  }
+
+  .wp-table-scroll-btn {
+    padding: 4px 9px;
+    font-size: 0.72rem;
+  }
+
+  .wp-table-scroll-indicator {
+    font-size: 0.72rem;
+  }
+}

@@ -1,0 +1,33 @@
+.wp-nav-menu__list {
+  display: flex;
+  list-style: none;
+  gap: var(--wp-space-lg);
+  margin: 0;
+  padding: 0;
+}
+
+.wp-nav-menu__link {
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-md);
+  font-weight: 500;
+  color: var(--wp-color-text-muted);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: var(--wp-radius-sm);
+  transition: background-color var(--wp-transition-fast), color var(--wp-transition-fast);
+}
+
+.wp-nav-menu__link:hover {
+  color: var(--wp-color-text);
+}
+
+.wp-nav-menu__link--active {
+  background-color: var(--wp-color-neutral-bg);
+  color: var(--wp-color-text);
+}
+
+.wp-nav-menu__link--disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  pointer-events: none;
+}

@@ -1,0 +1,30 @@
+/* Review queue adopts the shared route-line controls and table. */
+.timesheets__week-switcher,.timesheets__bulk-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:24px; }
+.timesheets__bulk-toolbar { padding:16px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-surface); color:var(--wp-color-text-muted); }
+.timesheets__bulk-toolbar p { margin:0; flex-basis:100%; }
+.timesheets__team-heading .wp-filter-pills { margin-bottom:24px; }
+.timesheets__submission-toolbar { margin-bottom:24px; }
+.timesheets__team-table.wp-data-table { background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card); }
+.timesheets__team-table.wp-data-table table { min-width:1000px; table-layout:auto; }
+.timesheets__team-table.wp-data-table th,.timesheets__team-table.wp-data-table td { padding:16px; }
+.timesheets__team-table.wp-data-table th { background:var(--wp-color-surface); color:var(--wp-color-text-muted); }
+.timesheets__team-table.wp-data-table .wp-data-table__person { min-width:180px; }
+.timesheets__team-table.wp-data-table .wp-data-table__person small { color:var(--wp-color-text-muted); }
+.timesheets__team-table.wp-data-table tbody tr:hover { background:var(--wp-color-hover); }
+.timesheets__team-table.wp-data-table tbody tr.is-selected { background:var(--wp-color-primary-soft); }
+.timesheets__team-table.wp-data-table footer { background:var(--wp-color-surface); color:var(--wp-color-text-muted); }
+.timesheets__team-table .week-hours__days li { border:0; background:transparent; }
+.timesheets--review-compact .timesheets__team-heading { margin-bottom:0; }
+.timesheets--review-compact :is(button,summary,input,select) { min-height:44px; }
+.timesheets--review-compact :is(button,summary,input,select):focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
+.timesheets--review-compact .timesheets__subtabs-bar { margin-block:16px 24px; }
+.timesheets--review-compact .timesheets__apple-express-bar { background:var(--wp-color-surface)!important; border:1px solid var(--wp-color-border)!important; box-shadow:none!important; backdrop-filter:none!important; }
+.timesheets--review-compact .timesheets__apple-express-btn { background:var(--wp-color-primary)!important; color:var(--wp-color-primary-contrast)!important; border:1px solid var(--wp-color-primary)!important; box-shadow:none!important; }
+.timesheets--review-compact .timesheets__apple-express-title { color:var(--wp-color-text)!important; font:500 1.25rem var(--wp-font-display); }
+.timesheets--review-compact :is(.timesheets__apple-express-subtitle,.timesheets__apple-express-tag) { color:var(--wp-color-text-muted)!important; }
+.timesheets__filter-panel { background:var(--wp-color-surface); color:var(--wp-color-text); border-color:var(--wp-color-border); border-radius:var(--wp-radius-card); }
+.timesheets__filter-trigger { background:var(--wp-color-surface); color:var(--wp-color-primary); border-color:var(--wp-color-border); border-radius:var(--wp-radius-control); }
+.timesheets__filter-trigger[aria-expanded="true"] { background:var(--wp-color-primary); color:var(--wp-color-primary-contrast); }
+.timesheets__filter-panel > header button { color:var(--wp-color-primary); min-height:44px; }
+.timesheets__filter-dot { background:var(--wp-color-signal); }
+@media(max-width:600px) { .timesheets__bulk-toolbar .wp-button--primary { flex:1 1 100%; } .timesheets__week-switcher { gap:8px; } }

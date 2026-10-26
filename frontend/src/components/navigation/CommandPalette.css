@@ -1,0 +1,28 @@
+.wp-command-palette-backdrop { position:fixed; inset:0; z-index:1500; display:flex; align-items:flex-start; justify-content:center; padding:10dvh 16px 16px; }
+.wp-command-palette__dismiss { position:absolute; inset:0; width:100%; height:100%; border:0; border-radius:0; background:rgb(11 21 18 / 55%); cursor:pointer; }
+.wp-command-palette { position:relative; display:flex; flex-direction:column; width:100%; max-width:640px; max-height:80dvh; overflow:hidden; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card); background:var(--wp-color-surface); color:var(--wp-color-text); font-family:var(--wp-font-sans); }
+.wp-command-palette__search-row { display:flex; align-items:center; gap:8px; padding:16px; border-bottom:1px solid var(--wp-color-border); }
+.wp-command-palette__search-icon { display:grid; place-items:center; color:var(--wp-color-text-muted); }
+.wp-command-palette__input { flex:1; min-width:0; min-height:44px; padding:8px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-surface); color:var(--wp-color-text); font:inherit; }
+.wp-command-palette__input::placeholder { color:var(--wp-color-text-muted); }
+.wp-command-palette__esc-badge { min-width:44px; min-height:44px; padding:8px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-surface); color:var(--wp-color-text-muted); font:500 .75rem var(--wp-font-sans); cursor:pointer; }
+.wp-command-palette__body { min-height:0; overflow-y:auto; padding:8px; }
+.wp-command-palette__section-title { display:block; padding:16px 8px 8px; font:600 11px/1.5 var(--wp-font-sans); text-transform:uppercase; letter-spacing:.14em; color:var(--wp-color-text-muted); }
+.wp-command-palette__list { display:grid; gap:4px; }
+.wp-command-palette__item { display:flex; align-items:center; gap:16px; width:100%; min-height:44px; padding:8px; border:1px solid transparent; border-radius:var(--wp-radius-control); background:transparent; color:var(--wp-color-text); font:inherit; text-align:left; cursor:pointer; }
+.wp-command-palette__item:hover,.wp-command-palette__item.is-selected { border-color:var(--wp-color-border); background:var(--wp-color-primary-soft); }
+.wp-command-palette__item-icon,.wp-command-palette__avatar { display:grid; place-items:center; width:36px; height:36px; flex-shrink:0; color:var(--wp-color-primary); }
+.wp-command-palette__avatar { background:var(--wp-color-primary-soft); border-radius:50%; }
+.wp-command-palette__item-info { flex:1; min-width:0; }
+.wp-command-palette__item-title-row { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.wp-command-palette__item-title-row strong { font-size:.875rem; font-weight:600; }
+.wp-command-palette__item-info small,.wp-command-palette__item-category { color:var(--wp-color-text-muted); font-size:.75rem; }
+.wp-command-palette__id-pill,.wp-command-palette__role-pill { padding:4px 8px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-pill); font-size:.75rem; }
+.wp-command-palette__empty { padding:24px; color:var(--wp-color-text-muted); }
+.wp-command-palette__footer { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:16px; border-top:1px solid var(--wp-color-border); color:var(--wp-color-text-muted); font-size:.75rem; }
+.wp-command-palette__shortcuts { display:flex; flex-wrap:wrap; gap:16px; }
+.wp-command-palette__spinner { width:16px; height:16px; border:2px solid var(--wp-color-border); border-top-color:var(--wp-color-primary); border-radius:50%; animation:wpPaletteSpin .8s linear infinite; }
+.wp-command-palette :focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
+@keyframes wpPaletteSpin { to { transform:rotate(360deg); } }
+@media(prefers-reduced-motion:reduce) { .wp-command-palette__spinner { animation:none; } }
+@media(max-width:480px) { .wp-command-palette-backdrop { padding-top:16px; } .wp-command-palette__input { font-size:16px; } .wp-command-palette__branding { display:none; } }

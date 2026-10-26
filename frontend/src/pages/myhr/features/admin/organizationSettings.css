@@ -1,0 +1,22 @@
+.organization-settings__settings,.organization-settings__edit { display:grid; gap:24px; }
+.organization-settings__details,.organization-settings__fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 24px; margin:0; }
+.organization-settings__details div { display:grid; gap:8px; min-width:0; }
+.organization-settings__details dt { color:var(--wp-color-text-muted); font-size:.875rem; font-weight:500; }
+.organization-settings__details dd { color:var(--wp-color-text); font-weight:500; margin:0; overflow-wrap:anywhere; }
+.organization-settings__read-value { color:var(--wp-color-text); margin:0; white-space:pre-wrap; line-height:1.5; }
+.organization-settings__logo { display:block; max-width:220px; max-height:80px; width:auto; height:auto; object-fit:contain; margin:0 0 16px; }
+.organization-settings__logo-fallback { display:grid; place-items:center; width:72px; height:72px; border-radius:var(--wp-radius-card); background:var(--wp-color-primary-soft); color:var(--wp-color-primary); font-weight:600; font-size:1.125rem; margin:0 0 16px; }
+.organization-settings__authorized-signature { display:grid; gap:16px; color:var(--wp-color-text); }
+.organization-settings__authorized-signature > p { margin:0; }
+@media(max-width:640px) { .organization-settings__details,.organization-settings__fields { grid-template-columns:minmax(0,1fr); } }
+
+/* Release polish: hover/active/disabled feedback for buttons on this page. The route-line foundation pins the primary
+   background with !important (so Button.css hover never showed) and the dark-theme secondary hover turned text white. */
+:root .organization-settings-page .wp-button--primary:hover:not(:disabled) { background-color:color-mix(in srgb,var(--wp-color-primary) 82%,var(--wp-color-text))!important; border-color:var(--wp-color-primary); box-shadow:none; transform:none; }
+:root .organization-settings-page .wp-button--secondary:hover:not(:disabled) { background:var(--wp-color-primary-soft); color:var(--wp-color-primary); border-color:var(--wp-color-primary); box-shadow:none; transform:none; }
+:root .organization-settings-page .wp-button:active:not(:disabled) { transform:none; }
+:root .organization-settings-page .wp-button:disabled { opacity:.55; cursor:not-allowed; }
+
+/* Edit Authorization: keep the label readable on hover/focus in both themes (theme tokens only, scoped to this button). */
+:root .organization-settings-page .authorized-signature__edit.wp-button--secondary:is(:hover,:focus-visible):not(:disabled) { background:var(--wp-color-primary-soft); color:var(--wp-color-text); border-color:var(--wp-color-primary); }
+:root .organization-settings-page .authorized-signature__edit.wp-button--secondary:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }

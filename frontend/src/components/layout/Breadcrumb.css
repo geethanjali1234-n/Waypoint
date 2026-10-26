@@ -1,0 +1,33 @@
+.wp-breadcrumb__list {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: var(--wp-space-xs);
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-sm);
+}
+
+.wp-breadcrumb__item {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-xs);
+}
+
+.wp-breadcrumb__link {
+  color: var(--wp-color-text-muted);
+  text-decoration: none;
+}
+
+.wp-breadcrumb__link:hover {
+  text-decoration: underline;
+}
+
+.wp-breadcrumb__current {
+  color: var(--wp-color-text);
+  font-weight: 600;
+}
+
+.wp-breadcrumb__separator {
+  color: var(--wp-color-text-muted);
+}

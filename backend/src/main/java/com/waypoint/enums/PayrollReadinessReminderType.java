@@ -1,0 +1,12 @@
+package com.waypoint.enums;
+
+public enum PayrollReadinessReminderType {
+    EMPLOYEE_TIMESHEET_ACTION,
+    AUTO_EMPLOYEE_DAY_5,
+    AUTO_EMPLOYEE_DAY_7,
+    AUTO_EMPLOYEE_DAY_9,
+    AUTO_EMPLOYEE_CUTOFF_DAY,
+    AUTO_MANAGEMENT_DAY_7,
+    AUTO_MANAGEMENT_DAY_9,
+    AUTO_MANAGEMENT_CUTOFF_DAY
+}

@@ -1,0 +1,11 @@
+.wp-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--wp-dashboard-grid-columns, 3), 1fr);
+  gap: var(--wp-space-md);
+}
+
+@media (max-width: 768px) {
+  .wp-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waypoint Admin</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Waypoint Admin home"><span>W</span><strong>Waypoint Admin</strong></a>
+    <button class="profile" id="profile-button" aria-expanded="false"><span>GE</span><strong>Geethika</strong><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg></button>
+    <div class="profile-menu" id="profile-menu"><button data-action="profile">My profile</button><button data-action="signout">Sign out</button></div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">ADMIN WORKSPACE</p>
+      <h1>Welcome, Geethika</h1>
+      <p>Administrator &middot; Tardus Inc</p>
+      <div class="summary">
+        <button data-page="employees"><strong>248</strong><span>ACTIVE EMPLOYEES</span></button>
+        <button data-page="timesheets"><strong>12</strong><span>PENDING TIMESHEETS</span></button>
+        <button data-page="jobs"><strong>36</strong><span>OPEN JOBS</span></button>
+      </div>
+    </section>
+
+    <section id="home" class="page active">
+      <div class="section-heading"><div><h2>Admin Actions</h2><p>Manage HR operations across your organization.</p></div></div>
+      <div class="card-grid">
+        <button class="admin-card" data-page="hr"><span><strong>HR Management</strong><small>Create HR users and view, edit, activate, or deactivate HR accounts.</small><em>Open <b>&rarr;</b></em></span></button>
+        <button class="admin-card" data-page="organization"><span><strong>Organization Settings</strong><small>Configure organization information and the company payroll period.</small><em>Open <b>&rarr;</b></em></span></button>
+        <button class="admin-card" data-page="employees"><span><strong>Employee Management</strong><small>View all organization employees and their reporting relationships.</small><em>Open <b>&rarr;</b></em></span></button>
+        <button class="admin-card" data-page="timesheets"><span><strong>Timesheets</strong><small>View HR and Employee timesheets across the organization.</small><em>Open <b>&rarr;</b></em></span></button>
+        <button class="admin-card" data-page="payroll"><span><strong>Payroll</strong><small>Run HR payroll and review organization payroll records.</small><em>Open <b>&rarr;</b></em></span></button>
+        <button class="admin-card" data-page="reports"><span><strong>Reports</strong><small>Generate organization-wide workforce, timesheet, and payroll reports.</small><em>Open <b>&rarr;</b></em></span></button>
+        <button class="admin-card" data-page="jobs"><span><strong>Jobs</strong><small>Manage organization job postings and recruiting activity.</small><em>Open <b>&rarr;</b></em></span></button>
+        <button class="admin-card" data-page="applications"><span><strong>Applications</strong><small>View applicants and update application statuses.</small><em>Open <b>&rarr;</b></em></span></button>
+        <button class="admin-card" data-page="events"><span><strong>Events</strong><small>Create and manage organization events.</small><em>Open <b>&rarr;</b></em></span></button>
+        <button class="admin-card" data-page="registrations"><span><strong>Registrations</strong><small>View event registrations and participant information.</small><em>Open <b>&rarr;</b></em></span></button>
+        <button class="admin-card" data-page="audit"><span><strong>Audit History</strong><small>Review significant My HR actions across the organization.</small><em>Open <b>&rarr;</b></em></span></button>
+      </div>
+    </section>
+
+    <section id="detail" class="page">
+      <button class="back" id="back">&larr; Back to administration</button>
+      <div class="detail-card">
+        <div class="detail-head"><div><p class="eyebrow">ADMINISTRATION</p><h2 id="detail-title"></h2><p id="detail-copy"></p></div><button class="primary" id="primary-action"></button></div>
+        <div id="detail-content"></div>
+      </div>
+    </section>
+  </main>
+  <div class="modal" id="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel"><div class="modal-header"><h2 id="modal-title"></h2><button class="modal-close" data-close aria-label="Close">&times;</button></div><div id="modal-body"></div></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>

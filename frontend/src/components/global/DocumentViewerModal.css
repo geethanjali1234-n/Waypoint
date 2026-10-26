@@ -1,0 +1,270 @@
+.wp-doc-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(5, 12, 10, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  animation: wpDocFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes wpDocFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.wp-doc-viewer-header {
+  height: 3.5rem;
+  background: rgba(13, 22, 19, 0.95);
+  border-bottom: 1px solid rgba(0, 255, 135, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.wp-doc-viewer-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.wp-doc-viewer-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.wp-doc-viewer-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+@media (min-width: 640px) {
+  .wp-doc-viewer-title {
+    max-width: 450px;
+  }
+}
+
+.wp-doc-viewer-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.wp-doc-zoom-toolbar {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(0, 255, 135, 0.25);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.wp-doc-zoom-btn {
+  background: transparent;
+  border: none;
+  color: #e2e8f0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.wp-doc-zoom-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 135, 0.2);
+  color: #00ff87;
+}
+
+.wp-doc-zoom-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.wp-doc-zoom-level {
+  background: transparent;
+  border: none;
+  color: #00ff87;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0 0.5rem;
+  min-width: 3.2rem;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.wp-doc-zoom-level:hover {
+  background: rgba(0, 255, 135, 0.12);
+}
+
+.wp-doc-action-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  height: 2.1rem;
+  padding: 0 0.65rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.wp-doc-action-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
+}
+
+.wp-doc-close-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.wp-doc-close-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.wp-doc-viewer-body {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 1.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.wp-doc-viewer-viewport {
+  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1);
+  transform-origin: top center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+}
+
+.wp-doc-viewer-img {
+  max-width: 100%;
+  height: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  background: #ffffff;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.wp-doc-viewer-iframe {
+  width: 90vw;
+  max-width: 900px;
+  height: 80vh;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  background: #ffffff;
+}
+
+.wp-doc-viewer-docx-container {
+  width: 90vw;
+  max-width: 900px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  padding: 1.5rem;
+  color: #0f172a;
+  min-height: 400px;
+}
+
+.wp-doc-viewer-text {
+  width: 90vw;
+  max-width: 900px;
+  background: #111a16;
+  border: 1px solid rgba(0, 255, 135, 0.2);
+  border-radius: 8px;
+  padding: 1.5rem;
+  color: #e2e8f0;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Floating zoom bar inside inline attachment views (e.g. Timesheets) */
+.wp-inline-zoom-toolbar {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(13, 22, 19, 0.9);
+  border: 1px solid rgba(0, 255, 135, 0.3);
+  border-radius: 8px;
+  padding: 3px 6px;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.wp-inline-zoom-btn {
+  background: transparent;
+  border: none;
+  color: #f1f5f9;
+  width: 1.8rem;
+  height: 1.8rem;
+  font-size: 1.1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.wp-inline-zoom-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 135, 0.25);
+  color: #00ff87;
+}
+
+.wp-inline-zoom-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.wp-inline-zoom-label {
+  color: #00ff87;
+  font-size: 0.78rem;
+  font-weight: 700;
+  min-width: 3.2rem;
+  text-align: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 4px;
+}

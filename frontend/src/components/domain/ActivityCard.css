@@ -1,0 +1,40 @@
+.wp-activity-card {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-md);
+  padding: var(--wp-space-sm) 0;
+  border-bottom: 1px solid var(--wp-color-border);
+}
+
+.wp-activity-card:last-child {
+  border-bottom: none;
+}
+
+.wp-activity-card__icon {
+  color: var(--wp-color-text-muted);
+  font-size: 1.1rem;
+}
+
+.wp-activity-card__text {
+  flex: 1;
+}
+
+.wp-activity-card__title {
+  margin: 0;
+  font-family: var(--wp-font-sans);
+  font-weight: 600;
+  font-size: var(--wp-font-size-md);
+  color: var(--wp-color-text);
+}
+
+.wp-activity-card__subtitle {
+  margin: 2px 0 0;
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+}
+
+.wp-activity-card__date {
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+  white-space: nowrap;
+}

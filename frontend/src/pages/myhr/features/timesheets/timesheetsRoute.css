@@ -1,0 +1,144 @@
+/* Route-line timesheets. Keep the existing workflow, use one visual hierarchy. */
+.myhr-feature.timesheets-route { color:var(--wp-color-text); min-width:0; }
+.myhr-feature.timesheets-route .myhr-feature__heading { padding:0 0 24px!important; border:0!important; border-radius:0; background:transparent!important; }
+.myhr-feature.timesheets-route .myhr-feature__heading .wp-page-header__title { font:500 clamp(2rem,4vw,2.75rem) var(--wp-font-display)!important; }
+.myhr-feature.timesheets-route .wp-page-header__subtitle { max-width:65ch; color:var(--wp-color-text-muted); }
+.myhr-feature.timesheets-route [class*="timesheets__"] { box-shadow:none; text-shadow:none; backdrop-filter:none; }
+.myhr-feature.timesheets-route :is(.timesheets__team-workspace,.timesheets__landing,.timesheets__flow-panel,.timesheets__history,.timesheets__hours-workspace) { min-width:0; padding:24px; background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card); }
+.myhr-feature.timesheets-route :is(.timesheets__week-heading,.timesheets__team-heading,.timesheets__flow-header,.timesheets__sandbox-hero) { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:24px; margin:0 0 24px; padding:0 0 24px; border:0; border-bottom:1px solid var(--wp-color-border); background:transparent; }
+.myhr-feature.timesheets-route :is(h2,h3) { font-family:var(--wp-font-display); font-weight:500; color:var(--wp-color-text); }
+.myhr-feature.timesheets-route .timesheets__week-heading h2 { margin:8px 0; font-size:2rem; }
+.myhr-feature.timesheets-route .timesheets__week-heading p { margin:0; color:var(--wp-color-text-muted); }
+.myhr-feature.timesheets-route :is(.timesheets__eyebrow,.timesheets__flow-kicker,.timesheets__entry-card-badge,.timesheets__sim-badge) { font:600 11px var(--wp-font-sans); letter-spacing:.14em; text-transform:uppercase; color:var(--wp-color-text-muted); background:transparent; border:0; padding:0; }
+.myhr-feature.timesheets-route .timesheets__landing > .wp-route-line { padding-block:16px; }
+.myhr-feature.timesheets-route .timesheets__overview-links { display:flex; gap:16px; flex-wrap:wrap; border-top:1px solid var(--wp-color-border); margin-top:24px; padding-top:24px; }
+.myhr-feature.timesheets-route :is(.timesheets__workspace-tabs,.timesheets__subtabs-bar,.timesheets__review-navigation) { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:0; margin:0 0 24px; background:transparent; border:0; }
+.myhr-feature.timesheets-route :is(.timesheets__workspace-tabs button,.timesheets__subtab-btn,.timesheets__preset-btn,.timesheets__change-dates-btn,.timesheets__reminder-shortcut,.timesheets__view-options select,.timesheets__filter-trigger) { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:8px 16px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-surface); color:var(--wp-color-text); font:500 .9375rem var(--wp-font-sans); text-decoration:none; }
+.myhr-feature.timesheets-route :is(.timesheets__workspace-tabs button.active,.timesheets__subtab-btn.is-active,.timesheets__weekly-pill.active) { background:var(--wp-color-primary-soft); color:var(--wp-color-primary); border-color:var(--wp-color-primary); }
+.myhr-feature.timesheets-route .timesheets__subtab-text--compact { display:none; }
+.myhr-feature.timesheets-route .timesheets__subtab-text--full { display:inline; }
+.myhr-feature.timesheets-route .timesheets__team-heading--refined .timesheets__queue-title { font:500 1.5rem var(--wp-font-display)!important; color:var(--wp-color-text)!important; margin:0!important; }
+.myhr-feature.timesheets-route .timesheets__team-heading--refined .timesheets__queue-description { flex-basis:100%; margin:0; font-size:.9375rem; color:var(--wp-color-text-muted); }
+.myhr-feature.timesheets-route .timesheets__team-heading .wp-filter-pills { margin:0; }
+.myhr-feature.timesheets-route :is(.timesheets__week-switcher,.timesheets__submission-toolbar,.timesheets__bulk-toolbar,.timesheets__heading-actions) { display:flex; align-items:center; flex-wrap:wrap; gap:16px; margin:0 0 24px; }
+.myhr-feature.timesheets-route .timesheets__heading-actions { margin:0; }
+.myhr-feature.timesheets-route .timesheets__submission-toolbar > .wp-field { flex:0 1 200px; display:grid; gap:8px; margin:0; }
+.myhr-feature.timesheets-route .timesheets__submission-toolbar > .wp-search-input { flex:1 1 280px; margin:0; }
+.myhr-feature.timesheets-route .timesheets__bulk-toolbar { padding:16px; background:var(--wp-color-bg); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); color:var(--wp-color-text-muted); }
+.myhr-feature.timesheets-route :is(.wp-button,.wp-field__control,.timesheets__heading-actions .wp-field__control,.timesheets__toolbar-filter-anchor .timesheets__filter-trigger) { min-height:44px!important; font-size:.9375rem; }
+.myhr-feature.timesheets-route .timesheets__heading-actions .wp-form-label { font-size:.875rem; margin-bottom:8px; }
+.myhr-feature.timesheets-route .timesheets__submission-toolbar .wp-form-label { font-size:.875rem; }
+.myhr-feature.timesheets-route .timesheets__filter-panel { background:var(--wp-color-surface); border:1px solid var(--wp-color-border); color:var(--wp-color-text); border-radius:var(--wp-radius-card); }
+.myhr-feature.timesheets-route .timesheets__team-workspace .timesheets__submissions-table { overflow:hidden!important; max-width:100%; }
+.myhr-feature.timesheets-route .timesheets__submissions-table .wp-data-table__scroll { contain:inline-size layout paint; max-width:100%; overflow:auto; }
+.myhr-feature.timesheets-route .timesheets__team-workspace .timesheets__submissions-table table { display:table!important; width:100%!important; min-width:1120px!important; table-layout:auto!important; }
+.myhr-feature.timesheets-route .timesheets__team-workspace .timesheets__submissions-table thead { display:table-header-group; position:static; width:auto; height:auto; overflow:visible; clip-path:none; }
+.myhr-feature.timesheets-route .timesheets__team-workspace .timesheets__submissions-table tbody { display:table-row-group; }
+.myhr-feature.timesheets-route .timesheets__team-workspace .timesheets__submissions-table tr { display:table-row; padding:0; }
+.myhr-feature.timesheets-route .timesheets__team-workspace .timesheets__submissions-table :is(th,td) { display:table-cell!important; width:auto!important; padding:16px!important; font-size:.875rem; white-space:nowrap!important; text-align:left!important; vertical-align:middle; }
+.myhr-feature.timesheets-route .timesheets__submissions-table td::before { display:none!important; }
+.myhr-feature.timesheets-route .timesheets__submissions-table th { position:sticky; top:0; background:var(--wp-color-surface); }
+.myhr-feature.timesheets-route .timesheets__submissions-table .wp-data-table__person { min-width:180px; }
+.myhr-feature.timesheets-route .timesheets__submissions-table .wp-data-table__person small { color:var(--wp-color-text-muted); }
+.myhr-feature.timesheets-route .timesheets__submissions-table .week-hours { min-width:168px; }
+.myhr-feature.timesheets-route .timesheets__submissions-table .week-hours__days { grid-template-columns:repeat(5,minmax(24px,1fr)); }
+/* Preserve the earlier table's readable fields instead of shrinking actions. */
+.myhr-feature.timesheets-route .timesheets__team-workspace .timesheets__submissions-table :is(th,td) { overflow-wrap:normal; word-break:normal; }
+.myhr-feature.timesheets-route .timesheets__team-workspace .timesheets__submissions-table .wp-button { min-width:88px; width:auto; white-space:nowrap; overflow-wrap:normal; word-break:normal; padding:8px 16px; font-size:.875rem; }
+.myhr-feature.timesheets-route .timesheets__submissions-table time { display:inline-block; min-width:150px; white-space:nowrap; }
+@media(min-width:900px) {
+  .myhr-feature.timesheets-route .timesheets__team-workspace .timesheets__submissions-table :is(th,td):nth-child(2) { position:sticky; left:0; min-width:220px; background:var(--wp-color-surface); z-index:2; border-right:1px solid var(--wp-color-border); }
+  .myhr-feature.timesheets-route .timesheets__team-workspace .timesheets__submissions-table th:nth-child(2) { z-index:4; }
+  .myhr-feature.timesheets-route .timesheets__submissions-table tr:hover td:nth-child(2) { background:var(--wp-color-hover); }
+  .myhr-feature.timesheets-route .timesheets__submissions-table tr.is-selected td:nth-child(2) { background:var(--wp-color-primary-soft); }
+}
+.myhr-feature.timesheets-route .timesheets__entry-options-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:24px; }
+.myhr-feature.timesheets-route .timesheets__entry-card { display:grid; gap:16px; padding:24px; background:var(--wp-color-surface); color:var(--wp-color-text); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card); }
+.myhr-feature.timesheets-route :is(.timesheets__entry-card-title,.timesheets__manual-actions,.timesheets__sim-presets) { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.myhr-feature.timesheets-route .timesheets__entry-card-title h3 { margin:0 0 8px; font-size:1.5rem; }
+.myhr-feature.timesheets-route :is(.timesheets__entry-card-title p,.timesheets__sandbox-sub,.timesheets__flow-header p) { margin:0; color:var(--wp-color-text-muted); font-size:.9375rem; line-height:1.6; max-width:70ch; }
+.myhr-feature.timesheets-route .timesheets__entry-card-icon { color:var(--wp-color-primary); background:var(--wp-color-primary-soft); border:0; border-radius:var(--wp-radius-control); }
+.myhr-feature.timesheets-route :is(.timesheets__upload-zone,.timesheets__sandbox-hero,.timesheets__flow-content--cockpit,.timesheets__simulator-days,.timesheets__sim-day-card,.timesheets__sim-day-input-group) { background:transparent; border-color:var(--wp-color-border); }
+.myhr-feature.timesheets-route .timesheets__entry-total { display:flex; flex-wrap:wrap; align-items:baseline; gap:16px; padding:24px 0; margin-bottom:24px; border-block:1px solid var(--wp-color-border); color:var(--wp-color-text-muted); }
+.myhr-feature.timesheets-route .timesheets__entry-total strong { color:var(--wp-color-text); font:600 1.75rem var(--wp-font-sans); font-variant-numeric:tabular-nums; }
+#workspace-content .timesheets-route .myhr-feature__heading { background:transparent!important; border:0!important; box-shadow:none!important; min-height:0; }
+#workspace-content .timesheets-route .myhr-feature__heading:has(> .myhr-page-back:only-child) { padding-bottom:16px!important; }
+#workspace-content .timesheets-route .wp-page-header { padding:0; background:transparent!important; border:0!important; }
+#workspace-content .timesheets-route .timesheets__flow-panel { padding:24px!important; }
+#workspace-content .timesheets-route .timesheets__flow-header h2 { font:500 1.75rem var(--wp-font-display)!important; }
+.myhr-feature.timesheets-route .timesheets__history-summary { display:grid; gap:24px; padding:24px; background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card); }
+.myhr-feature.timesheets-route .timesheets__summary-metrics { display:flex; flex-wrap:wrap; gap:32px; }
+.myhr-feature.timesheets-route .timesheets__summary-metrics article { flex:1 1 160px; background:transparent; border:0; padding:0; color:var(--wp-color-text); }
+.myhr-feature.timesheets-route .timesheets__summary-metrics :is(span,small) { color:var(--wp-color-text-muted); }
+.myhr-feature.timesheets-route :is(button,a,input,select,textarea):focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
+.timesheets__details-modal.wp-modal__panel { width:min(720px,100%); max-width:720px; border-radius:var(--wp-radius-card); box-shadow:none; }
+.timesheets__details-modal .wp-modal__header h2 { font:500 1.5rem var(--wp-font-display); }
+.wp-modal__backdrop:has(.timesheets__details-modal) { z-index:2000; }
+.timesheets__details-modal .timesheets__record-details > dl { grid-template-columns:minmax(0,1fr); padding:16px; gap:16px; }
+.timesheets__details-modal .timesheets__record-details > dl > div { grid-template-columns:160px minmax(0,1fr); gap:16px; }
+.timesheets__details-modal .timesheets__record-details :is(dt,dd) { min-width:0; }
+.timesheets__details-modal .wp-modal__close { display:grid; place-items:center; width:44px; height:44px; flex-shrink:0; }
+.timesheets__details-modal .wp-modal__footer .timesheets__entry-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
+.timesheets__details-modal .timesheets__record-details :is(dt,dd) { font-size:.9375rem; }
+@media(max-width:700px) {
+  #workspace-content .timesheets-route .timesheets__flow-panel { padding:16px!important; }
+  .myhr-feature.timesheets-route :is(.timesheets__team-workspace,.timesheets__landing,.timesheets__flow-panel,.timesheets__entry-card) { padding:16px; }
+  .myhr-feature.timesheets-route .timesheets__landing > .wp-route-line { overflow-x:auto; }
+  .myhr-feature.timesheets-route .timesheets__landing > .wp-route-line .wp-route-line__stop { min-width:110px; }
+  .myhr-feature.timesheets-route .timesheets__submission-toolbar > .wp-field { flex:1 1 160px; }
+  .myhr-feature.timesheets-route .timesheets__week-heading > .wp-button { width:100%; }
+  .wp-modal__backdrop:has(.timesheets__details-modal) { align-items:flex-end; padding:0; }
+  .timesheets__details-modal.wp-modal__panel { width:100%; max-width:none; height:90dvh; max-height:90dvh; border-radius:14px 14px 0 0; padding-bottom:env(safe-area-inset-bottom); }
+  .timesheets__details-modal .timesheets__record-details > dl > div { grid-template-columns:minmax(0,1fr); gap:8px; }
+}
+
+.timesheets__breadcrumb a { display: inline-flex; align-items: center; min-height: 44px; }
+
+/* Reference-inspired editorial hierarchy: generous type, cream panels, quiet controls. */
+#workspace-content .myhr-feature.timesheets-route { max-width:1440px; margin-inline:auto; }
+#workspace-content .timesheets-route .myhr-feature__heading { padding:16px 0 32px!important; gap:16px; }
+#workspace-content .timesheets-route .wp-page-header { align-items:flex-end; gap:24px; }
+#workspace-content .timesheets-route .wp-page-header__title { font:500 clamp(2.25rem,3.8vw,3rem)/1.1 var(--wp-font-display)!important; letter-spacing:-.025em; }
+#workspace-content .timesheets-route .wp-page-header__subtitle { font-size:1rem; line-height:1.6; margin-top:12px; max-width:65ch; }
+#workspace-content .timesheets-route .wp-page-header__eyebrow { margin-bottom:16px; color:var(--wp-color-primary); }
+#workspace-content .timesheets-route .timesheets__workspace-tabs { display:inline-flex; width:fit-content; padding:6px; gap:4px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-pill); background:var(--wp-color-surface); margin:0 0 24px; }
+#workspace-content .timesheets-route .timesheets__workspace-tabs button { border:0; border-radius:var(--wp-radius-pill); padding:12px 24px; background:transparent; }
+#workspace-content .timesheets-route .timesheets__workspace-tabs button.active { background:var(--wp-color-primary); color:var(--wp-color-primary-contrast)!important; border:0!important; }
+#workspace-content .timesheets-route .timesheets__team-workspace { padding:32px!important; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card); background:var(--wp-color-surface); }
+#workspace-content .timesheets-route .timesheets__team-heading { align-items:flex-start; justify-content:flex-start; gap:12px; padding-bottom:24px; margin-bottom:24px; }
+#workspace-content .timesheets-route .timesheets__queue-title { font:500 1.75rem/1.2 var(--wp-font-display)!important; flex-basis:100%; }
+#workspace-content .timesheets-route .timesheets__queue-description { line-height:1.6; margin-bottom:12px; }
+#workspace-content .timesheets-route .timesheets__team-heading .wp-filter-pills { gap:8px; }
+#workspace-content .timesheets-route .wp-filter-pills button { padding:10px 16px; border-color:var(--wp-color-border); background:transparent; color:var(--wp-color-text-muted); }
+#workspace-content .timesheets-route .wp-filter-pills button[aria-pressed='true'] { background:var(--wp-color-primary-soft); color:var(--wp-color-primary); border-color:var(--wp-color-primary); }
+#workspace-content .timesheets-route .wp-filter-pills__count { display:grid; place-items:center; min-width:24px; min-height:24px; border-radius:var(--wp-radius-pill); background:var(--wp-color-hover); color:var(--wp-color-text); font-weight:600; }
+#workspace-content .timesheets-route .timesheets__subtabs-bar { padding-bottom:16px; margin-bottom:24px; border-bottom:1px solid var(--wp-color-border); }
+#workspace-content .timesheets-route .timesheets__subtab-btn { background:transparent; border-color:transparent; color:var(--wp-color-text-muted); }
+#workspace-content .timesheets-route .timesheets__subtab-btn.is-active { border-color:var(--wp-color-border); background:var(--wp-color-bg); color:var(--wp-color-primary); }
+#workspace-content .timesheets-route .timesheets__review-controls { display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px 24px; margin-bottom:24px; }
+#workspace-content .timesheets-route .timesheets__week-switcher { flex:0 0 auto; margin:0; gap:8px; }
+#workspace-content .timesheets-route .timesheets__week-switcher .wp-button { padding:10px 14px; }
+#workspace-content .timesheets-route .timesheets__submission-toolbar { flex:1 1 500px; margin:0; gap:12px; align-items:flex-end; }
+#workspace-content .timesheets-route .timesheets__submission-toolbar > .wp-search-input { flex:1 1 240px; }
+#workspace-content .timesheets-route .timesheets__submission-toolbar > .wp-field { flex:0 1 180px; display:grid; gap:8px; }
+#workspace-content .timesheets-route .timesheets__submission-toolbar .wp-field__control { min-height:48px; }
+#workspace-content .timesheets-route .timesheets__bulk-toolbar { margin-bottom:24px; padding:16px; border-radius:var(--wp-radius-control); background:var(--wp-color-primary-soft); }
+#workspace-content .timesheets-route .timesheets__submissions-table { border-color:var(--wp-color-border); }
+#workspace-content .timesheets-route .timesheets__submissions-table th { color:var(--wp-color-text-muted); font-size:11px!important; letter-spacing:.08em; text-transform:uppercase; background:var(--wp-color-bg); }
+#workspace-content .timesheets-route .timesheets__submissions-table th:nth-child(2) { background:var(--wp-color-bg); }
+#workspace-content .timesheets-route .timesheets__submissions-table footer { padding:16px; }
+#workspace-content .timesheets-route .timesheets__submissions-table .wp-data-table__person button { font-weight:600; color:var(--wp-color-text); justify-content:flex-start; padding-inline:0; }
+@media(max-width:1000px) {
+  #workspace-content .timesheets-route .timesheets__team-workspace { padding:24px!important; }
+  #workspace-content .timesheets-route .timesheets__submission-toolbar { flex-basis:100%; }
+}
+@media(max-width:700px) {
+  #workspace-content .timesheets-route .myhr-feature__heading { padding:8px 0 24px!important; }
+  #workspace-content .timesheets-route .timesheets__team-workspace { padding:16px!important; }
+  #workspace-content .timesheets-route .timesheets__workspace-tabs { border-radius:var(--wp-radius-card); width:100%; }
+  #workspace-content .timesheets-route .timesheets__workspace-tabs button { flex:1 1 120px; padding:12px; border-radius:var(--wp-radius-control); }
+  #workspace-content .timesheets-route .timesheets__submission-toolbar > .wp-search-input { flex-basis:100%; }
+  #workspace-content .timesheets-route .timesheets__submission-toolbar > .wp-field { flex:1 1 160px; }
+  #workspace-content .timesheets-route .timesheets__heading-actions { align-items:stretch; width:100%; }
+  #workspace-content .timesheets-route .timesheets__heading-actions > .wp-field { flex:1; min-width:0; }
+}

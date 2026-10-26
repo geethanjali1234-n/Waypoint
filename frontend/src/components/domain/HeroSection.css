@@ -1,0 +1,38 @@
+.wp-hero-section {
+  background: var(--wp-color-surface);
+  color: var(--wp-color-primary-contrast);
+  padding: var(--wp-space-2xl) var(--wp-space-xl);
+}
+
+.wp-hero-section__inner {
+  max-width: 32rem;
+}
+
+.wp-hero-section__eyebrow {
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-sm);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  margin: 0 0 var(--wp-space-sm);
+}
+
+.wp-hero-section__headline {
+  font-family: var(--wp-font-sans);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0 0 var(--wp-space-md);
+}
+
+.wp-hero-section__description {
+  font-size: var(--wp-font-size-md);
+  opacity: 0.85;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.wp-hero-section { background: var(--wp-color-primary-soft); color: var(--wp-color-text); border-block-end: 1px solid var(--wp-color-border); }
+.wp-hero-section__headline { font-family: var(--wp-font-display); font-weight: 500; }
+.wp-hero-section__eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .14em; opacity: 1; }
+.wp-hero-section__description { color: var(--wp-color-text-muted); opacity: 1; }

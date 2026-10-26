@@ -1,0 +1,283 @@
+.wp-careers-page {
+  background-color: transparent;
+  min-height: 100%;
+}
+
+.wp-careers-page__content {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--wp-space-xl) var(--wp-space-xl) var(--wp-space-2xl);
+}
+
+/* Search bar: two SearchInput fields + a location icon merged into one bordered box */
+.wp-careers-searchbar {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-sm);
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-control);
+  padding: var(--wp-space-sm);
+  margin-bottom: var(--wp-space-md);
+}
+
+.wp-careers-searchbar .wp-field__control {
+  border: none;
+  padding: var(--wp-space-sm) var(--wp-space-sm);
+}
+
+.wp-careers-searchbar .wp-field__control:focus {
+  box-shadow: none;
+}
+
+.wp-careers-searchbar__loc {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-xs);
+  flex: 1;
+  border-left: 1px solid var(--wp-color-border);
+  padding-left: var(--wp-space-sm);
+  color: var(--wp-color-text-muted);
+}
+
+.wp-careers-searchbar__loc .wp-search-input {
+  flex: 1;
+}
+
+/* Filter dropdown row (reuses the shared FilterBar layout) */
+.wp-careers-filter-dropdown {
+  margin-bottom: 0;
+  min-width: 160px;
+}
+
+.wp-careers-filters__clear-all {
+  margin-left: auto;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.wp-careers-filters__clear-all:hover {
+  color: var(--wp-color-text);
+}
+
+/* Results row */
+.wp-careers-results-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--wp-space-sm);
+}
+
+.wp-careers-eyebrow {
+  margin: 0;
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wp-color-text-muted);
+}
+
+.wp-careers-results-count {
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+}
+
+/* Split layout */
+.wp-careers-split {
+  grid-template-columns: 2fr 3fr;
+}
+
+/* Job list scrolls independently; detail pane stays in view (same technique as Events) */
+.wp-careers-split .wp-two-column__main {
+  max-height: 680px;
+  overflow-y: auto;
+  padding-right: var(--wp-space-xs);
+}
+
+.wp-careers-split .wp-two-column__main::-webkit-scrollbar {
+  width: 4px;
+}
+
+.wp-careers-split .wp-two-column__main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.wp-careers-split .wp-two-column__main::-webkit-scrollbar-thumb {
+  background-color: var(--wp-color-border);
+  border-radius: var(--wp-radius-pill);
+}
+
+.wp-careers-split .wp-two-column__side {
+  position: sticky;
+  top: var(--wp-space-lg);
+}
+
+@media (max-width: 900px) {
+  .wp-careers-split {
+    grid-template-columns: 1fr;
+  }
+
+  .wp-careers-split .wp-two-column__side {
+    position: static;
+  }
+}
+
+/* Job list column */
+.wp-careers-group-label {
+  margin: 0 0 var(--wp-space-sm);
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wp-color-text-muted);
+}
+
+.wp-careers-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.wp-careers-list__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-sm);
+  padding: var(--wp-space-sm) var(--wp-space-sm);
+  margin-bottom: var(--wp-space-xs);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: background-color var(--wp-transition-fast), border-color var(--wp-transition-fast),
+    box-shadow var(--wp-transition-fast);
+}
+
+.wp-careers-list__item--selected {
+  background-color: var(--wp-color-primary-soft);
+  border-color: var(--wp-color-primary);
+  box-shadow: none;
+}
+
+.wp-careers-list__title {
+  margin: 0 0 3px;
+  font-size: var(--wp-font-size-md);
+  font-weight: 600;
+  color: var(--wp-color-text);
+}
+
+.wp-careers-list__subtitle {
+  margin: 0;
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+}
+
+/* Detail column */
+.wp-careers-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--wp-space-md);
+  margin-bottom: var(--wp-space-md);
+}
+
+.wp-careers-job-id-tag {
+  margin: 0 0 var(--wp-space-xs);
+  font-family: var(--mono, ui-monospace, Consolas, monospace);
+  font-size: 0.75rem;
+  color: var(--wp-color-text-muted);
+}
+
+.wp-careers-detail-title {
+  margin: 0 0 4px;
+  font-family: var(--wp-font-sans);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--wp-color-text);
+}
+
+.wp-careers-detail-company {
+  margin: 0;
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+}
+
+.wp-careers-facts-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--wp-space-md) var(--wp-space-lg);
+  margin-bottom: var(--wp-space-lg);
+  padding-bottom: var(--wp-space-md);
+  border-bottom: 1px solid var(--wp-color-border);
+}
+
+@media (max-width: 900px) {
+  .wp-careers-facts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.wp-careers-facts-k {
+  margin: 0 0 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wp-color-text-muted);
+}
+
+.wp-careers-facts-v {
+  margin: 0;
+  font-size: var(--wp-font-size-sm);
+  font-weight: 500;
+  color: var(--wp-color-text);
+}
+
+.wp-careers-section-label {
+  margin: 0 0 var(--wp-space-sm);
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wp-color-text-muted);
+}
+
+.wp-careers-body-copy {
+  margin: 0 0 var(--wp-space-lg);
+  font-size: var(--wp-font-size-md);
+  line-height: 1.65;
+  color: var(--wp-color-text);
+  white-space: pre-line;
+}
+
+.wp-careers-skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wp-space-sm);
+}
+
+/* Toast position */
+.wp-careers-page__toast-container {
+  position: fixed;
+  bottom: var(--wp-space-xl);
+  right: var(--wp-space-xl);
+  z-index: 100;
+}
+
+.wp-careers-list__item { border-radius: var(--wp-radius-card); padding: 16px; margin-bottom: 8px; min-height: 44px; }
+.wp-careers-list__item--selected { border-inline-start: 4px solid var(--wp-color-primary); }
+.wp-careers-list__item:hover { background: var(--wp-color-hover); }
+.wp-careers-list__title, .wp-careers-detail-title { font-family: var(--wp-font-display); font-weight: 500; font-size: 1.25rem; }
+.wp-careers-eyebrow, .wp-careers-group-label, .wp-careers-section-label { font-size: 11px; font-weight: 600; letter-spacing: .14em; }
+.wp-careers-filters__clear-all { min-height: 44px; padding-inline: 8px; }
+@media (max-width: 700px) { .wp-careers-page__content { padding: 24px 16px 104px; } .wp-careers-split .wp-two-column__main { max-height: none; overflow: visible; } }
+
+#workspace-content .wp-careers-list__title, #workspace-content .wp-careers-detail-title { font-family: var(--wp-font-display); font-weight: 500; }
+#workspace-content .wp-careers-page :is(input, select) { background-color: var(--wp-color-surface); color: var(--wp-color-text); border-color: var(--wp-color-border); }
+@media (max-width: 600px) { .wp-careers-searchbar { flex-wrap: wrap; } .wp-careers-searchbar > .wp-search-input, .wp-careers-searchbar__loc { flex: 1 1 100%; } .wp-careers-searchbar__loc { border-left: 0; padding-left: 0; } .wp-careers-searchbar > button { width: 100%; } }

@@ -1,0 +1,26 @@
+.wp-segmented-control {
+  display: inline-flex;
+  background-color: var(--wp-color-neutral-bg);
+  border-radius: var(--wp-radius-md);
+  padding: 4px;
+  gap: 4px;
+}
+
+.wp-segmented-control__option {
+  border: none;
+  background: transparent;
+  padding: 8px 20px;
+  border-radius: var(--wp-radius-sm);
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-sm);
+  font-weight: 600;
+  color: var(--wp-color-text-muted);
+  cursor: pointer;
+  transition: background-color var(--wp-transition-fast), color var(--wp-transition-fast);
+}
+
+.wp-segmented-control__option--active {
+  background-color: var(--wp-color-surface);
+  color: var(--wp-color-text);
+  box-shadow: var(--wp-shadow-sm);
+}

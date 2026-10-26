@@ -1,0 +1,35 @@
+.wp-workspace { min-height:100dvh; background:var(--wp-color-bg); color:var(--wp-color-text); font-family:var(--wp-font-sans); }
+.wp-workspace__header { position:sticky; top:0; z-index:100; display:flex; align-items:center; gap:24px; min-height:80px; padding:16px max(24px,env(safe-area-inset-right)) 16px max(24px,env(safe-area-inset-left)); border-bottom:1px solid var(--wp-color-border); background:var(--wp-color-surface); }
+.wp-workspace__brand { display:flex; align-items:center; gap:8px; min-height:44px; color:var(--wp-color-text); text-decoration:none; flex-shrink:0; }
+.wp-workspace__brand > .wp-waypoint-mark { width:36px; height:36px; }
+.wp-workspace__brand > span:not(.wp-waypoint-mark) { display:grid; gap:2px; }
+.wp-workspace__brand strong { font:600 1.125rem/1.2 var(--wp-font-sans); }
+.wp-workspace__brand small { font-size:.75rem; color:var(--wp-color-text-muted); }
+.wp-workspace__quick-jump { display:flex; align-items:center; gap:8px; min-height:44px; padding:8px 16px; width:min(300px,100%); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-bg); color:var(--wp-color-text-muted); font:500 .875rem/1.4 var(--wp-font-sans); cursor:pointer; }
+.wp-workspace__quick-jump svg { flex-shrink:0; }
+.wp-workspace__quick-jump kbd { margin-left:auto; font:400 .75rem var(--wp-font-mono); white-space:nowrap; }
+.wp-workspace__quick-jump:hover { background:var(--wp-color-hover); color:var(--wp-color-primary); }
+.wp-workspace__account { display:flex; align-items:center; gap:8px; margin-left:auto; min-width:0; }
+.wp-workspace__account :is(.wp-theme-toggle,.wp-notification-menu__trigger) { width:44px; height:44px; min-height:44px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); padding:0; color:var(--wp-color-text); background:var(--wp-color-surface); transform:none; }
+.wp-workspace__account :is(.wp-theme-toggle,.wp-notification-menu__trigger):hover { background:var(--wp-color-hover); color:var(--wp-color-primary); }
+.wp-workspace__body { display:grid; grid-template-columns:max-content minmax(0,1fr); align-items:start; gap:32px; max-width:1920px; margin:auto; padding:24px; }
+.wp-workspace__main { min-width:0; padding:0 0 84px; }
+@media(min-width:769px) { .wp-workspace:has(.wp-floating-assistant,.wp-chatbot-window) .wp-workspace__body { padding-right:max(84px,calc(68px + env(safe-area-inset-right))); } }
+.wp-workspace__skip { position:fixed; left:16px; top:-100px; padding:8px 16px; min-height:44px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-surface); color:var(--wp-color-primary); z-index:3000; }
+.wp-workspace__skip:focus { top:8px; }
+.wp-workspace :focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
+.wp-workspace__account .wp-profile-menu__trigger { min-height:44px; max-width:280px; }
+.wp-workspace__account .wp-profile-menu__name,.wp-workspace__account .wp-profile-menu__secondary { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wp-workspace__account .wp-profile-menu__identity { min-width:0; }
+@media(max-width:1000px) { .wp-workspace__header { gap:16px; padding-inline:16px; } .wp-workspace__body { gap:24px; padding:24px 16px; } .wp-workspace__quick-jump { width:auto; } .wp-workspace__quick-jump kbd { display:none; } }
+@media(max-width:768px) {
+  .wp-workspace__header { gap:8px; padding:calc(8px + env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left)); min-height:64px; }
+  .wp-workspace__brand { gap:4px; } .wp-workspace__brand > .wp-waypoint-mark { width:28px; height:28px; }
+  .wp-workspace__brand strong { font-size:1rem; } .wp-workspace__brand small { display:none; }
+  .wp-workspace__quick-jump { width:44px; padding:0; justify-content:center; flex-shrink:0; } .wp-workspace__quick-jump > span { display:none; }
+  .wp-workspace__account { gap:4px; } .wp-workspace__account .wp-profile-menu__trigger { padding:4px; }
+  .wp-workspace__account .wp-profile-menu__identity { max-width:64px; } .wp-workspace__account .wp-profile-menu__name { font-size:.75rem; }
+  .wp-workspace__body { display:block; padding:24px max(16px,env(safe-area-inset-right)) 24px max(16px,env(safe-area-inset-left)); }
+  .wp-workspace__main { padding-bottom:calc(160px + env(safe-area-inset-bottom)); }
+}
+@media(max-width:360px) { .wp-workspace__account .wp-profile-menu__identity { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); } }

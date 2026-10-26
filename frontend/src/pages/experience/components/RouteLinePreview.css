@@ -1,0 +1,7 @@
+.wp-primitive-preview { max-width:1200px; margin:auto; padding:32px 24px 120px; color:var(--wp-color-text); font-family:var(--wp-font-sans); }
+.wp-primitive-preview > section { margin:24px 0; padding:24px; border:1px solid var(--wp-color-border); border-radius:14px; background:var(--wp-color-surface); }
+.wp-primitive-preview h2 { font-family:var(--wp-font-display); font-weight:500; margin:0 0 16px; }
+.wp-primitive-preview__badges { display:flex; flex-wrap:wrap; gap:16px; margin-top:16px; }
+.wp-detail-panel input#preview-note { display:block; width:100%; box-sizing:border-box; min-height:44px; margin-top:8px; border:1px solid var(--wp-color-border); border-radius:10px; background:var(--wp-color-surface); color:var(--wp-color-text); font:inherit; padding:8px 16px; }
+.wp-primitive-preview .wp-route-line + .wp-route-line { margin-top:24px; }
+@media (max-width:600px) { .wp-primitive-preview { padding:16px 16px 160px; } .wp-primitive-preview > section { padding:16px; } }

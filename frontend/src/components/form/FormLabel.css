@@ -1,0 +1,16 @@
+.wp-form-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-md);
+  font-weight: 600;
+  color: var(--wp-color-text);
+  margin-bottom: var(--wp-space-xs);
+}
+
+.wp-form-label__required {
+  display: inline-block;
+  line-height: 1;
+  color: var(--wp-color-error);
+}

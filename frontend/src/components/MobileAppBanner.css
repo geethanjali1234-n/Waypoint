@@ -1,0 +1,126 @@
+/* MobileAppBanner.css */
+.wp-mobile-banner {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #ffffff;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  position: relative;
+  z-index: 100;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  animation: wpBannerSlideDown 0.25s ease-out;
+}
+
+@keyframes wpBannerSlideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.wp-mobile-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.wp-mobile-banner-icon {
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.wp-mobile-banner-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wp-mobile-banner-title {
+  font-weight: 600;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.85rem;
+}
+
+.wp-mobile-banner-subtitle {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wp-mobile-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.wp-mobile-banner-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+}
+
+.wp-mobile-banner-btn:hover {
+  background: #1d4ed8;
+}
+
+.wp-mobile-banner-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+}
+
+.wp-mobile-banner-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.wp-mobile-banner-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.15rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.wp-mobile-banner-close:hover {
+  color: #ffffff;
+}
+
+@media (max-width: 480px) {
+  .wp-mobile-banner {
+    padding: 0.5rem 0.75rem;
+  }
+  .wp-mobile-banner-subtitle {
+    display: none;
+  }
+}

@@ -1,0 +1,19 @@
+.employee-today { max-width:1200px; margin-inline:auto; color:var(--wp-color-text); font-family:var(--wp-font-sans); }
+.employee-today__card { min-width:0; padding:24px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card); background:var(--wp-color-surface); }
+.employee-today__card h2 { margin:0 0 16px; font:500 clamp(1.4rem,2.5vw,1.8rem)/1.25 var(--wp-font-display); color:var(--wp-color-text); }
+.employee-today__card > p:not(.employee-today__eyebrow) { color:var(--wp-color-text-muted); font-size:.875rem; line-height:1.5; }
+.employee-today__eyebrow { margin:0 0 8px; color:var(--wp-color-text-muted); font:600 11px/1.5 var(--wp-font-sans); letter-spacing:.14em; text-transform:uppercase; }
+.employee-today__timesheet { margin-bottom:32px; }
+.employee-today__timesheet .wp-route-line { margin:24px 0 32px; }
+.employee-today__requests { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); align-items:start; gap:32px; }
+.employee-today__requests .wp-route-line { margin:24px 0; }
+.employee-today__actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.employee-today a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px 16px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-surface); color:var(--wp-color-primary); font:500 .875rem/1.4 var(--wp-font-sans); text-decoration:none; }
+.employee-today a:hover { background:var(--wp-color-hover); }
+.employee-today a.employee-today__primary { background:var(--wp-color-primary-deep); border-color:var(--wp-color-primary-deep); color:#FBF9F3; }
+.employee-today a.employee-today__primary:hover { background:var(--wp-color-primary-hover); color:var(--wp-color-primary-contrast); }
+.employee-today a.employee-today__text-link { border-color:transparent; background:transparent; }
+.employee-today a:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
+.employee-today__card--past { border-style:dashed; }
+.employee-today__date { font-size:.8rem; }
+@media(max-width:700px) { .employee-today__requests { grid-template-columns:minmax(0,1fr); gap:24px; } .employee-today__card { padding:16px; } .employee-today__timesheet .wp-route-line__state { font-size:.65rem; } .employee-today__actions > a:first-child { width:100%; } }

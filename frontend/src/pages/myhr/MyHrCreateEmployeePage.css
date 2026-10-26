@@ -1,0 +1,27 @@
+.myhr-create-employee__card {
+  margin: 0 auto;
+  max-width: 640px;
+}
+
+.myhr-create-employee__row {
+  display: grid;
+  gap: var(--wp-space-md);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.myhr-create-employee__success {
+  margin: 0 auto;
+  max-width: 640px;
+}
+
+.myhr-create-employee__success-actions {
+  display: flex;
+  gap: var(--wp-space-md);
+  margin-top: var(--wp-space-md);
+}
+
+@media (max-width: 640px) {
+  .myhr-create-employee__row {
+    grid-template-columns: 1fr;
+  }
+}

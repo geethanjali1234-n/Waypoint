@@ -1,0 +1,11 @@
+.signature-region-selector { display: grid; gap: .6rem; margin-top: .75rem; }
+.signature-region-selector > p { margin: 0; font-size: .9rem; color: #5b6a64; }
+.signature-region-selector__stage {
+  position: relative; display: inline-block; max-width: 100%; touch-action: none; cursor: crosshair;
+  border: 1px solid #dce5e1; border-radius: .5rem; overflow: hidden; line-height: 0;
+}
+.signature-region-selector__stage img { display: block; max-width: 100%; max-height: 320px; width: auto; height: auto; user-select: none; }
+.signature-region-selector__box {
+  position: absolute; border: 2px dashed #2f6f57; background: rgba(47, 111, 87, .12); pointer-events: none;
+}
+.signature-region-selector__actions { display: flex; gap: .6rem; }

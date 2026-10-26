@@ -1,0 +1,219 @@
+/* Apple Pay style Bloom confirmation modal */
+.apple-bloom__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: appleBackdropFade 0.25s ease-out forwards;
+}
+
+@keyframes appleBackdropFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.apple-bloom__card {
+  position: relative;
+  width: 90%;
+  max-width: 420px;
+  background: linear-gradient(135deg, rgba(20, 24, 33, 0.95), rgba(13, 17, 23, 0.98));
+  border: 1px solid rgba(0, 255, 136, 0.35);
+  border-radius: 28px;
+  padding: 36px 28px 28px;
+  text-align: center;
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(0, 255, 136, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  animation: appleCardBloom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes appleCardBloom {
+  0% {
+    opacity: 0;
+    transform: scale(0.82) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.apple-bloom__ambient-glow {
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(0, 255, 136, 0.25) 0%, rgba(0, 255, 136, 0) 70%);
+  pointer-events: none;
+}
+
+/* Concentric rings */
+.apple-bloom__rings {
+  position: absolute;
+  top: 52px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  pointer-events: none;
+}
+
+.apple-bloom__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 255, 136, 0.4);
+  animation: appleRingPulse 2s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+}
+
+.apple-bloom__ring--1 {
+  animation-delay: 0s;
+}
+
+.apple-bloom__ring--2 {
+  animation-delay: 0.4s;
+  opacity: 0.7;
+}
+
+.apple-bloom__ring--3 {
+  animation-delay: 0.8s;
+  opacity: 0.4;
+}
+
+@keyframes appleRingPulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* Tactile checkmark emblem */
+.apple-bloom__icon-container {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.apple-bloom__check-svg {
+  width: 72px;
+  height: 72px;
+  display: block;
+}
+
+.apple-bloom__check-circle {
+  stroke: #00ff88;
+  stroke-width: 2.5;
+  stroke-miterlimit: 10;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: appleStrokeCircle 0.5s cubic-bezier(0.65, 0, 0.45, 1) 0.1s forwards;
+}
+
+.apple-bloom__check-path {
+  stroke: #00ff88;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-miterlimit: 10;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: appleStrokeCheck 0.4s cubic-bezier(0.65, 0, 0.45, 1) 0.45s forwards;
+}
+
+@keyframes appleStrokeCircle {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes appleStrokeCheck {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Speed badge */
+.apple-bloom__speed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(0, 255, 136, 0.12);
+  border: 1px solid rgba(0, 255, 136, 0.25);
+  border-radius: 999px;
+  color: #00ff88;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.apple-bloom__bolt {
+  font-size: 0.85rem;
+}
+
+.apple-bloom__title {
+  color: #ffffff;
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.apple-bloom__detail {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin: 0 0 24px;
+  max-width: 320px;
+}
+
+/* Done button */
+.apple-bloom__done-btn {
+  width: 100%;
+  max-width: 240px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #00ff88, #05c270);
+  border: none;
+  border-radius: 14px;
+  color: #0a0f1d;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 8px 24px rgba(0, 255, 136, 0.35);
+}
+
+.apple-bloom__done-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(0, 255, 136, 0.5);
+}
+
+.apple-bloom__done-btn:active {
+  transform: scale(0.97);
+}

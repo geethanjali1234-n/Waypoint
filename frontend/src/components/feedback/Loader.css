@@ -1,0 +1,41 @@
+.wp-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wp-space-sm);
+}
+
+.wp-loader__spinner {
+  border-radius: 50%;
+  border: 3px solid var(--wp-color-neutral-bg);
+  border-top-color: var(--wp-color-primary);
+  animation: wp-loader-spin 0.8s linear infinite;
+}
+
+.wp-loader__spinner--sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.wp-loader__spinner--md {
+  width: 24px;
+  height: 24px;
+}
+
+.wp-loader__spinner--lg {
+  width: 36px;
+  height: 36px;
+  border-width: 4px;
+}
+
+.wp-loader__label {
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-md);
+  color: var(--wp-color-text-muted);
+}
+
+@keyframes wp-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,34 @@
+.wp-app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--wp-color-bg);
+}
+
+.wp-app-layout__content {
+  flex: 1;
+}
+
+/* Authenticated job seeker and employer pages share one framed workspace. */
+.job-seeker-shell > .wp-app-layout__content,
+.employer-dashboard > .wp-app-layout__content {
+  background: #e8f0ec;
+  margin: 0 auto;
+  width: min(1360px, calc(100% - 40px));
+}
+
+/* The four primary employer pages share the same inset green workspace. */
+.employer-dashboard--primary-page > .wp-app-layout__content {
+  background: transparent;
+}
+
+.job-seeker-shell > .wp-app-layout__content {
+  background: transparent;
+}
+
+@media (max-width: 760px) {
+  .job-seeker-shell > .wp-app-layout__content,
+  .employer-dashboard > .wp-app-layout__content {
+    width: 100%;
+  }
+}

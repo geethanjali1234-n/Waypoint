@@ -1,0 +1,102 @@
+.phase-six { color:var(--wp-color-text); min-width:0; }
+.phase-six :is(button,select,textarea),.phase-six input:not([type='checkbox']):not([type='radio']) { min-height:44px; }
+#workspace-content .myhr-feature.phase-six .myhr-feature__heading { padding:0 0 24px!important; border:0!important; border-radius:0; box-shadow:none!important; background:transparent!important; }
+#workspace-content .myhr-feature.phase-six .wp-page-header { padding:0; border:0; background:transparent; }
+#workspace-content .myhr-feature.phase-six .wp-page-header__title { font:500 clamp(2rem,4vw,2.75rem) var(--wp-font-display)!important; }
+#workspace-content .phase-six :is(.reports__hero h2,.reports__panels h3,.myhr-profile__identity h2,.i983-panel__header h3,.wp-card__title) { font-family:var(--wp-font-display)!important; font-weight:500!important; }
+#workspace-content .phase-six .wp-card__title { font-size:1.5rem; letter-spacing:normal; text-transform:none; }
+.phase-six .wp-data-table__scroll,.payroll-readiness__workspace .wp-data-table__scroll { contain:inline-size layout paint; max-width:100%; overflow:auto; }
+.myhr-feature.phase-six :is(.reports__card,.reports__hero,.reports__results,.reports__attention,.reports__enterprise-filters,.reports__filters,.reports__filter-panel,.reports__download-menu,.reports__scope-menu,.document-requests__toolbar,.document-requests__scope,.document-requests__detail,.document-requests__card,.request-documents__card,.request-documents__review,.offer-letter__context,.offer-letter__send,.offer-letter__sent,.offer-letter__signature-option,.i983-signing__card) { background:var(--wp-color-surface); color:var(--wp-color-text); border-color:var(--wp-color-border); border-radius:var(--wp-radius-card); box-shadow:none; backdrop-filter:none; }
+.myhr-feature.phase-six :is(.reports__card,.document-requests__card) { padding:24px; }
+.myhr-feature.phase-six :is(.reports__hero,.reports__card,.document-requests__card,.audit-history__card):hover { box-shadow:none; transform:none; border-color:var(--wp-color-border); }
+.myhr-feature.phase-six :is(.reports__hero h2,.reports__card > strong,.reports__results h3,.reports__card p,.reports__hero span,.request-documents__card h2,.request-documents__card h3,.document-requests__detail h3,.document-requests__card-title,.document-requests__card-row > span,.document-requests__detail dd,.request-documents__summary dd,.offer-letter__context strong,.offer-letter__send-intro,.offer-letter__sent p,.i983-signing__card h3,.i983-signing__card dd) { color:var(--wp-color-text); }
+.myhr-feature.phase-six :is(.reports__card > strong,.document-requests__card-title) { font:500 1.5rem var(--wp-font-display); }
+.myhr-feature.phase-six :is(.reports__icon,.myhr-profile__avatar) { background:var(--wp-color-primary-soft); color:var(--wp-color-primary); border-color:var(--wp-color-border); }
+.myhr-feature.phase-six .reports__icon svg { width:24px; height:24px; }
+.myhr-feature.phase-six :is(.reports__card small,.reports__status,.document-requests__card-label,.document-requests__detail dt,.request-documents__summary dt,.request-documents__card header > div > span,.offer-letter__send-note,.i983-signing__source) { color:var(--wp-color-text-muted); }
+.myhr-feature.phase-six :is(.document-requests__card-kicker,.offer-letter__section-title,.reports__hero p) { font:600 11px var(--wp-font-sans); letter-spacing:.14em; text-transform:uppercase; color:var(--wp-color-text-muted); }
+.myhr-feature.phase-six :is(.document-requests__card-header,.document-requests__card-body,.document-requests__card-footer,.request-documents__card header,.offer-letter__send footer) { border-color:var(--wp-color-border); background:transparent; }
+.myhr-feature.phase-six :is(.document-requests__view-toggle,.offer-letter__steps,.offer-letter__signature-tabs,.request-documents__steps) { background:transparent; border-color:var(--wp-color-border); box-shadow:none; display:flex; flex-wrap:wrap; gap:8px; }
+.myhr-feature.phase-six :is(.document-requests__view-toggle-btn,.offer-letter__signature-tab,.offer-letter__signature-font-option,.reports__scope-toggle button,.reports__view-toggle button) { min-height:44px; padding:8px 16px; background:var(--wp-color-surface); color:var(--wp-color-text); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); box-shadow:none; }
+.myhr-feature.phase-six :is(.offer-letter__signature-tab.active,.offer-letter__signature-font-option.active,.reports__view-toggle button.is-active) { background:var(--wp-color-primary-soft); color:var(--wp-color-primary); border-color:var(--wp-color-primary); }
+.myhr-feature.phase-six :is(.offer-letter__steps span.active,.request-documents__steps span.active) { background:var(--wp-color-primary-soft); color:var(--wp-color-primary); border-color:var(--wp-color-primary); }
+.myhr-feature.phase-six :is(.document-requests__error,.reports__status--error) { color:var(--wp-color-error); }
+.myhr-feature.phase-six :is(.document-requests__returned,.document-requests__rejection,.offer-letter__org-signature-status) { padding:16px; background:var(--wp-color-bg); color:var(--wp-color-text); border-color:var(--wp-color-border); border-radius:var(--wp-radius-control); }
+.myhr-feature.phase-six :is(.document-requests__detail a,.document-requests__attachments a,.document-requests__legacy-attachment,.request-documents__card a,.offer-letter__attachment-file) { color:var(--wp-color-primary); }
+.myhr-feature.phase-six .document-requests__cards-grid { gap:24px; grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr)); }
+.myhr-feature.phase-six .document-requests__card-title { display:block; margin-top:8px; overflow-wrap:anywhere; }
+.myhr-feature.phase-six .document-requests__card-footer .wp-button { min-height:44px; }
+.myhr-feature.phase-six .wp-filter-pills { margin-block:16px 24px; }
+.myhr-feature.phase-six .request-documents__card .offer-letter__preview { color:#17231e; background:#fff; }
+.reports__detail-panel,.payroll-readiness__detail-panel { width:min(720px,100%); }
+.reports__detail-panel :is(.reports__drawer-body,.reports__drawer-meta,.reports__drawer-feedback,.reports__drawer-body section,.reports__drawer-entries),.payroll-readiness__detail-panel .payroll-readiness__drawer-body { background:var(--wp-color-surface); color:var(--wp-color-text); border-color:var(--wp-color-border); }
+.reports__detail-panel dt,.payroll-readiness__detail-panel dt { color:var(--wp-color-text-muted); }
+.reports__detail-panel dd,.payroll-readiness__detail-panel dd { color:var(--wp-color-text); overflow-wrap:anywhere; }
+.payroll-readiness__workspace :is(.payroll-readiness__hero h2,.payroll-readiness__hero dd,.payroll-readiness__table h3,.payroll-readiness__card-identity strong) { color:var(--wp-color-text); }
+.payroll-readiness__workspace :is(.payroll-readiness__hero span,.payroll-readiness__hero dt,.payroll-readiness__table > header p) { color:var(--wp-color-text-muted); }
+.payroll-readiness__workspace :is(.payroll-readiness__action-btn,.payroll-readiness__table-actions select,.payroll-readiness__filter-trigger,.payroll-readiness__filter-clear) { min-height:44px; }
+.phase-six .myhr-profile__identity { box-shadow:none; }
+.phase-six .myhr-profile__avatar,.phase-six .organization-settings__logo-fallback { background:var(--wp-color-primary-soft); border-color:var(--wp-color-border); color:var(--wp-color-primary); }
+.phase-six :is(.myhr-profile__identity h2,.myhr-profile__signature-intro,.organization-settings__read-value,.organization-settings__details dd) { color:var(--wp-color-text); }
+.phase-six :is(.myhr-profile__identity-copy>span,.myhr-profile__signature-empty,.myhr-profile__signature-hint) { color:var(--wp-color-text-muted); }
+.phase-six .myhr-profile__fields div { border-bottom-color:var(--wp-color-border); }
+.phase-six .myhr-profile__badge--role { background:var(--wp-color-primary-soft); border-color:var(--wp-color-border); color:var(--wp-color-primary); }
+.phase-six .myhr-profile__signature-upload { min-height:44px; border-color:var(--wp-color-border); background:var(--wp-color-surface); color:var(--wp-color-text); border-radius:var(--wp-radius-control); }
+.phase-six .myhr-profile__signature-upload:hover { background:var(--wp-color-hover); }
+.phase-six .offer-approval__banner { background:var(--wp-color-surface); color:var(--wp-color-text); border-color:var(--wp-color-border); }
+.phase-six .offer-approval__badge { background:var(--wp-color-primary-soft); color:var(--wp-color-text); font-weight:600; }
+.phase-six .offer-approval__banner--pending { border-left-color:var(--wp-color-signal); }
+.phase-six :is(.offer-approval__banner--approved,.offer-approval__banner--sent) { border-left-color:var(--wp-color-primary); }
+.phase-six .offer-approval__banner--rejected { border-left-color:var(--wp-color-error); }
+.phase-six :is(.reports__hero,.reports__results,.reports__attention,.audit-history__card,.organization-settings__settings,.myhr-profile__identity,.document-requests__detail,.offer-approvals__item) { background:var(--wp-color-surface)!important; color:var(--wp-color-text); border-color:var(--wp-color-border)!important; border-radius:var(--wp-radius-card); }
+.phase-six :is(.reports__icon,.audit-history__cell-actor,.audit-history__cell-action,.myhr-profile__fields dd,.organization-settings__details dd,.document-requests__card-body) { color:var(--wp-color-text)!important; }
+.phase-six :is(.reports__hero p,.reports__hero span,.reports__kpis span,.myhr-profile__fields dt,.organization-settings__details dt,.myhr-profile__identity-copy p,.audit-history__card-label) { color:var(--wp-color-text-muted)!important; }
+.phase-six :is(h2,h3) { font-family:var(--wp-font-display); font-weight:500; }
+.phase-six .wp-data-table table,.payroll-readiness__workspace .wp-data-table table { min-width:800px; table-layout:auto; }
+.phase-six .wp-data-table th,.phase-six .wp-data-table td,.payroll-readiness__workspace .wp-data-table th,.payroll-readiness__workspace .wp-data-table td { padding:16px; background:transparent; color:var(--wp-color-text); }
+.phase-six .wp-data-table th,.payroll-readiness__workspace .wp-data-table th { background:var(--wp-color-surface); }
+.phase-six .wp-data-table tbody tr:hover,.payroll-readiness__workspace .wp-data-table tbody tr:hover { background:var(--wp-color-hover); }
+.phase-six .wp-data-table tbody tr.is-selected,.payroll-readiness__workspace .wp-data-table tbody tr.is-selected { background:var(--wp-color-primary-soft); }
+.document-route { min-width:0; padding:24px; background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card); }
+.document-route__eyebrow { font:600 11px var(--wp-font-sans); letter-spacing:.14em; text-transform:uppercase; color:var(--wp-color-text-muted); margin:0 0 24px; }
+.document-workflow-layout { display:grid; grid-template-columns:minmax(200px,280px) minmax(0,1fr); gap:32px; align-items:start; }
+.document-workflow-layout > .document-route { position:sticky; top:104px; }
+.document-workflow-layout > section,.document-workflow-content { min-width:0; }
+.document-workflow-layout > .request-documents__card { margin:0; align-self:start; }
+.phase-six .request-documents__card { padding:24px; }
+.phase-six .request-documents__card > header { margin:0 0 24px; padding:0 0 24px; border-bottom:1px solid var(--wp-color-border); }
+.phase-six .request-documents__card > header h2 { font:500 1.75rem var(--wp-font-display); text-transform:none; }
+.phase-six .offer-letter__preview { background:#fff; color:#17231e; color-scheme:light; }
+.phase-six .organization-settings__save-bar { position:sticky; top:calc(96px + env(safe-area-inset-top)); order:-1; z-index:20; display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end; gap:16px; padding:16px 24px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card); background:var(--wp-color-surface); }
+.phase-six .organization-settings__save-bar > span { margin-right:auto; color:var(--wp-color-text-muted); }
+.phase-six .audit-history__cards-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:0; padding-left:32px; border-left:2px solid var(--wp-color-border); margin-left:12px; }
+.phase-six .audit-history__cards-grid { list-style:none; }
+.phase-six__search { display:grid; gap:8px; color:var(--wp-color-text-muted); font-size:.875rem; }
+.i983-panel__progress .wp-route-line { padding:0; list-style:none; }
+.i983-panel__progress .wp-route-line--vertical { grid-template-columns:minmax(0,1fr); }
+.i983-panel__progress .wp-route-line__stop { border:0; background:transparent; padding:0 0 24px; }
+.i983-panel__progress .wp-route-line__stop:last-child { padding-bottom:0; }
+.i983-panel__progress .wp-route-line__marker { width:36px; height:36px; flex:0 0 36px; }
+.i983-panel__progress .wp-route-line__stop--done .wp-route-line__marker { background:var(--wp-color-primary-deep); border:2px solid var(--wp-color-primary-deep); color:var(--wp-color-primary-contrast); }
+.i983-panel__progress .wp-route-line__stop--current .wp-route-line__marker { border:2px solid var(--wp-color-signal); outline:2px solid var(--wp-color-signal); outline-offset:2px; background:var(--wp-color-surface); }
+.i983-panel__progress .wp-route-line__stop--upcoming .wp-route-line__marker { border:2px dashed var(--wp-color-future-stop); background:var(--wp-color-surface); }
+.phase-six .audit-history__card { position:relative; margin-bottom:24px; padding:24px; border:1px solid var(--wp-color-border); }
+.phase-six .audit-history__card::before { content:''; position:absolute; width:12px; height:12px; left:-41px; top:32px; border-radius:50%; background:var(--wp-color-primary); border:3px solid var(--wp-color-bg); }
+.phase-six .audit-history__card-category { font:600 11px var(--wp-font-sans); letter-spacing:.14em; color:var(--wp-color-text-muted); }
+.phase-six .audit-history__card-action-title { font:500 1.25rem var(--wp-font-display); color:var(--wp-color-primary); min-height:44px; }
+.phase-six .audit-history__view-toggle-btn,.phase-six .document-requests__view-toggle-btn,.payroll-readiness__view-toggle-btn { min-height:44px; padding:8px 16px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-surface)!important; color:var(--wp-color-text)!important; }
+.phase-six .audit-history__view-toggle-btn.is-active,.phase-six .document-requests__view-toggle-btn.is-active,.payroll-readiness__view-toggle-btn.is-active { background:var(--wp-color-primary)!important; color:var(--wp-color-primary-contrast)!important; }
+.payroll-readiness__workspace :is(.payroll-readiness__hero,.payroll-readiness__filter-panel,.payroll-readiness__table,.payroll-readiness__card) { background:var(--wp-color-surface)!important; border-color:var(--wp-color-border)!important; color:var(--wp-color-text); }
+.payroll-readiness__workspace .wp-filter-pills { margin-block:24px; }
+.phase-six .reports__kpis { display:flex; flex-wrap:wrap; gap:32px; border-block:1px solid var(--wp-color-border); padding-block:24px; }
+.phase-six .reports__kpis article { border:0; background:transparent; padding:0; }
+.phase-six .reports__kpis strong { color:var(--wp-color-text); font-family:var(--wp-font-sans); }
+.phase-six :is(button,a,input,textarea,select):focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
+@media(max-width:900px) { .document-workflow-layout { grid-template-columns:minmax(0,1fr); gap:24px; } .document-workflow-layout > .document-route { position:static; } }
+@media(max-width:768px) {
+  .phase-six .organization-settings__save-bar { top:calc(80px + env(safe-area-inset-top)); padding:16px; justify-content:flex-start; }
+  .phase-six .organization-settings__settings:has(> .organization-settings__save-bar) { padding-bottom:128px; }
+  .phase-six .organization-settings__settings > .organization-settings__save-bar { position:fixed; top:auto; bottom:calc(80px + env(safe-area-inset-bottom)); left:max(16px,env(safe-area-inset-left)); right:max(80px,calc(16px + env(safe-area-inset-right))); }
+  .phase-six .organization-settings__save-bar > span { flex-basis:100%; }
+}
+@media(max-width:600px) { .document-route,.phase-six .request-documents__card { padding:16px; } .phase-six .audit-history__cards-grid { padding-left:24px; } .phase-six .audit-history__card::before { left:-33px; } }

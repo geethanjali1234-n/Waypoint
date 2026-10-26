@@ -1,0 +1,43 @@
+.wp-job-detail__back {
+  padding: var(--wp-space-lg) var(--wp-space-lg) 0;
+}
+
+.wp-job-detail__back a {
+  color: var(--wp-color-primary);
+  text-decoration: none;
+}
+
+.wp-job-detail__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-md);
+  padding: var(--wp-space-lg);
+}
+
+.wp-job-detail__content > .wp-toast {
+  align-self: flex-start;
+}
+
+.wp-job-detail__meta,
+.wp-job-detail__salary,
+.wp-job-detail__status,
+.wp-job-detail__code,
+.wp-job-detail__dates {
+  margin: 0 0 var(--wp-space-xs);
+  color: var(--wp-color-text-muted);
+}
+
+.wp-job-detail__description {
+  white-space: pre-line;
+  color: var(--wp-color-text);
+  margin: 0;
+}
+
+.wp-job-detail__skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wp-space-sm);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}

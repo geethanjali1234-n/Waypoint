@@ -1,0 +1,8 @@
+.wp-filter-pills { display:flex; flex-wrap:wrap; gap:8px; }
+.wp-filter-pills button { min-height:44px; padding:8px 16px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-pill); display:inline-flex; align-items:center; gap:8px; font:500 .875rem/1.4 var(--wp-font-sans); background:var(--wp-color-surface); color:var(--wp-color-text); cursor:pointer; }
+.wp-filter-pills button:hover:not(:disabled) { background:var(--wp-color-hover); }
+.wp-filter-pills button[aria-pressed='true'] { background:var(--wp-color-primary-deep); color:#FBF9F3; border-color:var(--wp-color-primary-deep); }
+.wp-filter-pills button[aria-pressed='true']:hover:not(:disabled) { background:var(--wp-color-primary-deep); color:#FBF9F3; border-color:var(--wp-color-primary-deep); filter:brightness(1.12); }
+.wp-filter-pills button:disabled { cursor:not-allowed; opacity:.6; }
+.wp-filter-pills__count { font-variant-numeric:tabular-nums; font-size:.8rem; }
+.wp-filter-pills button:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }

@@ -1,0 +1,111 @@
+.wp-profile-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--wp-space-xl) var(--wp-space-lg);
+}
+
+.wp-profile-page__summary .wp-card__body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--wp-space-md);
+  flex-wrap: wrap;
+}
+
+.wp-profile-page__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-md);
+}
+
+.wp-profile-page__name {
+  font-size: var(--wp-font-size-lg);
+  font-weight: 500;
+  color: var(--wp-color-text);
+  margin: 0;
+}
+
+.wp-profile-page__subtitle {
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+  margin: 4px 0 0;
+}
+
+.wp-profile-page__summary-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--wp-space-sm);
+}
+
+.wp-profile-page__completion {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-sm);
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+}
+
+.wp-profile-page__completion-track {
+  width: 80px;
+  height: 5px;
+  border-radius: var(--wp-radius-sm);
+  background-color: var(--wp-color-neutral-bg);
+  overflow: hidden;
+}
+
+.wp-profile-page__completion-fill {
+  height: 100%;
+  background-color: var(--wp-color-primary);
+  border-radius: var(--wp-radius-sm);
+}
+
+.wp-profile-page__stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--wp-space-md);
+  margin-bottom: var(--wp-space-md);
+}
+
+.wp-profile-page__link {
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-primary);
+  text-decoration: none;
+}
+
+.wp-profile-page__link:hover {
+  text-decoration: underline;
+}
+
+.wp-profile-page__application-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wp-space-md);
+  width: 100%;
+  margin: 0;
+  padding: var(--wp-space-sm) var(--wp-space-xs);
+  border: none;
+  border-radius: var(--wp-radius-sm);
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wp-profile-page__application-row:hover,
+.wp-profile-page__application-row:focus-visible {
+  background-color: var(--wp-color-neutral-bg);
+}
+
+@media (max-width: 640px) {
+  .wp-profile-page__stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.wp-profile-page h1, .wp-profile-page h2 { font-family: var(--wp-font-display); font-weight: 500; color: var(--wp-color-text); }
+.wp-profile-page button, .wp-profile-page select, .wp-profile-page input:not([type="checkbox"]):not([type="radio"]) { min-height: 44px; }
+
+.wp-profile-page__link { display: inline-flex; align-items: center; min-height: 44px; }

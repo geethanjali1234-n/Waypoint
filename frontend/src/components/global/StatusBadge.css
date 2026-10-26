@@ -1,0 +1,10 @@
+.wp-status-badge { display:inline-flex; align-items:center; gap:8px; padding:4px 8px; border-radius:var(--wp-radius-pill); color:var(--wp-color-text); background:var(--wp-color-neutral-bg); font:500 .8rem/1.4 var(--wp-font-sans); white-space:nowrap; }
+.wp-status-badge__dot { display:inline-block; width:8px; height:8px; flex:0 0 8px; background:var(--wp-color-text-muted); border-radius:50%; }
+.wp-status-badge--active,.wp-status-badge--approved { color:var(--wp-color-success); background:var(--wp-color-success-bg); }
+.wp-status-badge--active .wp-status-badge__dot,.wp-status-badge--approved .wp-status-badge__dot { background:var(--wp-color-success); }
+.wp-status-badge--pending { color:var(--wp-color-warning); background:var(--wp-color-warning-bg); }
+.wp-status-badge--pending .wp-status-badge__dot { background:var(--wp-color-signal); }
+.wp-status-badge--rejected { color:var(--wp-color-error); background:var(--wp-color-error-bg); }
+.wp-status-badge--rejected .wp-status-badge__dot { background:var(--wp-color-error); }
+.wp-status-badge--inactive .wp-status-badge__dot { background:transparent; border:1px solid currentColor; }
+.wp-status-badge--draft .wp-status-badge__dot { background:transparent; border:1px dashed currentColor; }

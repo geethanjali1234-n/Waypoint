@@ -1,0 +1,27 @@
+.wp-card {
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-card);
+  box-shadow: var(--wp-shadow-md);
+  padding: var(--wp-space-lg);
+  margin-bottom: var(--wp-space-md);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.wp-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--wp-space-sm);
+}
+
+.wp-card__title {
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--wp-color-text-muted);
+  margin: 0;
+}

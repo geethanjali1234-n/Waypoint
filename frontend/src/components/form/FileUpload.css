@@ -1,0 +1,164 @@
+.wp-file-upload {
+  margin-bottom: var(--wp-space-md);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.wp-file-upload__control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  gap: var(--wp-space-md);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-sm);
+  padding: 10px 12px;
+  background-color: var(--wp-color-surface);
+}
+
+.wp-file-upload__filename {
+  flex: 1 1 auto;
+  font-size: var(--wp-font-size-md);
+  color: var(--wp-color-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wp-file-upload__filename--downloadable {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.wp-file-upload__filename--downloadable:hover,
+.wp-file-upload__filename--downloadable:focus-visible {
+  color: var(--wp-color-primary);
+  text-decoration: underline;
+  outline: none;
+}
+
+.wp-file-upload__placeholder {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--wp-font-size-md);
+  color: var(--wp-color-text-muted);
+}
+
+.wp-file-upload__button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--wp-font-size-sm);
+  font-weight: 600;
+  color: var(--wp-color-primary);
+  cursor: pointer;
+}
+
+.wp-file-upload__actions {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--wp-space-md);
+  margin-left: auto;
+}
+
+.wp-file-upload__remove {
+  border: 0;
+  border-left: 1px solid var(--wp-color-border);
+  background: transparent;
+  color: var(--wp-color-error, #ff3b69);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--wp-font-size-sm);
+  font-weight: 600;
+  padding: 0 0 0 var(--wp-space-md);
+}
+
+.wp-file-upload__remove:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.wp-file-upload__remove:disabled {
+  color: var(--wp-color-text-muted);
+  cursor: not-allowed;
+}
+
+.wp-file-upload--disabled {
+  opacity: 0.7;
+}
+
+.wp-file-upload__button--disabled {
+  color: var(--wp-color-text-muted);
+  cursor: not-allowed;
+}
+
+.wp-file-upload__input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.wp-file-upload__input:disabled {
+  cursor: not-allowed;
+}
+
+.wp-file-upload__hint {
+  margin: var(--wp-space-xs) 0 0;
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+}
+
+[data-theme="light"] .wp-file-upload__control {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+}
+
+[data-theme="light"] .wp-file-upload__placeholder {
+  color: #64748b;
+}
+
+[data-theme="light"] .wp-file-upload__filename {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+[data-theme="light"] .wp-file-upload__button {
+  color: #0b624f;
+  font-weight: 700;
+}
+
+[data-theme="light"] .wp-file-upload__hint {
+  color: #475569;
+}
+
+[data-theme="light"] .wp-file-upload__remove {
+  color: #b91c1c;
+}
+
+@media (max-width: 460px) {
+  .wp-file-upload__control {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .wp-file-upload__filename,
+  .wp-file-upload__placeholder {
+    flex-basis: 100%;
+  }
+
+  .wp-file-upload__actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

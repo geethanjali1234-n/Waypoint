@@ -1,0 +1,1429 @@
+.payroll-readiness__hero {
+  align-items: stretch;
+  background:var(--wp-color-surface);
+  border-radius: 18px;
+  box-shadow:none;
+  color:var(--wp-color-text);
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, auto);
+  padding: 24px 28px;
+}
+
+.payroll-readiness__hero p,
+.payroll-readiness__drawer-panel header p {
+  color:var(--wp-color-text);
+  font-size: 0.72rem;
+  font-weight:600;
+  letter-spacing: 0.1em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.payroll-readiness__hero h2 {
+  color:var(--wp-color-text);
+  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  margin: 8px 0;
+}
+
+.payroll-readiness__hero span {
+  color:var(--wp-color-text);
+}
+
+.payroll-readiness__hero dl {
+  background:var(--wp-color-surface);
+  border:1px solid var(--wp-color-border);
+  border-radius: 16px;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 16px;
+}
+
+.payroll-readiness__hero dl div {
+  display: grid;
+  gap: 2px;
+}
+
+.payroll-readiness__hero dt {
+  color:var(--wp-color-text);
+  font-size: 0.7rem;
+  font-weight:600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.payroll-readiness__hero dd {
+  color:var(--wp-color-text);
+  font-weight:600;
+  margin: 0;
+}
+
+.payroll-readiness__summary {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  margin-top: 18px;
+}
+
+.payroll-readiness__summary button {
+  background:var(--wp-color-surface);
+  border:1px solid var(--wp-color-border);
+  border-radius: 15px;
+  box-shadow:none;
+  cursor: pointer;
+  min-height: 96px;
+  padding: 16px 18px;
+  text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.payroll-readiness__summary button:hover,
+.payroll-readiness__summary button:focus-visible,
+.payroll-readiness__summary button.is-active {
+  border-color:var(--wp-color-border);
+  box-shadow:none;
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.payroll-readiness__summary span,
+.payroll-readiness__table header p {
+  color:var(--wp-color-text-muted);
+  display: block;
+  font-size: 0.72rem;
+  font-weight:600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.payroll-readiness__summary strong {
+  color:var(--wp-color-primary);
+  display: block;
+  font-size: 1.75rem;
+  line-height: 1;
+  margin-top: 10px;
+}
+
+.payroll-readiness__filters {
+  /* Top-align, not end: fields whose hint text wraps to a second line (the
+     typeahead fields) are taller than plain dropdowns, so bottom-aligning
+     pushed those dropdowns' labels down out of line with the rest of the row. */
+  align-items: start;
+  background:var(--wp-color-surface);
+  border:1px solid var(--wp-color-border);
+  border-radius: 18px;
+  box-shadow:none;
+  display: grid;
+  gap: 10px 14px;
+  grid-template-columns: repeat(4, minmax(170px, 1fr));
+  margin-top: 12px;
+  padding: 14px 18px;
+}
+
+.payroll-readiness__filters .wp-field {
+  margin-bottom: 0;
+}
+
+.payroll-readiness__month-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.payroll-readiness__month-controls select:first-child {
+  flex: 1.4;
+}
+
+.payroll-readiness__month-controls select:last-child {
+  flex: 1;
+}
+
+.payroll-readiness__filters label,
+.payroll-readiness__table label {
+  color:var(--wp-color-text-muted);
+  display: grid;
+  font-size: 0.8rem;
+  font-weight:600;
+  gap: 5px;
+}
+
+.payroll-readiness__filters select,
+.payroll-readiness__table select {
+  background:var(--wp-color-surface);
+  border:1px solid var(--wp-color-border);
+  border-radius: 10px;
+  color:var(--wp-color-primary);
+  min-height:44px;
+  padding: 8px 12px;
+}
+
+.payroll-readiness__typeahead {
+  position: relative;
+}
+
+.payroll-readiness__clear-inline {
+  background: transparent;
+  border: 0;
+  color:var(--wp-color-primary);
+  cursor: pointer;
+  font-weight:600;
+  margin-top: 5px;
+  padding: 0;
+}
+
+.payroll-readiness__search-state {
+  color:var(--wp-color-text-muted);
+  font-size: 0.82rem;
+  margin: 6px 0 0;
+}
+
+.payroll-readiness__search-results {
+  background:var(--wp-color-surface);
+  border:1px solid var(--wp-color-border);
+  border-radius: 12px;
+  box-shadow:none;
+  display: grid;
+  gap: 4px;
+  left: 0;
+  max-height: 280px;
+  overflow: auto;
+  padding: 8px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+}
+
+.payroll-readiness__search-results button {
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color:var(--wp-color-primary);
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  text-align: left;
+}
+
+.payroll-readiness__search-results button:hover,
+.payroll-readiness__search-results button:focus-visible {
+  background:var(--wp-color-surface);
+}
+
+.payroll-readiness__search-results span,
+.payroll-readiness__search-results small {
+  color:var(--wp-color-text-muted);
+  font-size: 0.8rem;
+}
+
+.payroll-readiness__filter-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.payroll-readiness__filter-actions-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Match the adjacent filter fields' ~42px height instead of the default
+   .wp-button padding (16px 24px), which towered over the rest of this row. */
+.payroll-readiness__filter-actions-buttons .wp-button {
+  padding: 10px 20px;
+  min-height:44px;
+}
+
+.payroll-readiness__status,
+.payroll-readiness__error {
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-weight:600;
+}
+
+.payroll-readiness__status {
+  background:var(--wp-color-surface);
+  color:var(--wp-color-text);
+}
+
+.payroll-readiness__error {
+  align-items: center;
+  background:var(--wp-color-surface);
+  border:1px solid var(--wp-color-border);
+  color:var(--wp-color-text);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.payroll-readiness__error p {
+  margin: 0;
+}
+
+.payroll-readiness__table {
+  background:var(--wp-color-surface);
+  border:1px solid var(--wp-color-border);
+  border-radius: 18px;
+  box-shadow:none;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .payroll-readiness__table {
+  background:var(--wp-color-surface);
+  border-color:var(--wp-color-border);
+  box-shadow:none;
+}
+
+.payroll-readiness__table header {
+  align-items: center;
+  border-bottom:1px solid var(--wp-color-border);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 16px 20px;
+  flex-wrap: wrap;
+}
+
+.payroll-readiness__table h3 {
+  color:var(--wp-color-primary);
+  margin: 0 0 4px;
+}
+
+[data-theme="dark"] .payroll-readiness__table h3 {
+  color:var(--wp-color-text);
+}
+
+.payroll-readiness__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.payroll-readiness__view-toggle {
+  display: inline-flex;
+  align-items: center;
+  background:var(--wp-color-surface);
+  border:1px solid var(--wp-color-border);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+
+[data-theme="dark"] .payroll-readiness__view-toggle {
+  background:var(--wp-color-surface);
+  border-color:var(--wp-color-border);
+}
+
+.payroll-readiness__view-toggle-btn {
+  border: none;
+  background: transparent;
+  color:var(--wp-color-text-muted);
+  font-size: 0.8rem;
+  font-weight:600;
+  padding: 4px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+[data-theme="dark"] .payroll-readiness__view-toggle-btn {
+  color:var(--wp-color-text-muted);
+}
+
+.payroll-readiness__view-toggle-btn.is-active {
+  background:var(--wp-color-surface);
+  color:var(--wp-color-text);
+  box-shadow:none;
+}
+
+.payroll-readiness__table-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: flex-end;
+}
+
+/* Match the Table/Cards toggle's compact pill sizing so every control in this
+   row - view toggle, Download, rows-per-page - reads as one consistent set. */
+.payroll-readiness__table-actions .wp-button {
+  font-size: 0.8rem;
+  font-weight:600;
+  padding: 4px 14px;
+  border-radius: 999px;
+  min-height: 0;
+}
+
+.payroll-readiness__table label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color:var(--wp-color-text);
+  font-weight:600;
+  font-size: 0.8rem;
+}
+
+.payroll-readiness__table select {
+  min-height: 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+
+[data-theme="dark"] .payroll-readiness__table label {
+  color:var(--wp-color-text-muted);
+}
+
+.payroll-readiness__table .wp-table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
+  box-sizing: border-box;
+}
+
+.payroll-readiness__table .wp-table {
+  min-width: 1050px;
+}
+
+.payroll-readiness__table .wp-table th,
+.payroll-readiness__table .wp-table td {
+  padding: 10px 14px;
+  vertical-align: middle;
+  text-align: left;
+}
+
+.payroll-readiness__table .wp-table th {
+  background:var(--wp-color-surface);
+  color:var(--wp-color-primary);
+  font-size: 0.74rem;
+  font-weight:600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom:1.5px solid var(--wp-color-border);
+  white-space: nowrap;
+}
+
+.payroll-readiness__table .wp-table td {
+  border-bottom:1px solid var(--wp-color-border);
+  color:var(--wp-color-text);
+  font-size: 0.86rem;
+}
+
+.payroll-readiness__table .wp-table tbody tr:hover td {
+  background-color:var(--wp-color-surface);
+}
+
+/* Cards View */
+.payroll-readiness__cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-top: 0.5rem;
+  box-sizing: border-box;
+}
+
+.payroll-readiness__card {
+  background:var(--wp-color-surface);
+  border:1px solid var(--wp-color-border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow:none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+[data-theme="dark"] .payroll-readiness__card {
+  background:var(--wp-color-surface);
+  border-color:var(--wp-color-border);
+  box-shadow:none;
+}
+
+.payroll-readiness__card.is-selected {
+  border-color:var(--wp-color-border);
+  background:var(--wp-color-surface);
+}
+
+[data-theme="dark"] .payroll-readiness__card.is-selected {
+  background:var(--wp-color-surface);
+  border-color:var(--wp-color-border);
+}
+
+.payroll-readiness__card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom:1px solid var(--wp-color-border);
+}
+
+[data-theme="dark"] .payroll-readiness__card-header {
+  border-bottom-color:var(--wp-color-text);
+}
+
+.payroll-readiness__card-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.payroll-readiness__card-name {
+  font-size: 1rem;
+  font-weight:600;
+  color:var(--wp-color-text);
+}
+
+[data-theme="dark"] .payroll-readiness__card-name {
+  color:var(--wp-color-text);
+}
+
+.payroll-readiness__card-id {
+  font-size: 0.76rem;
+  font-weight:600;
+  font-family: var(--wp-font-mono, monospace);
+  background:var(--wp-color-surface);
+  color:var(--wp-color-text);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+[data-theme="dark"] .payroll-readiness__card-id {
+  background:var(--wp-color-surface);
+  color:var(--wp-color-text-muted);
+}
+
+.payroll-readiness__card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.payroll-readiness__card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.86rem;
+}
+
+.payroll-readiness__card-label {
+  color:var(--wp-color-text-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+[data-theme="dark"] .payroll-readiness__card-label {
+  color:var(--wp-color-text-muted);
+}
+
+.payroll-readiness__card-value {
+  font-weight: 600;
+  color:var(--wp-color-text);
+  text-align: right;
+}
+
+[data-theme="dark"] .payroll-readiness__card-value {
+  color:var(--wp-color-text);
+}
+
+.payroll-readiness__card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 10px;
+  border-top:1px solid var(--wp-color-border);
+}
+
+[data-theme="dark"] .payroll-readiness__card-footer {
+  border-top-color:var(--wp-color-text);
+}
+
+.payroll-readiness__ready-indicator {
+  font-size: 0.82rem;
+  font-weight:600;
+  color:var(--wp-color-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.payroll-readiness__empty {
+  text-align: center;
+  color:var(--wp-color-text-muted);
+  padding: 2rem 1rem;
+}
+
+.payroll-readiness__follow-up {
+  display: inline-flex;
+  align-items: center;
+  min-height:44px;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  background:var(--wp-color-surface);
+  color:var(--wp-color-text);
+  font-size: 0.82rem;
+  font-weight:600;
+}
+
+.payroll-readiness__reason {
+  color:var(--wp-color-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+  line-height: 1.35;
+  font-size: 0.82rem;
+}
+
+[data-theme="dark"] .payroll-readiness__reason {
+  color:var(--wp-color-text-muted);
+}
+
+.payroll-readiness__action-btn {
+  padding: 5px 12px !important;
+  font-size: 0.8rem !important;
+  min-height: 30px !important;
+  border-radius: 8px !important;
+  white-space: nowrap !important;
+  font-weight: 650 !important;
+}
+
+.payroll-readiness__pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-top:1px solid var(--wp-color-border);
+  background:var(--wp-color-surface);
+  color:var(--wp-color-text-muted);
+  font-size: 0.84rem;
+  font-weight: 600;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+[data-theme="dark"] .payroll-readiness__pagination-bar {
+  background:var(--wp-color-surface);
+  border-top-color:var(--wp-color-text);
+  color:var(--wp-color-text-muted);
+}
+
+.payroll-readiness__pagination-info {
+  color:var(--wp-color-text-muted);
+  font-weight: 600;
+}
+
+[data-theme="dark"] .payroll-readiness__pagination-info {
+  color:var(--wp-color-text-muted);
+}
+
+.payroll-readiness__pagination {
+  align-items: center;
+  color:var(--wp-color-text-muted);
+  display: flex;
+  font-weight:600;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 14px 20px;
+}
+
+.payroll-readiness__drawer {
+  background:var(--wp-color-surface);
+  inset: 0;
+  position: fixed;
+  z-index: 1000;
+}
+
+.payroll-readiness__drawer-panel {
+  background:var(--wp-color-surface);
+  box-shadow:none;
+  height: 100%;
+  margin-left: auto;
+  max-width: 620px;
+  overflow: auto;
+  width: min(94vw, 620px);
+}
+
+.payroll-readiness__drawer-panel > header {
+  align-items: center;
+  border-bottom:1px solid var(--wp-color-border);
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 24px;
+}
+
+.payroll-readiness__drawer-panel h3 {
+  color:var(--wp-color-primary);
+  margin: 5px 0 0;
+}
+
+.payroll-readiness__drawer-panel header button {
+  background:var(--wp-color-surface);
+  border: 0;
+  border-radius: 999px;
+  color:var(--wp-color-primary);
+  cursor: pointer;
+  font-size: 1.4rem;
+  height: 38px;
+  width: 38px;
+}
+
+.payroll-readiness__drawer-body {
+  display: grid;
+  gap: 18px;
+  padding: 22px 24px;
+}
+
+.payroll-readiness__drawer-body dl {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 170px 1fr;
+  margin: 0;
+}
+
+.payroll-readiness__drawer-body dt {
+  color:var(--wp-color-text-muted);
+  font-weight:600;
+}
+
+.payroll-readiness__drawer-body dd {
+  color:var(--wp-color-primary);
+  margin: 0;
+}
+
+.payroll-readiness__drawer-body h4 {
+  color:var(--wp-color-primary);
+  margin: 0 0 6px;
+}
+
+.payroll-readiness__drawer-body p {
+  color:var(--wp-color-text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 1180px) {
+  .payroll-readiness__hero,
+  .payroll-readiness__filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .payroll-readiness__hero {
+    grid-template-columns: 1fr;
+    padding: 14px 16px;
+    gap: 12px;
+    margin-bottom: 12px;
+    border-radius: 14px;
+  }
+
+  .payroll-readiness__hero p {
+    font-size: 0.65rem;
+    margin-bottom: 2px;
+  }
+
+  .payroll-readiness__hero h2 {
+    font-size: 1.25rem;
+    margin: 0 0 4px;
+  }
+
+  .payroll-readiness__hero span {
+    font-size: 0.8rem;
+    line-height: 1.35;
+  }
+
+  .payroll-readiness__hero dl {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding-top: 10px;
+    border-top:1px solid var(--wp-color-border);
+  }
+
+  .payroll-readiness__hero dt {
+    font-size: 0.62rem;
+  }
+
+  .payroll-readiness__hero dd {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Compact 2x2 summary metrics grid on mobile (saves 250px+ vertical space) */
+  .payroll-readiness__summary {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .payroll-readiness__summary button {
+    min-height: 56px;
+    padding: 8px 12px;
+    border-radius: 12px;
+  }
+
+  .payroll-readiness__summary span {
+    font-size: 0.65rem;
+  }
+
+  .payroll-readiness__summary strong {
+    font-size: 1.35rem;
+    margin-top: 2px;
+  }
+
+  .payroll-readiness__filters {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 10px;
+    border-radius: 14px;
+    margin-top: 12px;
+  }
+
+  .payroll-readiness__filter-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .payroll-readiness__filter-actions {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .payroll-readiness__filter-actions .wp-button {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    min-height:44px;
+  }
+
+  .payroll-readiness__table {
+    padding: 10px;
+    border-radius: 14px;
+    margin-top: 12px;
+  }
+
+  .payroll-readiness__table header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 4px 2px 10px;
+  }
+
+  .payroll-readiness__table header h3 {
+    font-size: 1.05rem;
+  }
+
+  .payroll-readiness__table-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .payroll-readiness__view-toggle {
+    display: flex;
+    width: 100%;
+  }
+
+  .payroll-readiness__view-toggle-btn {
+    flex: 1;
+    text-align: center;
+    padding: 7px 10px;
+    font-size: 0.82rem;
+  }
+
+  /* Compact touch card styling on mobile */
+  .payroll-readiness__cards-grid {
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .payroll-readiness__card {
+    padding: 10px 12px;
+    border-radius: 12px;
+    gap: 8px;
+  }
+
+  .payroll-readiness__card-header {
+    padding-bottom: 6px;
+    gap: 8px;
+  }
+
+  .payroll-readiness__card-identity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .payroll-readiness__card-identity strong {
+    font-size: 0.92rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .payroll-readiness__card-sub {
+    font-size: 0.72rem;
+    color:var(--wp-color-text-muted);
+  }
+
+  .payroll-readiness__card-body {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    background:var(--wp-color-surface);
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+
+  [data-theme="dark"] .payroll-readiness__card-body {
+    background:var(--wp-color-surface);
+  }
+
+  .payroll-readiness__card-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .payroll-readiness__card-label {
+    font-size: 0.65rem;
+    font-weight:600;
+    text-transform: uppercase;
+    color:var(--wp-color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  [data-theme="dark"] .payroll-readiness__card-label {
+    color:var(--wp-color-text-muted);
+  }
+
+  .payroll-readiness__card-row > span:not(.payroll-readiness__card-label) {
+    font-size: 0.78rem;
+    font-weight:600;
+    color:var(--wp-color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  [data-theme="dark"] .payroll-readiness__card-row > span:not(.payroll-readiness__card-label) {
+    color:var(--wp-color-text);
+  }
+
+  .payroll-readiness__card-row--issue {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    background:var(--wp-color-surface);
+    border:1px solid var(--wp-color-border);
+    padding: 3px 6px;
+    border-radius: 6px;
+    gap: 4px;
+  }
+
+  [data-theme="dark"] .payroll-readiness__card-row--issue {
+    background:var(--wp-color-surface);
+    border-color:var(--wp-color-border);
+  }
+
+  .payroll-readiness__card-issue {
+    font-size: 0.74rem;
+    color:var(--wp-color-text);
+    font-weight: 600;
+    white-space: normal;
+  }
+
+  .payroll-readiness__card-row--reminder {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    font-size: 0.7rem;
+    color:var(--wp-color-text-muted);
+  }
+
+  .payroll-readiness__card-footer {
+    padding-top: 6px;
+    gap: 6px;
+  }
+
+  .payroll-readiness__card-footer .wp-button {
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    min-height:44px;
+    border-radius: 6px;
+  }
+
+  .payroll-readiness__card-ready {
+    font-size: 0.76rem;
+    color:var(--wp-color-primary);
+    font-weight:600;
+  }
+
+  /* Table View on Mobile: NO frozen half-screen sticky columns, compact rows */
+  .payroll-readiness__table .wp-table {
+    min-width: 820px;
+  }
+
+  .payroll-readiness__table .wp-table th,
+  .payroll-readiness__table .wp-table td {
+    padding: 7px 9px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    position: static !important;
+    left: auto !important;
+    box-shadow:none;
+  }
+
+  .payroll-readiness__table .wp-table .wp-button {
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    min-height: 26px;
+    border-radius: 6px;
+  }
+
+  .payroll-readiness__reminder-cell {
+    min-width: 7rem;
+    gap: 2px;
+  }
+
+  .payroll-readiness__pagination {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .payroll-readiness__drawer-body dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+.payroll-readiness__feedback {
+  border:1px solid var(--wp-color-border);
+  background:var(--wp-color-surface);
+  color:var(--wp-color-text);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  margin: 1rem 0;
+}
+
+.payroll-readiness__feedback p {
+  margin: 0;
+  font-weight:600;
+}
+
+.payroll-readiness__bulk-bar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  border:1px solid var(--wp-color-border);
+  background:var(--wp-color-surface);
+  border-radius: 16px;
+  padding: 0.55rem 1rem;
+  margin-bottom: 1rem;
+  box-shadow:none;
+}
+
+/* The default .wp-button padding (16px 24px) is sized for standalone CTAs -
+   here it was stretching this whole row tall around a single line of text. */
+.payroll-readiness__bulk-bar .wp-button {
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  min-height: 0;
+}
+
+.payroll-readiness__bulk-bar strong {
+  color:var(--wp-color-text);
+}
+
+.payroll-readiness__bulk-bar span {
+  color:var(--wp-color-text-muted);
+  font-size: 0.88rem;
+  margin-right: auto;
+}
+
+.payroll-readiness__reminder-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 8rem;
+}
+
+.payroll-readiness__reminder-last {
+  color:var(--wp-color-text-muted);
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.payroll-readiness__reminder-none {
+  color:var(--wp-color-text-muted);
+  font-size: 0.82rem;
+}
+
+.payroll-readiness__modal {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background:var(--wp-color-surface);
+}
+
+.payroll-readiness__modal-panel {
+  width: min(32rem, 100%);
+  border-radius: 22px;
+  background:var(--wp-color-surface);
+  box-shadow:none;
+  padding: 1.5rem;
+}
+
+.payroll-readiness__modal-panel h3 {
+  margin: 0 0 0.6rem;
+  color:var(--wp-color-text);
+}
+
+.payroll-readiness__modal-panel p {
+  color:var(--wp-color-text);
+  margin: 0.35rem 0;
+}
+
+.payroll-readiness__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* Dark Theme Enforcements for Payroll Readiness */
+[data-theme="dark"] .payroll-readiness__summary button {
+  background:var(--wp-color-surface);
+  border:1px solid var(--wp-color-border);
+  box-shadow:none;
+  color:var(--wp-color-text);
+}
+
+[data-theme="dark"] .payroll-readiness__summary button:hover,
+[data-theme="dark"] .payroll-readiness__summary button:focus-visible,
+[data-theme="dark"] .payroll-readiness__summary button.is-active {
+  border-color:var(--wp-color-border);
+  box-shadow:none;
+}
+
+[data-theme="dark"] .payroll-readiness__summary span {
+  color:var(--wp-color-text-muted);
+}
+
+[data-theme="dark"] .payroll-readiness__summary strong {
+  color:var(--wp-color-primary);
+}
+
+[data-theme="dark"] .payroll-readiness__filters {
+  background:var(--wp-color-surface);
+  border:1px solid var(--wp-color-border);
+  box-shadow:none;
+}
+
+[data-theme="dark"] .payroll-readiness__filters label,
+[data-theme="dark"] .payroll-readiness__table label {
+  color:var(--wp-color-text-muted);
+}
+
+[data-theme="dark"] .payroll-readiness__filters select,
+[data-theme="dark"] .payroll-readiness__table select {
+  background:var(--wp-color-surface);
+  border:1px solid var(--wp-color-border);
+  color:var(--wp-color-text);
+}
+
+[data-theme="dark"] .payroll-readiness__search-results {
+  background:var(--wp-color-surface);
+  border:1px solid var(--wp-color-border);
+  box-shadow:none;
+  color:var(--wp-color-text);
+}
+
+[data-theme="dark"] .payroll-readiness__search-item {
+  color:var(--wp-color-text);
+}
+
+[data-theme="dark"] .payroll-readiness__search-item:hover {
+  background:var(--wp-color-surface);
+  color:var(--wp-color-primary);
+}
+
+[data-theme="dark"] .payroll-readiness__feedback {
+  background:var(--wp-color-surface);
+  border-color:var(--wp-color-border);
+  color:var(--wp-color-primary);
+}
+
+[data-theme="dark"] .payroll-readiness__bulk-bar {
+  background:var(--wp-color-surface);
+  border-color:var(--wp-color-border);
+  box-shadow:none;
+}
+
+[data-theme="dark"] .payroll-readiness__bulk-bar strong {
+  color:var(--wp-color-primary);
+}
+
+[data-theme="dark"] .payroll-readiness__bulk-bar span {
+  color:var(--wp-color-text-muted);
+}
+
+[data-theme="dark"] .payroll-readiness__table header {
+  border-bottom-color:var(--wp-color-text);
+}
+
+[data-theme="dark"] .payroll-readiness__table .wp-table th {
+  background:var(--wp-color-surface);
+  color:var(--wp-color-text);
+  border-bottom:1.5px solid var(--wp-color-border);
+}
+
+[data-theme="dark"] .payroll-readiness__table .wp-table td {
+  border-bottom:1px solid var(--wp-color-border);
+  color:var(--wp-color-text);
+}
+
+[data-theme="dark"] .payroll-readiness__table .wp-table tbody tr:hover {
+  background:var(--wp-color-surface);
+}
+
+[data-theme="dark"] .payroll-readiness__modal-panel {
+  background:var(--wp-color-surface);
+  border:1px solid var(--wp-color-border);
+  box-shadow:none;
+  color:var(--wp-color-text);
+}
+
+[data-theme="dark"] .payroll-readiness__modal-panel h3 {
+  color:var(--wp-color-text);
+}
+
+[data-theme="dark"] .payroll-readiness__modal-panel p {
+  color:var(--wp-color-text);
+}
+
+[data-theme="dark"] .payroll-readiness__drawer {
+  background:var(--wp-color-surface);
+  border-left:1px solid var(--wp-color-border);
+  color:var(--wp-color-text);
+}
+
+[data-theme="dark"] .payroll-readiness__drawer header h3 {
+  color:var(--wp-color-text);
+}
+
+[data-theme="dark"] .payroll-readiness__drawer-body dt {
+  color:var(--wp-color-primary);
+}
+
+[data-theme="dark"] .payroll-readiness__drawer-body dd {
+  color:var(--wp-color-text);
+}
+
+.payroll-readiness__submission-complete,
+.payroll-readiness__submission-missing {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight:600;
+}
+
+.payroll-readiness__submission-complete {
+  background:var(--wp-color-surface);
+  color:var(--wp-color-text);
+}
+
+.payroll-readiness__submission-missing {
+  background:var(--wp-color-surface);
+  color:var(--wp-color-text);
+}
+
+[data-theme="dark"] .payroll-readiness__submission-complete {
+  background:var(--wp-color-surface);
+  color:var(--wp-color-primary);
+}
+
+[data-theme="dark"] .payroll-readiness__submission-missing {
+  background:var(--wp-color-surface);
+  color:var(--wp-color-text);
+}
+
+/* Compact readiness workspace. */
+.payroll-readiness__hero { background:var(--wp-color-surface); color:var(--wp-color-text); border:1px solid var(--wp-color-border); box-shadow:none; padding: 20px 24px; grid-template-columns: minmax(260px, 1fr) auto; align-items: center; gap: 24px; }
+.payroll-readiness__hero h2 { color:var(--wp-color-text); font-size: 1.8rem; margin: 0 0 6px; }
+.payroll-readiness__hero span { color:var(--wp-color-text-muted); font-size: .9rem; }
+.payroll-readiness__hero dl { background: none; border: 0; padding: 0; display: flex; align-items: center; gap: 20px; }
+.payroll-readiness__hero dt { color:var(--wp-color-text-muted); text-transform: none; letter-spacing: 0; }
+.payroll-readiness__hero dd { color:var(--wp-color-text); font-size: .85rem; }
+.payroll-readiness__hero dl > div:last-child { background:var(--wp-color-surface); color:var(--wp-color-text); padding: 12px 16px; border-radius: 10px; }
+.payroll-readiness__hero dl > div:last-child dd { color:var(--wp-color-text); }
+.payroll-readiness__summary { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.payroll-readiness__summary button { min-height: 110px; padding: 18px 22px; border-radius: 12px; box-shadow:none; }
+.payroll-readiness__summary button:nth-child(1) { background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+.payroll-readiness__summary button:nth-child(2) { background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+.payroll-readiness__summary button:nth-child(3) { background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+.payroll-readiness__summary button:nth-child(4) { background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+.payroll-readiness__summary span { text-transform: none; letter-spacing: 0; font-size: .85rem; }
+.payroll-readiness__summary strong { font-size: 1.9rem; margin: 8px 0 4px; }
+.payroll-readiness__summary small { color:var(--wp-color-text-muted); font-size: .8rem; }
+.payroll-readiness__status-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; }
+.payroll-readiness__status-chips button { background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius: 8px; color:var(--wp-color-text); padding: 9px 14px; cursor: pointer; font: inherit; font-size: .8rem; }
+.payroll-readiness__status-chips button[aria-pressed="true"] { background:var(--wp-color-surface); color: white; border-color:var(--wp-color-border); }
+.payroll-readiness__status-chips strong { margin-left: 8px; }
+.payroll-readiness__status-chips button:focus-visible { outline: 2px solid #0b624f; outline-offset: 3px; }
+.payroll-readiness__filters { padding: 16px 20px; gap: 16px; grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(140px, 1fr)) auto; margin-top: 12px; }
+.payroll-readiness__table { margin-top: 16px; }
+.payroll-readiness__table > header { padding: 14px 20px; }
+.payroll-readiness__bulk-bar { padding: 12px 20px; border-radius: 12px 12px 0 0; background:var(--wp-color-surface); box-shadow:none; gap: 12px; }
+.payroll-readiness__coverage { display: grid; gap: 6px; min-width: 100px; }
+.payroll-readiness__coverage progress { width: 100%; height: 6px; border: 0; border-radius: 8px; overflow: hidden; accent-color:var(--wp-color-text); }
+.payroll-readiness__coverage progress::-webkit-progress-bar { background:var(--wp-color-surface); border-radius: 8px; }
+.payroll-readiness__coverage progress::-webkit-progress-value { background:var(--wp-color-surface); border-radius: 8px; }
+[data-theme="dark"] .payroll-readiness__hero { background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+[data-theme="dark"] .payroll-readiness__hero h2, [data-theme="dark"] .payroll-readiness__hero dd { color:var(--wp-color-text); }
+[data-theme="dark"] .payroll-readiness__hero span, [data-theme="dark"] .payroll-readiness__summary small { color:var(--wp-color-text); }
+[data-theme="dark"] .payroll-readiness__summary button { background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+[data-theme="dark"] .payroll-readiness__status-chips button, [data-theme="dark"] .payroll-readiness__bulk-bar { background:var(--wp-color-surface); color:var(--wp-color-text); border-color:var(--wp-color-border); }
+[data-theme="dark"] .payroll-readiness__status-chips button[aria-pressed="true"] { background:var(--wp-color-surface); }
+@media (max-width: 1200px) { .payroll-readiness__hero { grid-template-columns: 1fr; } .payroll-readiness__filters { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 768px) { .payroll-readiness__hero { padding: 16px; } .payroll-readiness__hero dl { flex-wrap: wrap; gap: 14px; } .payroll-readiness__summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .payroll-readiness__summary button { min-height: 96px; padding: 14px; } .payroll-readiness__filters { grid-template-columns: 1fr; padding: 16px; } }
+.payroll-readiness__row-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.payroll-readiness__applied-month { color:var(--wp-color-text-muted); font-size: .75rem; }
+.payroll-readiness__row-actions small { color:var(--wp-color-text-muted); font-size: .75rem; }
+
+/* Keep the embedded workspace independent of the surrounding page spacing. */
+.payroll-readiness__workspace { display: flex; flex-direction: column; gap: 12px; min-width: 0; width: 100%; margin-top: 16px; }
+.payroll-readiness__workspace > section, .payroll-readiness__workspace > .payroll-readiness__status-chips { margin: 0; }
+.payroll-readiness__workspace .payroll-readiness__hero { padding: 16px 20px; gap: 20px; border-radius: 12px; }
+.payroll-readiness__hero .payroll-readiness__month-field { margin: 0; min-width: 220px; gap: 4px; }
+.payroll-readiness__hero .payroll-readiness__month-controls { display: grid; grid-template-columns: minmax(120px, 1.4fr) minmax(88px, 1fr); gap: 8px; align-items: center; }
+.payroll-readiness__hero .payroll-readiness__month-controls select { box-sizing: border-box; width: 100%; min-width: 0; height: 40px; margin: 0; padding: 8px 30px 8px 12px; border:1px solid var(--wp-color-border); border-radius: 8px; background:var(--wp-color-surface); color:var(--wp-color-text); font: inherit; font-size: .85rem; line-height: 1.2; }
+.payroll-readiness__hero .payroll-readiness__month-controls select:focus-visible { outline: 2px solid #0c8067; outline-offset: 2px; }
+.payroll-readiness__workspace .payroll-readiness__summary { gap: 12px; }
+.payroll-readiness__workspace .payroll-readiness__summary button { min-height: 96px; padding: 14px 18px; }
+.payroll-readiness__workspace .payroll-readiness__summary strong { font-size: 1.65rem; margin: 6px 0 3px; }
+.payroll-readiness__workspace .payroll-readiness__filters { padding: 12px 16px; gap: 12px; background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+.payroll-readiness__status-chips { gap: 8px; }
+.payroll-readiness__status-chips button { padding: 8px 12px; font-weight: 600; transition: background .15s, box-shadow .15s; }
+.payroll-readiness__status-chips button[data-status="MONTH_SUBMITTED"] { color:var(--wp-color-text); background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+.payroll-readiness__status-chips button[data-status="PARTIALLY_APPROVED"] { color:var(--wp-color-text); background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+.payroll-readiness__status-chips button[data-status="MISSING_TIMESHEET"] { color:var(--wp-color-text); background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+.payroll-readiness__status-chips button[data-status="INCOMPLETE_TIMESHEET"] { color:var(--wp-color-text); background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+.payroll-readiness__status-chips button[data-status="CORRECTION_REQUIRED"] { color:var(--wp-color-text); background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+.payroll-readiness__status-chips button:hover { filter: brightness(.97); box-shadow:none; }
+.payroll-readiness__status-chips button[aria-pressed="true"] { color:var(--wp-color-text); background:var(--wp-color-surface); border-color:var(--wp-color-border); box-shadow:none; }
+[data-theme="dark"] .payroll-readiness__workspace .payroll-readiness__filters { background:var(--wp-color-surface); border-color:var(--wp-color-border); }
+[data-theme="dark"] .payroll-readiness__hero .payroll-readiness__month-controls select { background:var(--wp-color-surface); color:var(--wp-color-text); border-color:var(--wp-color-border); color-scheme: dark; }
+[data-theme="dark"] .payroll-readiness__status-chips button[data-status] { background:var(--wp-color-surface); color:var(--wp-color-text); border-color:var(--wp-color-border); }
+[data-theme="dark"] .payroll-readiness__status-chips button[aria-pressed="true"] { background:var(--wp-color-surface); color:var(--wp-color-text); }
+@media (max-width: 768px) {
+  .payroll-readiness__workspace { gap: 10px; margin-top: 12px; }
+  .payroll-readiness__workspace .payroll-readiness__hero { padding: 14px; gap: 12px; }
+  .payroll-readiness__hero .payroll-readiness__month-field { min-width: 0; width: 100%; }
+  .payroll-readiness__hero .payroll-readiness__month-controls { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+  .payroll-readiness__workspace .payroll-readiness__summary button { padding: 12px; min-height: 90px; }
+}
+/* Fit all readiness columns within the workspace rather than a sliding table. */
+.payroll-readiness__workspace .payroll-readiness__table .wp-table { width: 100%; min-width: 0; table-layout: fixed; }
+.payroll-readiness__workspace .payroll-readiness__table .wp-table-wrapper { overflow-x: visible; border-radius: 10px; }
+.payroll-readiness__workspace .payroll-readiness__table .wp-table th,
+.payroll-readiness__workspace .payroll-readiness__table .wp-table td { padding: 8px; white-space: normal; overflow-wrap: anywhere; font-size: .8rem; line-height: 1.4; }
+.payroll-readiness__workspace .payroll-readiness__table .wp-table th { font-size: .7rem; letter-spacing: .02em; }
+.payroll-readiness__workspace .payroll-readiness__coverage { min-width: 0; width: 100%; }
+.payroll-readiness__workspace .payroll-readiness__coverage progress { min-width: 0; max-width: 100%; }
+.payroll-readiness__workspace .payroll-readiness__row-actions { gap: 4px; }
+.payroll-readiness__workspace .payroll-readiness__row-actions button { min-width: 0; max-width: 100%; min-height:44px; padding: 5px 8px; font-size: .75rem; white-space: normal; }
+.payroll-readiness__workspace .payroll-readiness__table .wp-table td > * { max-width: 100%; box-sizing: border-box; white-space: normal; }
+.payroll-readiness__workspace .payroll-readiness__table > header { padding: 10px 14px; gap: 8px; }
+.payroll-readiness__workspace .payroll-readiness__table-actions { gap: 8px; flex-wrap: wrap; }
+.payroll-readiness__workspace .payroll-readiness__table-actions > button { padding: 8px 12px; min-height:44px; }
+.payroll-readiness__workspace .payroll-readiness__pagination-bar { padding: 10px 14px; }
+.timesheets--payroll-readiness.myhr-feature { gap: 14px; }
+.timesheets--payroll-readiness .myhr-feature__body { gap: 12px; }
+.timesheets--payroll-readiness .timesheets__workspace-tabs { margin: 0; gap: 20px; }
+.timesheets--payroll-readiness .timesheets__workspace-tabs button { padding: 8px 2px; }
+:root .timesheets--payroll-readiness .myhr-feature__heading { padding: 14px 20px; gap: 8px; border-radius: 16px; }
+.timesheets--payroll-readiness .myhr-feature__heading .wp-page-header { margin: 0; padding: 0; gap: 6px; }
+.timesheets--payroll-readiness .myhr-feature__heading .wp-page-header__title { margin: 0; font-size: 1.6rem; }
+.timesheets--payroll-readiness .payroll-readiness__workspace { margin-top: 0; gap: 10px; }
+.payroll-readiness__workspace .payroll-readiness__hero { padding: 12px 16px; }
+.payroll-readiness__workspace .payroll-readiness__summary button { min-height: 84px; padding: 12px 14px; }
+@media (max-width: 768px) {
+  .payroll-readiness__workspace .payroll-readiness__table .wp-table th,
+  .payroll-readiness__workspace .payroll-readiness__table .wp-table td { padding: 5px 3px; font-size: .68rem; }
+  .payroll-readiness__workspace .payroll-readiness__row-actions button { padding: 4px; font-size: .68rem; }
+}
+.payroll-readiness__workspace .payroll-readiness__hero { grid-template-columns: minmax(220px, 1fr) auto auto; }
+.payroll-readiness__filter-popover { position: relative; align-self: center; }
+.payroll-readiness__filter-popover > button { display: inline-flex; gap: 8px; align-items: center; }
+.payroll-readiness__filter-panel { position: absolute; right: 0; top: 100%; width: min(560px, calc(100vw - 48px)); z-index: 35; padding: 16px; box-sizing: border-box; background:var(--wp-color-surface); color:var(--wp-color-text); border:1px solid var(--wp-color-border); border-radius: 12px; box-shadow:none; }
+.payroll-readiness__filter-panel > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.payroll-readiness__filter-panel > header button { border: 0; background: none; color:var(--wp-color-primary); cursor: pointer; font: inherit; padding: 6px; }
+.payroll-readiness__workspace .payroll-readiness__filter-panel .payroll-readiness__filters { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0; background: none; border: 0; margin: 12px 0 0; box-shadow:none; }
+.payroll-readiness__filter-panel .payroll-readiness__status-chips { margin: 0; gap: 6px; }
+.payroll-readiness__filter-panel .payroll-readiness__status-chips button { font-size: .75rem; padding: 6px 8px; }
+.payroll-readiness__filter-panel .payroll-readiness__month-field, .payroll-readiness__filter-panel .payroll-readiness__filter-actions { grid-column: 1 / -1; }
+.payroll-readiness__hero .payroll-readiness__filter-panel .payroll-readiness__month-field { min-width: 0; }
+.payroll-readiness__filter-panel .payroll-readiness__filter-actions > label { display: none; }
+.payroll-readiness__filter-panel .payroll-readiness__typeahead { min-width: 0; }
+[data-theme="dark"] .payroll-readiness__filter-panel { background:var(--wp-color-surface); color:var(--wp-color-text); border-color:var(--wp-color-border); }
+@media (max-width: 1100px) { .payroll-readiness__workspace .payroll-readiness__hero { grid-template-columns: 1fr auto; } .payroll-readiness__hero > dl { grid-row: 2; grid-column: 1 / -1; } .payroll-readiness__filter-popover { grid-row: 1; grid-column: 2; } }
+@media (max-width: 600px) { .payroll-readiness__filter-panel { position: fixed; top: 100px; right: 16px; left: 16px; width: auto; max-height: calc(100dvh - 130px); overflow-y: auto; } .payroll-readiness__workspace .payroll-readiness__filter-panel .payroll-readiness__filters { grid-template-columns: 1fr; } }
+/* Match the compact, connected Team Timesheets layout. */
+.myhr-shell:has(.timesheets--payroll-readiness) .myhr-shell__main { padding-top: 0 !important; }
+.timesheets--payroll-readiness.myhr-feature { gap: 8px !important; }
+.timesheets--payroll-readiness .myhr-feature__body { gap: 0 !important; }
+:root[data-ui-variant] .timesheets--payroll-readiness .myhr-feature__heading { padding: 10px 16px; gap: 4px; border-radius: 16px; }
+.timesheets--payroll-readiness .myhr-feature__heading .myhr-page-back { padding: 4px 8px; min-height: 28px; margin: 0; }
+.timesheets--payroll-readiness .myhr-feature__heading .wp-page-header { margin: 0; padding: 0; gap: 4px; }
+.timesheets--payroll-readiness .myhr-feature__heading .wp-page-header__title { font-size: 1.45rem; margin: 0; line-height: 1.2; }
+.timesheets--payroll-readiness .myhr-feature__heading p { margin: 0; font-size: .85rem; line-height: 1.4; }
+.timesheets--payroll-readiness .timesheets__workspace-tabs { margin: 0 !important; gap: 16px; padding-bottom: 0; }
+.timesheets--payroll-readiness .timesheets__workspace-tabs button { padding: 6px 2px; font-size: .85rem; }
+.timesheets--payroll-readiness .payroll-readiness__workspace { margin-top: 0 !important; gap: 10px; }
+.timesheets--payroll-readiness .payroll-readiness__hero { border-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; padding: 12px 16px; }
+.timesheets--payroll-readiness .payroll-readiness__hero h2 { font-size: 1.4rem; margin: 0 0 4px; }
+.timesheets--payroll-readiness .payroll-readiness__hero dl { gap: 14px; }
+.timesheets--payroll-readiness .payroll-readiness__summary button { padding: 10px 12px; min-height: 76px; }
+.timesheets--payroll-readiness .payroll-readiness__summary strong { font-size: 1.5rem; margin: 4px 0; }

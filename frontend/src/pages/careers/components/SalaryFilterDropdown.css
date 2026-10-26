@@ -1,0 +1,90 @@
+.wp-salary-filter {
+  position: relative;
+}
+
+/* Matches the size, spacing and border of the other filter-bar dropdowns
+   (.wp-field__control), styled as a button since it opens a custom popover
+   rather than a native <select>. */
+.wp-salary-filter__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-sm);
+  min-width: 160px;
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-md);
+  color: var(--wp-color-text);
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-control);
+  padding: var(--wp-space-md) var(--wp-space-md);
+  cursor: pointer;
+  transition: border-color var(--wp-transition-fast), box-shadow var(--wp-transition-fast);
+}
+
+.wp-salary-filter__trigger:hover {
+  border-color: var(--wp-color-primary);
+}
+
+.wp-salary-filter__trigger span {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.wp-salary-filter__chevron {
+  flex-shrink: 0;
+  color: var(--wp-color-text-muted);
+}
+
+.wp-salary-filter__panel {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  width: 270px;
+  max-width: calc(100vw - 2 * var(--wp-space-md));
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-control);
+  box-shadow: none;
+  padding: 14px var(--wp-space-md);
+  z-index: 100;
+  box-sizing: border-box;
+}
+
+.wp-salary-filter__panel .wp-field {
+  margin-bottom: 0;
+}
+
+.wp-salary-filter__panel .wp-form-label {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.wp-salary-filter__panel .wp-range-slider__values {
+  margin-bottom: 6px;
+}
+
+.wp-salary-filter__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--wp-space-sm);
+}
+
+.wp-salary-filter__reset {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.wp-salary-filter__actions .wp-salary-filter__apply {
+  width: 96px;
+  font-size: var(--wp-font-size-sm);
+  padding: 6px var(--wp-space-sm);
+}

@@ -1,0 +1,134 @@
+waypoint:
+  # Application uploads always use MongoDB GridFS. The local root remains only
+  # as a legacy-file migration/read fallback.
+  resume-storage-root: ${RESUME_STORAGE_ROOT:uploads}
+  resume-max-file-size: ${RESUME_MAX_FILE_SIZE:10485760}
+  startup:
+    database-initializer:
+      enabled: ${DATABASE_INITIALIZER_ENABLED:false}
+    resume-storage-migration:
+      enabled: ${RESUME_STORAGE_MIGRATION_ENABLED:false}
+    file-storage-migration:
+      enabled: ${FILE_STORAGE_MIGRATION_ENABLED:false}
+    object-storage-migration:
+      enabled: ${OBJECT_STORAGE_MIGRATION_ENABLED:false}
+    event-location-migration:
+      enabled: ${EVENT_LOCATION_MIGRATION_ENABLED:false}
+    job-location-migration:
+      enabled: ${JOB_LOCATION_MIGRATION_ENABLED:false}
+  documents:
+    local:
+      root: ${DOCUMENT_LOCAL_STORAGE_ROOT:./uploads/object-store}
+    migrate-local-on-startup: ${DOCUMENT_STORAGE_MIGRATION_ENABLED:true}
+    r2:
+      # Shared document storage is the default. Local development must explicitly
+      # opt out with R2_ENABLED=false.
+      enabled: ${R2_ENABLED:true}
+      account-id: ${R2_ACCOUNT_ID:}
+      access-key-id: ${R2_ACCESS_KEY_ID:}
+      secret-access-key: ${R2_SECRET_ACCESS_KEY:}
+      bucket-name: ${R2_BUCKET_NAME:}
+      endpoint: ${R2_ENDPOINT:}
+  mail:
+    enabled: ${MAIL_ENABLED:true}
+    from-address: ${MAIL_FROM_ADDRESS:noreply@waypoint.local}
+    from-name: ${MAIL_FROM_NAME:Waypoint}
+  app:
+    # Absolute web address used for links in approval emails (e.g. "Review Offer Letter").
+    frontend-base-url: ${APP_FRONTEND_URL:http://localhost:5173}
+  myhr:
+    dev-credentials:
+      # Local first-login testing only. Never enable in shared or production environments.
+      enabled: ${MYHR_DEV_CREDENTIALS_ENABLED:true}
+      open-terminal: ${MYHR_DEV_CREDENTIALS_OPEN_TERMINAL:true}
+    dev-provisioning:
+      # Explicitly opt in for one local/development run. Generated credentials
+      # are printed only while this switch is enabled.
+      enabled: ${MYHR_DEV_PROVISIONING_ENABLED:false}
+      organization-id: ${MYHR_DEV_ORGANIZATION_ID:}
+      admin-email: ${MYHR_DEV_COMPANY_ADMIN_EMAIL:}
+    payroll-readiness:
+      automatic-reminders-enabled: ${PAYROLL_READINESS_AUTOMATIC_REMINDERS_ENABLED:true}
+      cutoff-day: ${PAYROLL_READINESS_CUTOFF_DAY:10}
+      employee-reminder-days: ${PAYROLL_READINESS_EMPLOYEE_REMINDER_DAYS:5,7,9,10}
+      management-summary-days: ${PAYROLL_READINESS_MANAGEMENT_SUMMARY_DAYS:7,9,10}
+      batch-size: ${PAYROLL_READINESS_BATCH_SIZE:250}
+      zone-id: ${PAYROLL_READINESS_ZONE_ID:America/Chicago}
+      scheduler-cron: ${PAYROLL_READINESS_SCHEDULER_CRON:0 15 2 * * *}
+      standard-workday-hours: ${PAYROLL_READINESS_STANDARD_WORKDAY_HOURS:8}
+      require-weekend-coverage: ${PAYROLL_READINESS_REQUIRE_WEEKEND_COVERAGE:false}
+    timesheet-document-ai:
+      # Cloud vision-based extraction used as a fallback when the local, deterministic
+      # parser (regex/table based) and local Tesseract OCR can't read a document (e.g. a
+      # scanned PDF/image on a machine without Tesseract installed). Leave the API key
+      # blank to disable this entirely and rely on local parsing only.
+      api-key: ${CLAUDE_API_KEY:}
+      api-url: ${CLAUDE_API_URL:https://api.anthropic.com/v1/messages}
+      model: ${CLAUDE_API_MODEL:claude-sonnet-5}
+  geocoding:
+    nominatim:
+      base-url: ${GEOCODING_NOMINATIM_BASE_URL:https://nominatim.openstreetmap.org/search}
+      # Required by Nominatim's usage policy to identify the calling app.
+      user-agent: "${GEOCODING_USER_AGENT:WayPoint-App (contact support@waypoint.example)}"
+      timeout-ms: ${GEOCODING_TIMEOUT_MS:5000}
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  application:
+    name: backend
+
+  data:
+    mongodb:
+      auto-index-creation: ${MONGODB_AUTO_INDEX_CREATION:false}
+
+  mongodb:
+    # Accept the existing team variable name as a compatibility alias.
+    uri: ${MONGODB_URI:${MONGODB_URL}}
+    database: ${MONGODB_DATABASE:waypoint}
+
+  mail:
+    # Use a local SMTP endpoint by default so the application can start during
+    # local development. Set MAIL_HOST/MAIL_USERNAME/MAIL_PASSWORD for a real
+    # SMTP provider before using email verification or notifications.
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:2525}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      "[mail.smtp.auth]": true
+      "[mail.smtp.starttls.enable]": true
+      "[mail.smtp.connectiontimeout]": 5000
+      "[mail.smtp.timeout]": 3000
+      "[mail.smtp.writetimeout]": 5000
+
+server:
+  # Canonical local development endpoint. Bound to 0.0.0.0 to accept both
+  # localhost and LAN connections from mobile devices/installed APKs.
+  address: ${SERVER_ADDRESS:0.0.0.0}
+  port: ${SERVER_PORT:8081}
+  servlet:
+    session:
+      persistent: false
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-ms: ${JWT_EXPIRATION_MS:10800000}
+
+openweather:
+  api-key: ${OPENWEATHER_API_KEY:}
+  geocoding-url: https://api.openweathermap.org/geo/1.0/direct
+  forecast-url: https://api.openweathermap.org/data/2.5/forecast
+
+app:
+  auth:
+    # Local password-reset testing only. When enabled, the reset OTP is written
+    # to the backend log; it is never returned to the browser or stored raw.
+    expose-dev-otp: ${EXPOSE_DEV_OTP:false}
+    # Local Phase 2 testing only. Keep false outside an explicitly controlled
+    # development run. This writes organization-registration OTPs to the local
+    # backend terminal and never adds them to an API response.
+    organization-registration-dev-otp-enabled: ${ORGANIZATION_REGISTRATION_DEV_OTP_ENABLED:false}

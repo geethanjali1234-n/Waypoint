@@ -1,0 +1,70 @@
+.myhr-role-landing {
+  padding: 4px 0 24px;
+}
+
+.myhr-role-landing__hero {
+  align-items: center;
+  background: linear-gradient(120deg, #f4faf7 0%, #ffffff 70%);
+  border: 1px solid #d6e6dd;
+  border-radius: 18px;
+  box-shadow: 0 6px 20px rgba(15, 62, 49, .06);
+  display: flex;
+  margin-bottom: 28px;
+  min-height: 154px;
+  padding: 30px 34px;
+}
+
+.myhr-role-landing__eyebrow {
+  color: #376d58;
+  font-size: .71rem;
+  font-weight: 750;
+  letter-spacing: .1em;
+}
+
+.myhr-role-landing__hero h1 {
+  color: var(--wp-color-text, #173d32);
+  font-size: clamp(1.7rem, 3vw, 2.35rem);
+  margin: .45rem 0;
+}
+
+.myhr-role-landing__hero p {
+  color: var(--wp-color-text-muted, #637a70);
+  margin: 0;
+}
+
+.myhr-role-landing__section-heading h2 {
+  color: var(--wp-color-text, #173d32);
+  font-size: 1.18rem;
+  margin: 0;
+}
+
+.myhr-role-landing__actions {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 16px;
+}
+
+@media (max-width: 960px) {
+  .myhr-role-landing__actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .myhr-role-landing__hero { min-height: 0; padding: 24px 20px; }
+  .myhr-role-landing__actions { grid-template-columns: 1fr; }
+}
+
+:root:not([data-theme='light']) .myhr-role-landing__hero,
+[data-theme='dark'] .myhr-role-landing__hero {
+  background: linear-gradient(120deg, #173d31 0%, #11271f 72%);
+  border-color: #315548;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, .22);
+}
+
+:root:not([data-theme='light']) .myhr-role-landing__hero h1,
+:root:not([data-theme='light']) .myhr-role-landing__section-heading h2,
+[data-theme='dark'] .myhr-role-landing__hero h1,
+[data-theme='dark'] .myhr-role-landing__section-heading h2 { color: #f2faf6; }
+
+:root:not([data-theme='light']) .myhr-role-landing__hero p,
+[data-theme='dark'] .myhr-role-landing__hero p { color: #b5cabf; }

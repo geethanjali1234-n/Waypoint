@@ -1,0 +1,21 @@
+.wp-section-container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-left: var(--wp-space-xl);
+  padding-right: var(--wp-space-xl);
+}
+
+.wp-section-container--sm {
+  padding-top: var(--wp-space-md);
+  padding-bottom: var(--wp-space-md);
+}
+
+.wp-section-container--md {
+  padding-top: var(--wp-space-lg);
+  padding-bottom: var(--wp-space-lg);
+}
+
+.wp-section-container--lg {
+  padding-top: var(--wp-space-xl);
+  padding-bottom: var(--wp-space-xl);
+}

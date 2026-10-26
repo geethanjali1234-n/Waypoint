@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Waypoint</title>
+  <g transform="rotate(-8 32 32)">
+    <path fill="#0f4a3a" d="M32 12c-11.046 0-20 8.954-20 20v15a5 5 0 0 0 5 5h15c11.046 0 20-8.954 20-20S43.046 12 32 12Z"/>
+  </g>
+  <text x="32" y="39" fill="#fff" font-family="system-ui, 'Segoe UI', Roboto, sans-serif" font-size="19" font-weight="700" text-anchor="middle">W</text>
+</svg>

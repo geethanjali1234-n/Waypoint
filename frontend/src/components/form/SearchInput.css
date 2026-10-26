@@ -1,0 +1,8 @@
+.wp-search-input {
+  display: flex;
+  flex: 1;
+}
+
+.wp-search-input__control {
+  margin: 0;
+}

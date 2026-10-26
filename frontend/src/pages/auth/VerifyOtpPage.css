@@ -1,0 +1,22 @@
+.wp-verify-otp-page {
+  min-height: 100vh;
+  background-color: var(--wp-color-bg);
+}
+
+.wp-verify-otp-page__columns {
+  min-height: 100vh;
+  gap: 0;
+  align-items: stretch;
+}
+
+.wp-verify-otp-page__columns .wp-two-column__side {
+  display: flex;
+  align-items: center;
+  padding: var(--wp-space-xl);
+}
+
+.wp-verify-otp-page__form-panel {
+  width: 100%;
+  max-width: 28rem;
+  margin: 0 auto;
+}

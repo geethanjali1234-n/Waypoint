@@ -1,0 +1,27 @@
+.wp-feature-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-md);
+  padding: var(--wp-space-md);
+}
+
+.wp-feature-card__icon {
+  color: var(--wp-color-primary);
+  font-size: 1.25rem;
+}
+
+.wp-feature-card__title {
+  margin: 0;
+  font-family: var(--wp-font-sans);
+  font-weight: 600;
+  color: var(--wp-color-text);
+}
+
+.wp-feature-card__description {
+  margin: 0;
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+}

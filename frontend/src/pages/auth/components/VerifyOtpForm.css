@@ -1,0 +1,11 @@
+.wp-verify-otp-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.wp-verify-otp-form .wp-toast {
+  width: 100%;
+  box-sizing: border-box;
+  max-width: none;
+  margin-bottom: var(--wp-space-md);
+}

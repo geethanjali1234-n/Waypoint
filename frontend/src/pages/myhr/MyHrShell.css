@@ -1,0 +1,13 @@
+/* Frame layout is shared by WorkspaceFrame. Keep My HR form compatibility. */
+.myhr-shell :where(select,input,textarea) { box-sizing:border-box; font-family:var(--wp-font-sans); }
+.myhr-shell :is(select,input:not([type='checkbox']):not([type='radio']):not([type='file']),textarea):not(.wp-field__control) { border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-surface); color:var(--wp-color-text); font-size:var(--wp-font-size-md); padding:8px 16px; }
+.myhr-shell select { min-height:44px; }
+.myhr-shell select option { background:var(--wp-color-surface); color:var(--wp-color-text); }
+.myhr-shell :where(select,input,textarea):disabled { background:var(--wp-color-hover); color:var(--wp-color-text-muted); cursor:not-allowed; }
+.myhr-shell .wp-field { margin-bottom:0; }
+.myhr-shell .wp-field__control,.myhr-shell .wp-button { min-height:44px; }
+.myhr-shell .wp-card { background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card); margin-bottom:0; }
+.myhr-shell .wp-table-wrapper { border-radius:var(--wp-radius-card); background:var(--wp-color-surface); border:1px solid var(--wp-color-border); }
+.myhr-shell table { color:var(--wp-color-text); font-family:var(--wp-font-sans); }
+.myhr-shell .wp-table th,.myhr-shell .wp-table td { padding:8px 16px; border-bottom:1px solid var(--wp-color-border); }
+.myhr-shell .wp-table th { background:var(--wp-color-surface); color:var(--wp-color-text-muted); }

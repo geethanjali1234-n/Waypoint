@@ -1,0 +1,50 @@
+.wp-welcome-banner {
+  background-color: var(--wp-color-primary);
+  color: var(--wp-color-primary-contrast);
+  border-radius: var(--wp-radius-lg);
+  padding: var(--wp-space-xl);
+}
+
+.wp-welcome-banner__title {
+  font-family: var(--wp-font-sans);
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 var(--wp-space-sm);
+}
+
+.wp-welcome-banner__subtitle {
+  font-size: var(--wp-font-size-md);
+  opacity: 0.85;
+  margin: 0;
+  max-width: 42rem;
+}
+
+.wp-welcome-banner__action {
+  margin-top: var(--wp-space-md);
+}
+
+.wp-welcome-banner__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wp-space-xl);
+  margin-top: var(--wp-space-lg);
+  padding-top: var(--wp-space-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.wp-welcome-banner__stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.wp-welcome-banner__stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.wp-welcome-banner__stat-label {
+  font-size: var(--wp-font-size-sm);
+  opacity: 0.75;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

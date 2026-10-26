@@ -1,0 +1,209 @@
+.myhr-employee-shell {
+  --myhr-accent: #0b624f;
+  --myhr-accent-hover: #0e7a63;
+  --myhr-accent-soft: rgba(0, 255, 135, 0.16);
+  --myhr-bg: #040a08;
+  --myhr-card: rgba(8, 24, 18, 0.85);
+  --myhr-text: #f8fafc;
+  --myhr-muted: #94a3b8;
+  --myhr-border: rgba(0, 255, 135, 0.18);
+  background: var(--myhr-bg);
+  color: var(--myhr-text);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--wp-font-sans);
+  min-height: 100vh;
+}
+
+.myhr-employee-shell__header {
+  align-items: center;
+  background: rgba(6, 18, 14, 0.88);
+  border-bottom: 1px solid var(--myhr-border);
+  box-sizing: border-box;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 76px;
+  padding: 14px clamp(22px, 4vw, 58px);
+  position: relative;
+  z-index: 10;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.myhr-employee-shell__brand {
+  align-items: center;
+  color: #ffffff;
+  display: inline-flex;
+  gap: 10px;
+  min-width: max-content;
+  text-decoration: none;
+}
+
+.myhr-employee-shell__brand > .wp-waypoint-mark {
+  flex: 0 0 auto;
+}
+
+.myhr-employee-shell__brand > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.myhr-employee-shell__brand strong {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: linear-gradient(90deg, #ffffff, #a5b4fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.myhr-employee-shell__brand small {
+  color: var(--wp-color-accent-cyan, #00ff87);
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.myhr-employee-shell__bell-wrapper {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--myhr-border);
+  border-radius: 12px;
+  display: inline-flex;
+  padding: 4px;
+  position: relative;
+}
+
+.myhr-employee-shell__header-actions,
+.myhr-employee-shell__bell-wrapper {
+  align-items: center;
+  display: flex;
+}
+
+.myhr-employee-shell__header-actions {
+  gap: 18px;
+  justify-content: flex-end;
+}
+
+.myhr-employee-shell__mode-pill {
+  align-items: center;
+  border: 1px solid var(--myhr-border);
+  border-radius: 99px;
+  background: rgba(0, 255, 135, 0.08);
+  color: var(--wp-color-accent-cyan);
+  display: inline-flex;
+  font-size: 0.65rem;
+  font-weight: 800;
+  gap: 7px;
+  letter-spacing: 0.08em;
+  padding: 7px 12px;
+  text-transform: uppercase;
+}
+
+.myhr-employee-shell__mode-pill i {
+  background: var(--wp-color-accent-emerald, #00ff87);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--wp-color-accent-emerald, #00ff87);
+  height: 6px;
+  width: 6px;
+}
+
+.myhr-employee-shell__bell svg {
+  height: 20px;
+  stroke: var(--wp-color-accent-cyan, #00ff87);
+  width: 20px;
+}
+
+.myhr-employee-shell__bell .wp-notification-menu__trigger {
+  color: var(--wp-color-accent-cyan, #00ff87);
+}
+
+.myhr-employee-shell__bell .wp-notification-menu__trigger:hover {
+  background: rgba(0, 255, 135, 0.12);
+}
+
+.myhr-employee-shell__bell-badge {
+  align-items: center;
+  background: #ff3b69;
+  border: 2px solid var(--myhr-card);
+  border-radius: 50%;
+  color: #fff;
+  display: inline-flex;
+  font-size: 0.57rem;
+  font-weight: 800;
+  height: 15px;
+  justify-content: center;
+  min-width: 15px;
+  pointer-events: none;
+  position: absolute;
+  right: -2px;
+  top: -4px;
+  box-shadow: 0 0 8px rgba(255, 59, 105, 0.6);
+}
+
+.myhr-employee-shell__profile-menu .wp-profile-menu__trigger {
+  padding: 0;
+}
+
+.myhr-employee-shell__profile-menu .wp-profile-menu__name {
+  color: var(--myhr-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.myhr-employee-shell__content {
+  box-sizing: border-box;
+  flex: 1;
+  margin: 0 auto;
+  max-width: 1400px;
+  padding: clamp(28px, 5vw, 58px) clamp(22px, 5vw, 66px) 84px;
+  width: 100%;
+}
+
+.myhr-employee-shell__content > .employer-dashboard__container {
+  background: transparent;
+  max-width: none;
+  min-height: 0;
+  padding: 0;
+  width: 100%;
+}
+
+@media (max-width: 1100px) {
+  .myhr-employee-shell__header {
+    gap: 14px;
+    padding-inline: 24px;
+  }
+
+  .myhr-employee-shell__mode-pill {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .myhr-employee-shell__header {
+    gap: 10px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    padding: 14px 18px;
+  }
+
+  .myhr-employee-shell__profile-menu .wp-profile-menu__name {
+    display: none;
+  }
+
+  .myhr-employee-shell__header-actions {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .myhr-employee-shell__brand small {
+    display: none;
+  }
+
+  .myhr-employee-shell__content {
+    padding-inline: 16px;
+  }
+}

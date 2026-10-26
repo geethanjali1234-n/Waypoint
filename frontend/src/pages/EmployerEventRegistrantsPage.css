@@ -1,0 +1,35 @@
+.employer-event-registrants__container { box-sizing: border-box; margin: 0 auto; max-width: 1200px; padding: var(--wp-space-2xl) var(--wp-space-xl); width: 100%; }
+.employer-event-registrants__back { background: transparent; border: 0; color: var(--wp-color-primary); cursor: pointer; font: inherit; font-size: var(--wp-font-size-sm); font-weight: 700; padding: 0; }
+.employer-event-registrants__back:hover, .employer-event-registrants__back:focus-visible { text-decoration: underline; }
+.employer-event-registrants__header { align-items: center; display: flex; gap: var(--wp-space-xl); justify-content: space-between; margin: var(--wp-space-xl) 0; }
+.employer-event-registrants__eyebrow { color: var(--wp-color-primary); font-size: var(--wp-font-size-sm); font-weight: 700; letter-spacing: .08em; margin: 0 0 var(--wp-space-xs); text-transform: uppercase; }
+.employer-event-registrants__header h1 { color: var(--wp-color-text); font-size: clamp(1.8rem, 4vw, 2.5rem); letter-spacing: -.035em; line-height: 1.15; margin: 0; }
+.employer-event-registrants__meta { color: var(--wp-color-text-muted); font-size: var(--wp-font-size-md); margin: var(--wp-space-sm) 0 0; }
+.employer-event-registrants__header-count { align-items: center; background: var(--wp-color-surface); border: 1px solid var(--wp-color-border); border-radius: var(--wp-radius-md); box-shadow: none; box-sizing: border-box; color: var(--wp-color-primary); display: flex; flex-direction: column; min-width: 142px; padding: var(--wp-space-md) var(--wp-space-lg); text-align: center; }
+.employer-event-registrants__header-count strong { color: var(--wp-color-primary); font-size: clamp(2rem, 4vw, 2.5rem); line-height: 1; }
+.employer-event-registrants__header-count span { color: var(--wp-color-text-muted); font-size: .7rem; font-weight: 700; letter-spacing: .08em; margin-top: 6px; text-transform: uppercase; }
+.employer-event-registrants__panel { background: var(--wp-color-surface); border: 1px solid var(--wp-color-border); border-radius: var(--wp-radius-lg); box-shadow: none; overflow: hidden; }
+.employer-event-registrants__panel-header { border-bottom: 1px solid var(--wp-color-border); padding: var(--wp-space-xl); }
+.employer-event-registrants__panel-header h2 { color: var(--wp-color-text); font-size: var(--wp-font-size-lg); margin: 0 0 var(--wp-space-xs); }
+.employer-event-registrants__panel-header p { color: var(--wp-color-text-muted); font-size: var(--wp-font-size-sm); margin: 0; }
+.employer-event-registrants__table-header, .employer-event-registrants__row { align-items: center; column-gap: var(--wp-space-md); display: grid; grid-template-columns: minmax(240px, 1.4fr) 130px 130px; padding: var(--wp-space-md) var(--wp-space-xl); }
+.employer-event-registrants__table-header { background: var(--wp-color-neutral-bg); color: var(--wp-color-text-muted); font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.employer-event-registrants__row { border-bottom: 1px solid var(--wp-color-border); color: var(--wp-color-text); }
+.employer-event-registrants__row:last-child { border-bottom: 0; }
+.employer-event-registrants__candidate { align-items: center; display: flex; gap: var(--wp-space-sm); min-width: 0; }
+.employer-event-registrants__candidate > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+.employer-event-registrants__candidate strong { color: var(--wp-color-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.employer-event-registrants__candidate small { color: var(--wp-color-text-muted); font-size: .75rem; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.employer-event-registrants__avatar { align-items: center; background: var(--wp-color-primary-soft); border-radius: 50%; color: var(--wp-color-primary); display: inline-flex; flex: 0 0 38px; font-size: var(--wp-font-size-sm); font-weight: 700; height: 38px; justify-content: center; }
+.employer-event-registrants__date { color: var(--wp-color-text-muted); font-size: var(--wp-font-size-sm); }
+.employer-event-registrants__status { background: var(--wp-color-primary-soft); border-radius: var(--wp-radius-pill); color: var(--wp-color-text); display: inline-flex; font-size: .72rem; font-weight: 700; padding: 5px 9px; }
+.employer-event-registrants__status--waitlisted { background: var(--wp-color-primary-soft); color: var(--wp-color-text-muted); }
+.employer-event-registrants__status--cancelled { background: var(--wp-color-error-bg); color: var(--wp-color-error); }
+.employer-event-registrants__error { background: var(--wp-color-error-bg); border: 1px solid var(--wp-color-error); border-radius: var(--wp-radius-lg); color: var(--wp-color-error); margin-top: var(--wp-space-xl); padding: var(--wp-space-xl); }
+.employer-event-registrants__error h1 { font-size: var(--wp-font-size-lg); margin: 0 0 var(--wp-space-sm); }
+.employer-event-registrants__error p { margin: 0; }
+@media (max-width: 760px) { .employer-event-registrants__container { padding: var(--wp-space-xl) var(--wp-space-md); } .employer-event-registrants__header { align-items: flex-start; flex-direction: column; } .employer-event-registrants__header-count { align-self: stretch; } .employer-event-registrants__table { overflow-x: auto; } .employer-event-registrants__table-header, .employer-event-registrants__row { grid-template-columns: minmax(220px, 1.4fr) 120px 120px; min-width: 520px; } }
+
+.employer-event-registrants__container { min-width: 0; }
+.employer-event-registrants__header h1 { font-family: var(--wp-font-display); font-weight: 500; }
+.employer-event-registrants__back { min-height: 44px; }

@@ -1,0 +1,8 @@
+.wp-footer {
+  padding: var(--wp-space-lg) var(--wp-space-xl);
+  text-align: center;
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-sm);
+  color: var(--wp-color-text-muted);
+  border-top: 1px solid var(--wp-color-border);
+}

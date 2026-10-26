@@ -1,0 +1,11 @@
+.wp-detail-panel-overlay { position: fixed; inset: 0; z-index: 2000; display: flex; justify-content: flex-end; }
+.wp-detail-panel-backdrop { position: absolute; inset: 0; width: 100%; border: 0; border-radius: 0; background: rgb(11 21 18 / 55%); cursor: pointer; }
+.wp-detail-panel { position: relative; width: min(480px, 100%); display: flex; flex-direction: column; background: var(--wp-color-surface); color: var(--wp-color-text); border-left: 1px solid var(--wp-color-border); font-family: var(--wp-font-sans); }
+.wp-detail-panel.wp-detail-panel--full-screen { width: 100%; height: 100dvh; max-height: none; border: 0; border-radius: 0; }
+.wp-detail-panel header, .wp-detail-panel footer { padding: 16px 24px; border-bottom: 1px solid var(--wp-color-border); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.wp-detail-panel h2 { font-family: var(--wp-font-display); font-weight: 500; font-size: 1.5rem; margin: 0; }
+.wp-detail-panel header button { width: 44px; height: 44px; display: grid; place-items: center; flex-shrink: 0; border: 1px solid var(--wp-color-border); border-radius: var(--wp-radius-control); color: var(--wp-color-text); background: transparent; cursor: pointer; }
+.wp-detail-panel__body { padding: 24px; overflow-y: auto; min-height: 0; flex: 1; }
+.wp-detail-panel footer { border-top: 1px solid var(--wp-color-border); border-bottom: 0; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+.wp-detail-panel :focus-visible { outline: 2px solid var(--wp-color-primary); outline-offset: 2px; }
+@media (max-width: 600px) { .wp-detail-panel-overlay { align-items: flex-end; } .wp-detail-panel { width: 100%; max-height: 90dvh; border: 1px solid var(--wp-color-border); border-radius: 14px 14px 0 0; padding-bottom: env(safe-area-inset-bottom); } }

@@ -1,0 +1,5 @@
+.wp-theme-toggle { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:8px 16px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-surface); color:var(--wp-color-text); font:500 .875rem var(--wp-font-sans); cursor:pointer; }
+.wp-theme-toggle:hover { background:var(--wp-color-hover); color:var(--wp-color-primary); }
+.wp-theme-toggle__icon { display:grid; place-items:center; width:24px; height:24px; }
+.wp-theme-toggle--icon-only { width:44px; height:44px; padding:0; }
+.wp-theme-toggle:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }

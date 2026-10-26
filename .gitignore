@@ -1,0 +1,73 @@
+# IntelliJ
+.idea/
+.run/
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+.kotlin
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+dev-credentials.txt
+push.bat
+
+# Environment variables
+.env
+.env.*
+
+# Node
+node_modules/
+
+# Build folders
+dist/
+build/
+
+# Java
+target/
+**/target/
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# Eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# OS files
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Claude
+.claude/
+
+# Runtime-generated file uploads (profile pictures, resumes)
+uploads/
+# Local backend overrides (may enable development-only authentication)
+backend/src/main/resources/application-local.yaml
+*.traineddata
+
+# Mobile / Capacitor
+frontend/android/.gradle/
+frontend/android/app/build/
+frontend/android/build/
+frontend/ios/App/build/
+frontend/ios/App/Pods/
+frontend/ios/App/App.xcworkspace/xcuserdata/
+frontend/ios/App/App.xcodeproj/xcuserdata/

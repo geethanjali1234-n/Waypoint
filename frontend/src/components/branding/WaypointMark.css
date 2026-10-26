@@ -1,0 +1,33 @@
+.wp-waypoint-mark {
+  align-items: center;
+  background: var(--wp-color-primary);
+  /* Brand geometry stays fixed when UI versions change control shapes. */
+  border-radius: 50% 50% 50% 6px;
+  color: var(--wp-color-primary-contrast);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+  height: 32px;
+  justify-content: center;
+  line-height: 1;
+  transform: rotate(-8deg);
+  width: 32px;
+}
+
+.wp-waypoint-mark__letter {
+  display: inline-block;
+  transform: rotate(8deg);
+}
+
+.wp-waypoint-mark--contrast {
+  background: var(--wp-color-primary-contrast);
+  color: var(--wp-color-primary);
+}
+
+.wp-waypoint-mark--outline {
+  background: transparent;
+  border: 2px solid currentColor;
+  color: currentColor;
+}

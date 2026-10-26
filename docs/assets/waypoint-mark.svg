@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 48 48" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Waypoint mark</title>
+  <desc id="desc">A circular Waypoint mark with a north-pointing triangle and the letter W.</desc>
+  <circle cx="24" cy="24" r="19" stroke="#0F4A3A" stroke-width="2"/>
+  <path d="M24 3 L28.5 11 L19.5 11 Z" fill="#0F4A3A"/>
+  <text x="24" y="30.5" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#0F4A3A">W</text>
+</svg>

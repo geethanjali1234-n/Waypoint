@@ -1,0 +1,11 @@
+.wp-profile-record { width: min(100%, 520px); box-sizing: border-box; padding: var(--ui-panel-padding); border: 1px solid var(--wp-color-border); border-radius: var(--wp-radius-card); background: var(--wp-color-surface); color: var(--wp-color-text); box-shadow: var(--ui-card-shadow); }
+.wp-profile-record header { display: grid; gap: 6px; }
+.wp-profile-record header > span { color: var(--wp-color-accent-cyan); font-size: .75rem; letter-spacing: .08em; }
+.wp-profile-record p, .wp-profile-record small { color: var(--wp-color-text-muted); font-size: .85rem; }
+.wp-profile-record__comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.wp-profile-record dt { font-size: .75rem; color: var(--wp-color-text-muted); }
+.wp-profile-record dd { margin: 8px 0; overflow-wrap: anywhere; }
+.wp-profile-record summary { cursor: pointer; padding: 12px 0; }
+.wp-profile-record button { background: var(--wp-color-primary-soft); color: var(--wp-color-text); border: 1px solid var(--wp-color-border); border-radius: var(--wp-radius-control); padding: 10px 16px; font: inherit; cursor: pointer; }
+.wp-profile-record :is(summary, button):focus-visible { outline: 2px solid var(--wp-color-accent-cyan); outline-offset: 3px; }
+[data-ui-variant='v2'] .wp-profile-record header { font-family: var(--wp-font-mono); }

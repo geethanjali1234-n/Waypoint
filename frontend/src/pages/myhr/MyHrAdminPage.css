@@ -1,0 +1,482 @@
+.myhr-admin {
+  --admin-green: #0b624f;
+  --admin-green-2: #10b981;
+  --admin-mint: #040a08;
+  --admin-line: rgba(0, 255, 135, 0.18);
+  --admin-text: #f8fafc;
+  --admin-muted: #94a3b8;
+  --admin-amber: #ffb800;
+  min-height: 100vh;
+  background: #040a08;
+  color: var(--admin-text);
+  font-family: Inter, var(--wp-font-sans), Arial, sans-serif;
+}
+
+.myhr-admin button {
+  font: inherit;
+}
+
+.myhr-admin__topbar {
+  align-items: center;
+  background: rgba(6, 18, 14, 0.88);
+  border-bottom: 1px solid rgba(0, 255, 135, 0.18);
+  backdrop-filter: blur(16px);
+  display: flex;
+  height: 64px;
+  justify-content: space-between;
+  padding: 0 34px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.myhr-admin__brand {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--admin-text);
+  cursor: pointer;
+  display: flex;
+  font-size: 15px;
+  gap: 11px;
+  padding: 0;
+}
+
+.myhr-admin__brand .wp-waypoint-mark {
+  height: 29px;
+  width: 29px;
+}
+
+.myhr-admin__profile-menu .wp-profile-menu__trigger {
+  color: #f8fafc;
+}
+
+.myhr-admin__shell {
+  margin: 0 auto;
+  max-width: 1290px;
+  padding: 42px 44px 60px;
+}
+
+.myhr-admin__hero {
+  background: radial-gradient(120% 120% at 50% 0%, #0a2e23 0%, #040d09 100%);
+  border: 1px solid rgba(0, 255, 135, 0.25);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 135, 0.08);
+  color: #fff;
+  padding: 34px 32px 0;
+}
+
+.myhr-admin__eyebrow {
+  color: #00ff87;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  margin: 0 0 9px;
+  text-shadow: 0 0 8px rgba(0, 255, 135, 0.3);
+}
+
+.myhr-admin__hero h1 {
+  font-size: 30px;
+  letter-spacing: -0.6px;
+  margin: 0 0 9px;
+}
+
+.myhr-admin__hero > p:not(.myhr-admin__eyebrow) {
+  color: #94a3b8;
+  font-size: 14px;
+  margin: 0;
+}
+
+.myhr-admin__summary {
+  border-top: 1px solid rgba(0, 255, 135, 0.15);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 26px;
+}
+
+.myhr-admin__summary button {
+  background: transparent;
+  border: 0;
+  border-right: 1px solid rgba(0, 255, 135, 0.15);
+  color: #fff;
+  cursor: pointer;
+  padding: 20px 0;
+  text-align: left;
+  transition: background 150ms ease;
+}
+
+.myhr-admin__summary button:hover {
+  background: rgba(0, 255, 135, 0.05);
+}
+
+.myhr-admin__summary button:not(:first-child) {
+  padding-left: 28px;
+}
+
+.myhr-admin__summary button:last-child {
+  border-right: 0;
+}
+
+.myhr-admin__summary strong,
+.myhr-admin__summary span {
+  display: block;
+}
+
+.myhr-admin__summary strong {
+  font-size: 24px;
+  margin-bottom: 5px;
+  color: #00ff87;
+  text-shadow: 0 0 12px rgba(0, 255, 135, 0.4);
+}
+
+.myhr-admin__summary span {
+  color: #94a3b8;
+  font-size: 10px;
+  letter-spacing: 0.7px;
+}
+
+.myhr-admin__section-heading {
+  margin: 31px 0 18px;
+}
+
+.myhr-admin__section-heading h2 {
+  font-size: 20px;
+  margin: 0 0 5px;
+}
+
+.myhr-admin__section-heading p,
+.myhr-admin__detail-head > div > p:last-child {
+  color: var(--admin-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+.myhr-admin__card-grid {
+  display: grid;
+  gap: 15px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.myhr-admin__action-card {
+  background: rgba(8, 24, 18, 0.85);
+  border: 1px solid rgba(0, 255, 135, 0.18);
+  border-radius: 12px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  color: var(--admin-text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  min-height: 142px;
+  padding: 20px;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.myhr-admin__action-card:hover,
+.myhr-admin__action-card:focus-visible {
+  border-color: #00ff87;
+  box-shadow: 0 8px 30px rgba(0, 255, 135, 0.2);
+  outline: 0;
+  transform: translateY(-2px);
+}
+
+.myhr-admin__action-card strong {
+  font-size: 14px;
+  color: #f8fafc;
+}
+
+.myhr-admin__action-card small {
+  color: var(--admin-muted);
+  display: block;
+  font-size: 12px;
+  line-height: 1.35;
+  margin: 5px 0 14px;
+}
+
+.myhr-admin__action-card em {
+  color: #00ff87;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 750;
+  margin-top: auto;
+}
+
+.myhr-admin__action-card em b {
+  font-size: 14px;
+}
+
+.myhr-admin__back {
+  background: none;
+  border: 0;
+  color: #00ff87;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 30px 0 15px;
+  padding: 0;
+  transition: opacity 150ms ease;
+}
+
+.myhr-admin__back:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.myhr-admin__detail-card {
+  background: rgba(8, 24, 18, 0.85);
+  border: 1px solid var(--admin-line);
+  border-radius: 14px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.myhr-admin__detail-head {
+  align-items: center;
+  border-bottom: 1px solid var(--admin-line);
+  display: flex;
+  justify-content: space-between;
+  padding: 27px 29px;
+}
+
+.myhr-admin__detail-head .myhr-admin__eyebrow {
+  color: #00ff87;
+  margin-bottom: 7px;
+}
+
+.myhr-admin__detail-head h2 {
+  font-size: 24px;
+  margin: 0 0 7px;
+  color: #f8fafc;
+}
+
+.myhr-admin__primary {
+  background: linear-gradient(135deg, #0b624f, #10b981);
+  border: 1px solid rgba(0, 255, 135, 0.4);
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 11px 16px;
+  box-shadow: 0 0 14px rgba(11, 98, 79, 0.35);
+  transition: all 180ms ease;
+}
+
+.myhr-admin__primary:hover,
+.myhr-admin__primary:focus-visible {
+  background: linear-gradient(135deg, #084437, #003cd6);
+  border-color: #00ff87;
+  box-shadow: 0 0 20px rgba(0, 255, 135, 0.45);
+  outline: 0;
+}
+
+.myhr-admin__table-wrap {
+  overflow: auto;
+}
+
+.myhr-admin__table-wrap table {
+  border-collapse: collapse;
+  min-width: 650px;
+  width: 100%;
+}
+
+.myhr-admin__table-wrap th,
+.myhr-admin__table-wrap td {
+  border-bottom: 1px solid rgba(0, 255, 135, 0.12);
+  font-size: 12px;
+  padding: 15px 29px;
+  text-align: left;
+}
+
+.myhr-admin__table-wrap th {
+  background: rgba(0, 255, 135, 0.05);
+  color: #00ff87;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.myhr-admin__clickable-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.myhr-admin__clickable-row:hover {
+  background: rgba(0, 255, 135, 0.06);
+}
+
+.myhr-admin__job-link {
+  background: none;
+  border: 0;
+  color: #00ff87;
+  cursor: pointer;
+  font-weight: 750;
+  padding: 0;
+  text-align: left;
+}
+
+.myhr-admin__job-link:hover,
+.myhr-admin__job-link:focus-visible {
+  text-decoration: underline;
+}
+
+.myhr-admin__back--inside {
+  margin: 20px 29px 5px;
+}
+
+.myhr-admin__status {
+  background: rgba(0, 255, 135, 0.12);
+  border: 1px solid rgba(0, 255, 135, 0.3);
+  border-radius: 20px;
+  color: #00ff87;
+  display: inline-block;
+  font-weight: 700;
+  padding: 4px 10px;
+}
+
+.myhr-admin__status.is-pending {
+  background: rgba(255, 184, 0, 0.12);
+  border-color: rgba(255, 184, 0, 0.3);
+  color: #ffb800;
+}
+
+.myhr-admin__status-select {
+  appearance: auto;
+  background: rgba(8, 24, 18, 0.9);
+  border: 1px solid rgba(0, 255, 135, 0.35);
+  border-radius: 20px;
+  color: #00ff87;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 100px;
+  padding: 6px 28px 6px 10px;
+}
+
+.myhr-admin__status-select.status-pending,
+.myhr-admin__status-select.status-review,
+.myhr-admin__status-select.status-screening,
+.myhr-admin__status-select.status-interview {
+  background: rgba(8, 24, 18, 0.9);
+  border-color: rgba(255, 184, 0, 0.4);
+  color: #ffb800;
+}
+
+.myhr-admin__status-select.status-inactive,
+.myhr-admin__status-select.status-closed,
+.myhr-admin__status-select.status-cancelled,
+.myhr-admin__status-select.status-rejected {
+  background: rgba(8, 24, 18, 0.9);
+  border-color: rgba(255, 77, 77, 0.4);
+  color: #ff4d4d;
+}
+
+.myhr-admin__status-select:focus-visible {
+  outline: 2px solid #00ff87;
+  outline-offset: 2px;
+}
+
+.myhr-admin__empty-state {
+  color: var(--admin-muted);
+  padding: 65px 25px;
+  text-align: center;
+}
+
+.myhr-admin__empty-state strong,
+.myhr-admin__empty-state span {
+  display: block;
+}
+
+.myhr-admin__empty-state strong {
+  color: var(--admin-text);
+  margin-bottom: 7px;
+}
+
+.myhr-admin__toast {
+  background: rgba(9, 14, 36, 0.95);
+  border: 1px solid rgba(0, 255, 135, 0.3);
+  box-shadow: 0 0 20px rgba(0, 255, 135, 0.25);
+  border-radius: 8px;
+  bottom: 24px;
+  color: #fff;
+  font-size: 12px;
+  opacity: 0;
+  padding: 12px 17px;
+  pointer-events: none;
+  position: fixed;
+  right: 24px;
+  transform: translateY(8px);
+  transition: 0.2s;
+}
+
+.myhr-admin__toast.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 850px) {
+  .myhr-admin__shell {
+    padding: 28px 22px;
+  }
+
+  .myhr-admin__card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .myhr-admin__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .myhr-admin__summary button,
+  .myhr-admin__summary button:not(:first-child) {
+    border-bottom: 1px solid #327061;
+    border-right: 0;
+    padding: 14px 0;
+  }
+
+  .myhr-admin__summary button:last-child {
+    border-bottom: 0;
+  }
+
+  .myhr-admin__detail-head {
+    align-items: flex-start;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .myhr-admin__topbar {
+    padding: 0 18px;
+  }
+
+  .myhr-admin__profile-menu .wp-profile-menu__name {
+    display: none;
+  }
+
+  .myhr-admin__shell {
+    padding: 20px 14px;
+  }
+
+  .myhr-admin__hero {
+    padding: 26px 22px 0;
+  }
+
+  .myhr-admin__hero h1 {
+    font-size: 25px;
+  }
+
+  .myhr-admin__card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .myhr-admin__detail-head {
+    display: grid;
+    padding: 22px;
+  }
+
+  .myhr-admin__detail-head .myhr-admin__primary {
+    width: max-content;
+  }
+}

@@ -1,0 +1,32 @@
+.wp-phone-input__wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.wp-phone-input__prefix {
+  background: #f4f7f5;
+  border-right: 1px solid var(--wp-color-border, #d0d5dd);
+  border-radius: var(--wp-radius-control) 0 0 var(--wp-radius-control);
+  box-sizing: border-box;
+  height: 100%;
+  justify-content: center;
+  left: 0;
+  align-items: center;
+  color: var(--wp-color-text);
+  display: flex;
+  font-family: var(--wp-font-sans);
+  font-size: var(--wp-font-size-sm);
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+  width: 70px;
+}
+
+.wp-phone-input__wrapper .wp-phone-input__control {
+  padding-left: 86px !important;
+}
+
+.wp-phone-input__wrapper--without-prefix .wp-phone-input__control {
+  padding-left: var(--wp-space-md) !important;
+}

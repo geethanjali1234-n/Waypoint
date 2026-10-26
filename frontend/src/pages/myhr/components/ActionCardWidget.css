@@ -1,0 +1,620 @@
+/* ==========================================================================
+   WAYPOINT ACTION CARD INTERACTIVE WIDGETS
+   ========================================================================== */
+
+.wp-action-widget {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+
+:is(.myhr-role-landing__action, .document-requests__action-card, .reports__card):hover .wp-action-widget {
+  transform: scale(1.08);
+}
+
+/* Featured Size: Embedded inside action card visual stage */
+.wp-action-widget--size-featured {
+  position: relative;
+  top: auto;
+  right: auto;
+  width: 100%;
+  height: 72px;
+  margin: 0 auto;
+}
+
+.wp-action-widget--size-featured .wp-action-clock { width: 58px; height: 58px; }
+.wp-action-widget--size-featured .wp-action-badge { width: 44px; height: 56px; }
+.wp-action-widget--size-featured .wp-action-team { width: 54px; height: 54px; }
+.wp-action-widget--size-featured .wp-action-docs { width: 44px; height: 52px; }
+.wp-action-widget--size-featured .wp-action-chart { width: 54px; height: 40px; }
+.wp-action-widget--size-featured .wp-action-radar { width: 54px; height: 54px; }
+.wp-action-widget--size-featured .wp-action-org { width: 52px; height: 52px; }
+
+/* Banner Size: Feature Page Header widget */
+.wp-action-widget--size-banner {
+  position: relative;
+  top: auto;
+  right: auto;
+  width: 38px;
+  height: 38px;
+}
+
+/* ==========================================================================
+   1. Live Analog Clock / Chronometer Widget
+   ========================================================================== */
+.wp-action-clock {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #0f3d2e 0%, #061812 100%);
+  border: 1.5px solid #00ff87;
+  box-shadow: 0 0 14px rgba(0, 255, 135, 0.35), inset 0 0 8px rgba(0, 0, 0, 0.7);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+[data-theme="light"] .wp-action-clock {
+  background: radial-gradient(circle at 35% 35%, #ecfdf5 0%, #d1fae5 100%);
+  border-color: #059669;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25), inset 0 0 4px rgba(255, 255, 255, 0.8);
+}
+
+.wp-action-clock__dial {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.wp-action-clock__tick {
+  position: absolute;
+  background: rgba(0, 255, 135, 0.75);
+  border-radius: 1px;
+}
+
+[data-theme="light"] .wp-action-clock__tick {
+  background: #059669;
+}
+
+.wp-action-clock__tick--12 { top: 2px; left: 50%; transform: translateX(-50%); width: 1.5px; height: 5px; }
+.wp-action-clock__tick--6  { bottom: 2px; left: 50%; transform: translateX(-50%); width: 1.5px; height: 5px; }
+.wp-action-clock__tick--3  { right: 2px; top: 50%; transform: translateY(-50%); width: 5px; height: 1.5px; }
+.wp-action-clock__tick--9  { left: 2px; top: 50%; transform: translateY(-50%); width: 5px; height: 1.5px; }
+
+/* Sub-hour ticks for featured size */
+.wp-action-clock__tick--1  { top: 5px; right: 13px; width: 1px; height: 3px; transform: rotate(30deg); }
+.wp-action-clock__tick--2  { top: 13px; right: 5px; width: 3px; height: 1px; transform: rotate(30deg); }
+.wp-action-clock__tick--4  { bottom: 13px; right: 5px; width: 3px; height: 1px; transform: rotate(-30deg); }
+.wp-action-clock__tick--5  { bottom: 5px; right: 13px; width: 1px; height: 3px; transform: rotate(-30deg); }
+.wp-action-clock__tick--7  { bottom: 5px; left: 13px; width: 1px; height: 3px; transform: rotate(30deg); }
+.wp-action-clock__tick--8  { bottom: 13px; left: 5px; width: 3px; height: 1px; transform: rotate(30deg); }
+.wp-action-clock__tick--10 { top: 13px; left: 5px; width: 3px; height: 1px; transform: rotate(-30deg); }
+.wp-action-clock__tick--11 { top: 5px; left: 13px; width: 1px; height: 3px; transform: rotate(-30deg); }
+
+.wp-action-clock__hand {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  transform-origin: 50% 100%;
+  border-radius: 2px;
+}
+
+.wp-action-clock__hand--hour {
+  width: 2.5px;
+  height: 12px;
+  margin-left: -1.25px;
+  background: #ffffff;
+}
+
+[data-theme="light"] .wp-action-clock__hand--hour {
+  background: #0f172a;
+}
+
+.wp-action-clock__hand--min {
+  width: 1.5px;
+  height: 17px;
+  margin-left: -0.75px;
+  background: #00ff87;
+  box-shadow: 0 0 4px rgba(0, 255, 135, 0.6);
+}
+
+[data-theme="light"] .wp-action-clock__hand--min {
+  background: #047857;
+  box-shadow: none;
+}
+
+.wp-action-clock__hand--sec {
+  width: 1px;
+  height: 20px;
+  margin-left: -0.5px;
+  background: #ff4757;
+  transition: transform 0.1s cubic-bezier(0.4, 2.08, 0.55, 0.44);
+}
+
+.wp-action-clock__cap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="light"] .wp-action-clock__cap {
+  background: #0f172a;
+}
+
+/* ==========================================================================
+   2. Holographic ID Badge Widget
+   ========================================================================== */
+.wp-action-badge {
+  width: 32px;
+  height: 40px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(0, 255, 135, 0.2) 0%, rgba(14, 165, 233, 0.3) 50%, rgba(168, 85, 247, 0.22) 100%);
+  border: 1.5px solid rgba(0, 255, 135, 0.45);
+  box-shadow: 0 0 12px rgba(0, 255, 135, 0.25);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 5px;
+  transition: all 0.3s ease;
+}
+
+[data-theme="light"] .wp-action-badge {
+  background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 50%, #f3e8ff 100%);
+  border-color: #059669;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.2);
+}
+
+.wp-action-badge__clip {
+  width: 12px;
+  height: 3px;
+  background: #cbd5e1;
+  border-radius: 2px;
+  margin-bottom: 4px;
+}
+
+.wp-action-badge__avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #00ff87;
+  opacity: 0.9;
+  box-shadow: 0 0 6px rgba(0, 255, 135, 0.4);
+}
+
+[data-theme="light"] .wp-action-badge__avatar {
+  background: #047857;
+}
+
+.wp-action-badge__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 5px;
+  width: 26px;
+  align-items: center;
+}
+
+.wp-action-badge__lines span {
+  height: 2px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 1px;
+}
+
+[data-theme="light"] .wp-action-badge__lines span {
+  background: #94a3b8;
+}
+
+.wp-action-badge__lines span:last-child {
+  width: 14px;
+}
+
+.wp-action-badge__chip {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 6px;
+  height: 5px;
+  border-radius: 1px;
+  background: #f59e0b;
+  box-shadow: 0 0 4px rgba(245, 158, 11, 0.5);
+}
+
+.wp-action-badge__shimmer {
+  position: absolute;
+  inset: -100%;
+  background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.4) 50%, transparent 60%);
+  animation: badgeShimmer 3s infinite linear;
+}
+
+@keyframes badgeShimmer {
+  0% { transform: translateY(-60%) rotate(25deg); }
+  100% { transform: translateY(60%) rotate(25deg); }
+}
+
+/* ==========================================================================
+   3. Team Roster Pulse Widget
+   ========================================================================== */
+.wp-action-team {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wp-action-team__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(0, 255, 135, 0.45);
+  animation: ringRotate 12s linear infinite;
+}
+
+.wp-action-team__ring-inner {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  animation: ringRotateReverse 8s linear infinite;
+}
+
+@keyframes ringRotateReverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+[data-theme="light"] .wp-action-team__ring {
+  border-color: rgba(5, 150, 105, 0.45);
+}
+
+@keyframes ringRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.wp-action-team__pulse {
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: rgba(0, 255, 135, 0.15);
+  animation: teamPulse 2s ease-in-out infinite;
+}
+
+@keyframes teamPulse {
+  0%, 100% { transform: scale(0.88); opacity: 0.5; }
+  50% { transform: scale(1.18); opacity: 0.95; }
+}
+
+.wp-action-team__core {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #00ff87;
+  color: #030712;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 800;
+  box-shadow: 0 0 10px rgba(0, 255, 135, 0.7);
+}
+
+[data-theme="light"] .wp-action-team__core {
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
+}
+
+.wp-action-team__node {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 6px #38bdf8;
+}
+
+[data-theme="light"] .wp-action-team__node {
+  background: #0284c7;
+  box-shadow: none;
+}
+
+.wp-action-team__node--1 { top: 2px; left: 50%; transform: translateX(-50%); }
+.wp-action-team__node--2 { bottom: 5px; right: 5px; }
+.wp-action-team__node--3 { bottom: 5px; left: 5px; }
+.wp-action-team__node--4 { top: 14px; right: 2px; }
+
+/* ==========================================================================
+   4. Document Stack Widget
+   ========================================================================== */
+.wp-action-docs {
+  position: relative;
+  width: 32px;
+  height: 38px;
+}
+
+.wp-action-docs__sheet {
+  position: absolute;
+  width: 30px;
+  height: 36px;
+  border-radius: 5px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+
+.wp-action-docs__sheet--back {
+  top: 0;
+  right: 0;
+  background: rgba(0, 255, 135, 0.16);
+  border: 1px solid rgba(0, 255, 135, 0.35);
+  transform: rotate(6deg);
+}
+
+[data-theme="light"] .wp-action-docs__sheet--back {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.wp-action-docs__sheet--front {
+  bottom: 0;
+  left: 0;
+  background: #0a251c;
+  border: 1.5px solid #00ff87;
+  padding: 6px 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+[data-theme="light"] .wp-action-docs__sheet--front {
+  background: #ffffff;
+  border-color: #059669;
+}
+
+.wp-action-docs__line {
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(0, 255, 135, 0.6);
+}
+
+[data-theme="light"] .wp-action-docs__line {
+  background: #94a3b8;
+}
+
+.wp-action-docs__line--1 { width: 18px; }
+.wp-action-docs__line--2 { width: 14px; }
+.wp-action-docs__line--3 { width: 10px; }
+
+.wp-action-docs__check {
+  font-size: 11px;
+  color: #00ff87;
+  font-weight: 800;
+  margin-top: auto;
+  align-self: flex-end;
+  text-shadow: 0 0 6px rgba(0, 255, 135, 0.8);
+}
+
+[data-theme="light"] .wp-action-docs__check {
+  color: #059669;
+  text-shadow: none;
+}
+
+/* ==========================================================================
+   5. Analytics Sparkline Widget
+   ========================================================================== */
+.wp-action-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 32px;
+  width: 40px;
+  padding-bottom: 2px;
+  position: relative;
+}
+
+.wp-action-chart__bar {
+  width: 6px;
+  border-radius: 2px;
+  background: linear-gradient(to top, rgba(0, 255, 135, 0.35), #00ff87);
+  box-shadow: 0 0 8px rgba(0, 255, 135, 0.35);
+  animation: barPulse 2.4s ease-in-out infinite alternate;
+}
+
+[data-theme="light"] .wp-action-chart__bar {
+  background: linear-gradient(to top, #bbf7d0, #059669);
+  box-shadow: none;
+}
+
+.wp-action-chart__bar--1 { height: 12px; animation-delay: 0s; }
+.wp-action-chart__bar--2 { height: 24px; animation-delay: 0.3s; }
+.wp-action-chart__bar--3 { height: 16px; animation-delay: 0.6s; }
+.wp-action-chart__bar--4 { height: 30px; animation-delay: 0.9s; }
+.wp-action-chart__bar--5 { height: 20px; animation-delay: 1.2s; }
+
+@keyframes barPulse {
+  0% { transform: scaleY(0.8); }
+  100% { transform: scaleY(1.2); }
+}
+
+.wp-action-chart__dot {
+  position: absolute;
+  top: -2px;
+  right: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+  animation: dotBlink 1.5s infinite;
+}
+
+[data-theme="light"] .wp-action-chart__dot {
+  background: #0284c7;
+  box-shadow: none;
+}
+
+@keyframes dotBlink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.75); }
+}
+
+/* ==========================================================================
+   6. Audit Radar Sweep Widget
+   ========================================================================== */
+.wp-action-radar {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #04140e;
+  border: 1.5px solid rgba(0, 255, 135, 0.45);
+  box-shadow: 0 0 12px rgba(0, 255, 135, 0.25);
+  overflow: hidden;
+}
+
+[data-theme="light"] .wp-action-radar {
+  background: #ecfdf5;
+  border-color: #059669;
+}
+
+.wp-action-radar__sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(0, 255, 135, 0.5) 60deg, transparent 65deg);
+  animation: radarSweep 3s linear infinite;
+}
+
+[data-theme="light"] .wp-action-radar__sweep {
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(5, 150, 105, 0.5) 60deg, transparent 65deg);
+}
+
+@keyframes radarSweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.wp-action-radar__ping {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #00ff87;
+  box-shadow: 0 0 8px #00ff87;
+  animation: pingGlow 2s infinite ease-out;
+}
+
+[data-theme="light"] .wp-action-radar__ping {
+  background: #047857;
+  box-shadow: none;
+}
+
+.wp-action-radar__ping--1 { top: 10px; left: 14px; animation-delay: 0.5s; }
+.wp-action-radar__ping--2 { bottom: 10px; right: 12px; animation-delay: 1.2s; }
+.wp-action-radar__ping--3 { top: 22px; right: 8px; animation-delay: 1.8s; }
+
+@keyframes pingGlow {
+  0% { opacity: 0.2; transform: scale(0.6); }
+  50% { opacity: 1; transform: scale(1.3); }
+  100% { opacity: 0.2; transform: scale(0.6); }
+}
+
+.wp-action-radar__center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+[data-theme="light"] .wp-action-radar__center {
+  background: #0f172a;
+}
+
+/* ==========================================================================
+   7. Organization Blueprint Gear Widget
+   ========================================================================== */
+.wp-action-org {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wp-action-org__gear {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid #00ff87;
+  background: rgba(0, 255, 135, 0.1);
+  animation: gearSpin 14s linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px rgba(0, 255, 135, 0.25);
+}
+
+[data-theme="light"] .wp-action-org__gear {
+  border-color: #059669;
+  background: #f0fdf4;
+}
+
+@keyframes gearSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.wp-action-org__tooth {
+  position: absolute;
+  width: 6px;
+  height: 38px;
+  background: #00ff87;
+  border-radius: 1px;
+}
+
+[data-theme="light"] .wp-action-org__tooth {
+  background: #059669;
+}
+
+.wp-action-org__tooth--1 { transform: rotate(0deg); }
+.wp-action-org__tooth--2 { transform: rotate(60deg); }
+.wp-action-org__tooth--3 { transform: rotate(120deg); }
+
+.wp-action-org__inner {
+  position: relative;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #04140e;
+  border: 1.5px solid #00ff87;
+}
+
+[data-theme="light"] .wp-action-org__inner {
+  background: #ffffff;
+  border-color: #059669;
+}

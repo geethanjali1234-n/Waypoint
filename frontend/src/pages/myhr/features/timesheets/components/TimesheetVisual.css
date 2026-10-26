@@ -1,0 +1,17 @@
+.wp-hours-visual { width: min(100%, 330px); box-sizing: border-box; display: grid; gap: 14px; padding: 24px; background: var(--wp-color-surface); color: var(--wp-color-text); border: 1px solid var(--wp-color-border); border-radius: var(--wp-radius-card); box-shadow: var(--ui-card-shadow); }
+.wp-hours-visual--small { padding: 16px; gap: 10px; }
+.wp-hours-visual__eyebrow { font-size: .7rem; letter-spacing: .08em; color: var(--wp-color-accent-cyan); }
+.wp-hours-visual__value { font-size: 2rem; line-height: 1.2; }
+.wp-hours-visual__value small { font: 400 .85rem var(--wp-font-sans); margin-left: 8px; }
+.wp-hours-visual > small { color: var(--wp-color-text-muted); }
+.wp-hours-visual button { color: var(--wp-color-text); border: 1px solid var(--wp-color-border); background: var(--wp-color-primary-soft); border-radius: var(--wp-radius-control); font: inherit; padding: 10px; cursor: pointer; }
+.wp-hours-visual button:focus-visible { outline: 2px solid var(--wp-color-accent-cyan); outline-offset: 3px; }
+.wp-hours-visual__segments { display: flex; gap: 4px; height: 28px; }
+.wp-hours-visual__segments span { flex: 1; border: 1px solid var(--wp-color-border); background: linear-gradient(to top, var(--wp-color-accent-cyan) var(--fill), var(--wp-color-primary-soft) var(--fill)); }
+.wp-hours-visual__ribbon { height: 34px; border-radius: 50px; overflow: hidden; background: var(--wp-color-primary-soft); border: 1px solid var(--wp-color-border); }
+.wp-hours-visual__ribbon span { display: block; height: 100%; border-radius: inherit; background: var(--wp-color-accent-cyan); transition: width .3s; }
+.wp-hours-visual dl { margin: 0; font-size: .85rem; }
+.wp-hours-visual dl div { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; }
+.wp-hours-visual dd { margin: 0; }
+[data-ui-variant='v2'] .wp-hours-visual { font-family: var(--wp-font-mono); }
+@media (prefers-reduced-motion: reduce) { .wp-hours-visual__ribbon span { transition: none; } }

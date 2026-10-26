@@ -1,0 +1,17 @@
+.wp-workspace-explorer { color: var(--wp-color-text); background: var(--wp-color-surface-solid); border: 1px solid var(--wp-color-border); border-radius: var(--wp-radius-card); padding: 20px; box-shadow: var(--ui-card-shadow); text-align: left; width: 100%; box-sizing: border-box; }
+.wp-workspace-explorer__label { display: block; margin-bottom: 14px; font-size: .8rem; font-weight: 700; color: var(--wp-color-accent-cyan); }
+.wp-workspace-explorer p { font-size: .9rem; line-height: 1.6; color: var(--wp-color-text-muted); margin: 12px 0 0; }
+.wp-workspace-explorer summary { cursor: pointer; padding: 10px 0; }
+.wp-workspace-explorer details + details { border-top: 1px solid var(--wp-color-border); }
+.wp-workspace-explorer details p { margin: 0 0 14px; }
+.wp-workspace-explorer__choices { display: flex; gap: 10px; flex-wrap: wrap; }
+.wp-workspace-explorer button { font: inherit; color: var(--wp-color-text); cursor: pointer; border: 1px solid var(--wp-color-border); background: var(--wp-color-surface); border-radius: var(--wp-radius-control); padding: 12px; }
+.wp-workspace-explorer__choices button { flex: 1; display: grid; gap: 8px; min-width: 75px; }
+.wp-workspace-explorer__choices button[aria-pressed='true'] { border-color: var(--wp-color-accent-cyan); background: var(--wp-color-primary-soft); }
+.wp-workspace-explorer__choices button span { color: var(--wp-color-accent-cyan); font-size: 1.5rem; }
+.wp-workspace-explorer__next { margin-top: 12px; }
+.wp-workspace-explorer :is(button, summary):focus-visible { outline: 2px solid var(--wp-color-accent-cyan); outline-offset: 3px; }
+[data-ui-variant='v2'] .wp-workspace-explorer { font-family: var(--wp-font-mono); }
+[data-ui-variant='v3'] .wp-workspace-explorer__choices button { border-radius: 30px 30px 12px 12px; transition: transform .2s; }
+[data-ui-variant='v3'] .wp-workspace-explorer__choices button:hover { transform: translateY(-3px); }
+@media (prefers-reduced-motion: reduce) { [data-ui-variant='v3'] .wp-workspace-explorer__choices button:hover { transform: none; } }

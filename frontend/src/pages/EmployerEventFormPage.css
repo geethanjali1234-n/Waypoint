@@ -1,0 +1,278 @@
+.wp-employer-event-form {
+  background: var(--wp-color-surface);
+  box-sizing: border-box;
+  margin: 0 auto;
+  max-width: 1060px;
+  padding: var(--wp-space-2xl) var(--wp-space-xl);
+  width: 100%;
+}
+
+.wp-employer-event-form__modal-backdrop {
+  align-items: flex-start;
+  background: rgb(23 35 30 / 50%);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  overflow-y: auto;
+  padding: clamp(16px, 4vh, 40px) 16px;
+  position: fixed;
+  z-index: 1100;
+}
+
+.wp-employer-event-form--modal {
+  background: transparent;
+  box-sizing: border-box;
+  margin: 0;
+  max-width: 1060px;
+  padding: 0;
+  width: min(100%, 1060px);
+}
+
+.wp-employer-event-form--modal .wp-employer-event-form__card {
+  max-height: calc(100vh - clamp(32px, 8vh, 80px));
+  overflow-y: auto;
+}
+
+.wp-employer-event-form__card {
+  border-radius: 14px;
+  box-shadow: none;
+  padding: clamp(24px, 4vw, 38px);
+}
+
+.wp-employer-event-form__heading {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--wp-space-lg);
+  justify-content: space-between;
+  margin-bottom: var(--wp-space-lg);
+}
+
+.wp-employer-event-form__heading h1 {
+  color: var(--wp-color-primary);
+  font: 500 1.65rem/1.1 var(--wp-font-display);
+  margin: 0 0 5px;
+}
+
+.wp-employer-event-form__heading p {
+  color: var(--wp-color-text-muted);
+  font-size: 0.86rem;
+  margin: 0;
+}
+
+.wp-employer-event-form__grid {
+  display: grid;
+  gap: var(--wp-space-lg);
+  grid-template-columns: 1fr 1fr;
+  margin-top: var(--wp-space-lg);
+}
+
+.wp-employer-event-form__wide {
+  grid-column: 1 / -1;
+}
+
+.wp-employer-event-form__grid > label {
+  color: var(--wp-color-text);
+  display: flex;
+  flex-direction: column;
+  font-size: 0.875rem;
+  gap: var(--wp-space-xs);
+  min-width: 0;
+}
+
+.wp-employer-event-form__grid > label > span,
+.wp-employer-event-form__grid .wp-form-label {
+  align-items: center;
+  align-self: flex-start;
+  display: inline-flex;
+  flex-direction: row;
+  font-weight: 700;
+  gap: 4px;
+  line-height: 1.35;
+  margin-bottom: 0;
+}
+
+.wp-employer-event-form__required,
+.wp-employer-event-form__grid .wp-form-label__required {
+  color: var(--wp-color-text-muted);
+  font-style: normal;
+  font-weight: 700;
+  margin: 0;
+}
+
+.wp-employer-event-form__grid input,
+.wp-employer-event-form__grid select,
+.wp-employer-event-form__grid textarea {
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-md);
+  box-sizing: border-box;
+  color: var(--wp-color-text);
+  font: 1rem/1.35 var(--wp-font-sans);
+  min-height: 50px;
+  padding: var(--wp-space-sm) var(--wp-space-md);
+  width: 100%;
+}
+
+.wp-employer-event-form__grid textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
+.wp-employer-event-form__grid input:focus,
+.wp-employer-event-form__grid select:focus,
+.wp-employer-event-form__grid textarea:focus {
+  border-color: var(--wp-color-primary);
+  outline: 2px solid var(--wp-color-primary-soft);
+}
+
+.wp-employer-event-form__grid .is-error {
+  border-color: var(--wp-color-error);
+}
+
+.wp-employer-event-form__grid label small {
+  color: var(--wp-color-error);
+  font-size: 0.75rem;
+}
+
+/* DatePicker and the custom time <select> bring their own .wp-field
+   wrapper/margin from fieldShared.css; neutralize that margin so they line
+   up on the same grid rhythm as this form's other fields (spacing already
+   comes from .wp-employer-event-form__grid's gap). */
+.wp-employer-event-form__grid .wp-field {
+  margin-bottom: 0;
+}
+
+.wp-employer-event-form__grid .wp-field__control {
+  min-height: 50px;
+}
+
+.wp-employer-event-form__section-heading {
+  border-bottom: 1px solid var(--wp-color-border);
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-lg);
+  font-weight: 600;
+  margin: var(--wp-space-xs) 0 0;
+  padding-bottom: var(--wp-space-sm);
+}
+
+.wp-employer-event-form__loading {
+  color: var(--wp-color-text-muted);
+  padding: 48px 0;
+  text-align: center;
+}
+
+.wp-employer-event-form__weather {
+  background: var(--wp-color-bg);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-md);
+  padding: var(--wp-space-lg);
+}
+
+.wp-employer-event-form__weather h2 {
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-lg);
+  margin: 0 0 var(--wp-space-sm);
+}
+
+.wp-employer-event-form__weather-hint {
+  color: var(--wp-color-text-muted);
+  font-size: 0.875rem;
+  margin: 0 0 var(--wp-space-md);
+}
+
+.wp-employer-event-form__weather .wp-validation-message {
+  margin-top: var(--wp-space-sm);
+}
+
+.wp-employer-event-form__weather-result {
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-md);
+  box-shadow: none;
+  margin-top: var(--wp-space-md);
+  padding: var(--wp-space-lg);
+}
+
+.wp-employer-event-form__weather-result-title {
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-lg);
+  font-weight: 700;
+  margin: 0;
+}
+
+.wp-employer-event-form__weather-result-condition {
+  color: var(--wp-color-text-muted);
+  margin: var(--wp-space-xs) 0 var(--wp-space-md);
+}
+
+.wp-employer-event-form__weather-result-grid {
+  display: grid;
+  gap: var(--wp-space-md);
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  margin: 0;
+}
+
+.wp-employer-event-form__weather-result-grid dt {
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+}
+
+.wp-employer-event-form__weather-result-grid dd {
+  color: var(--wp-color-text);
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 2px 0 0;
+}
+
+.wp-employer-event-form__weather-result-time {
+  border-top: 1px solid var(--wp-color-border);
+  color: var(--wp-color-text-muted);
+  font-size: 0.8125rem;
+  margin: var(--wp-space-md) 0 0;
+  padding-top: var(--wp-space-md);
+}
+
+.wp-employer-event-form__actions {
+  border-top: 1px solid var(--wp-color-border);
+  display: flex;
+  gap: var(--wp-space-sm);
+  justify-content: flex-end;
+  margin-top: var(--wp-space-sm);
+  padding-top: var(--wp-space-lg);
+}
+
+@media (max-width: 760px) {
+  .wp-employer-event-form {
+    padding: var(--wp-space-xl) var(--wp-space-md);
+  }
+
+  .wp-employer-event-form__modal-backdrop {
+    padding: 0;
+  }
+
+  .wp-employer-event-form--modal {
+    padding: 0;
+    width: 100%;
+  }
+
+  .wp-employer-event-form--modal .wp-employer-event-form__card {
+    border-radius: 0;
+    min-height: 100vh;
+  }
+
+  .wp-employer-event-form__heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .wp-employer-event-form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wp-employer-event-form__wide {
+    grid-column: auto;
+  }
+}
+
+.wp-employer-event-form h1, .wp-employer-event-form h2 { font-family: var(--wp-font-display); font-weight: 500; color: var(--wp-color-text); }
+.wp-employer-event-form button, .wp-employer-event-form select, .wp-employer-event-form input:not([type="checkbox"]):not([type="radio"]) { min-height: 44px; }
