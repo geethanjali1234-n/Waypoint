@@ -600,7 +600,7 @@ export default function EmployeeManagementPage({ role }) {
               ))}
             </div>
           ) : (
-            <DataTable label="Employees" columns={[
+            <DataTable label="Employees" mobileMode="cards" columns={[
               { key: 'person', header: 'Person', render: (value, person) => <div className="wp-data-table__person"><span className="wp-data-table__avatar" aria-hidden="true">{initials(person)}</span><span><button type="button" onClick={() => openEmployee(person.userId)}>{value.name || value.id}</button><small>{value.id}</small></span>{person.employeeId && <button type="button" aria-label={`Copy ID ${person.employeeId}`} onClick={(event) => copyToClipboard(person.employeeId, person.employeeId, event)}><StrokeIcon name="copy" size={20} /></button>}</div> },
               { key: 'personType', header: 'Type', render: (_, person) => personLabel(person.personType) },
               { key: 'designation', header: 'Designation' },
@@ -686,7 +686,7 @@ export default function EmployeeManagementPage({ role }) {
 
           <section className="employee-management__history">
             <h3>Reporting Assignment History</h3>
-            <DataTable label="Reporting assignment history"
+            <DataTable label="Reporting assignment history" mobileMode="cards"
               columns={[{ key: 'managerName', header: 'Manager' }, { key: 'effectiveFrom', header: 'Effective From' }, { key: 'effectiveTo', header: 'Effective To' }]}
               rows={(detail.reportingHistory || []).map((item, index) => ({
                 id: index,
@@ -700,7 +700,7 @@ export default function EmployeeManagementPage({ role }) {
           {(detail.personType === 'HR' || (detail.directReports && detail.directReports.length > 0)) && (
             <section className="employee-management__history">
               <h3>Employees Reporting to {detail.firstName || detail.name}</h3>
-              <DataTable label="Direct reports"
+              <DataTable label="Direct reports" mobileMode="cards"
                 columns={[{ key: 'person', header: 'Person', type: 'person' }, { key: 'designation', header: 'Designation' }, { key: 'accountStatus', header: 'Status', type: 'status' }]}
                 rows={(detail.directReports || []).map((report) => ({ ...report, id: report.userId, person: { name: report.name, id: report.employeeId } }))}
                 emptyMessage="No employees currently report to this person."

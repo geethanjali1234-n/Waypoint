@@ -71,3 +71,8 @@ input[type='number'],
 .wp-field__control:disabled {
   color: var(--wp-color-text-muted);
 }
+
+@media (max-width: 600px) {
+  .wp-field__row { flex-direction:column; gap:var(--wp-space-sm); }
+  .wp-field__control { min-height:44px; font-size:16px; }
+}

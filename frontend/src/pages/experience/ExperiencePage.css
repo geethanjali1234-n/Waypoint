@@ -126,6 +126,7 @@
   gap: 8px;
   flex-shrink: 0;
 }
+.wp-exp-mobile-menu-toggle,.wp-exp-mobile-menu { display:none; }
 
 .wp-exp-sound-btn {
   display: inline-flex;
@@ -2109,6 +2110,46 @@
   }
 }
 
+@media (max-width: 767px) {
+  .wp-exp-nav { height:auto; min-height:64px; position:sticky; top:0; z-index:100; }
+  .wp-exp-nav-inner { min-height:64px; padding:8px 14px; gap:8px; }
+  .wp-exp-brand-tag,.wp-exp-nav-links,.wp-exp-sound-btn,.wp-exp-login-btn--outline { display:none; }
+  .wp-exp-brand-name { font-size:1rem; }
+  .wp-exp-nav-actions { margin-left:auto; gap:4px; }
+  .wp-exp-nav-actions .wp-exp-login-btn { min-width:44px; padding:0 10px; font-size:0; }
+  .wp-exp-nav-actions .wp-exp-login-btn::after { content:'Sign in'; font-size:.75rem; }
+  .wp-exp-theme-btn { width:44px; padding:0; }
+  .wp-exp-theme-btn span { display:none; }
+  .wp-exp-mobile-menu-toggle { display:grid; place-content:center; gap:4px; flex:0 0 44px; width:44px; height:44px; padding:0; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-surface); color:var(--wp-color-text); cursor:pointer; }
+  .wp-exp-mobile-menu-toggle span { width:18px; height:2px; border-radius:2px; background:currentColor; }
+  .wp-exp-mobile-menu { position:absolute; top:100%; left:0; right:0; z-index:101; padding:12px 14px 18px; background:var(--wp-color-surface); border-bottom:1px solid var(--wp-color-border); box-shadow:0 12px 20px rgb(0 0 0 / .12); }
+  .wp-exp-mobile-menu.is-open { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .wp-exp-mobile-menu a { display:flex; align-items:center; min-height:44px; padding:8px 10px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); color:var(--wp-color-text); font-size:.875rem; text-decoration:none; }
+  .wp-exp-hero { min-height:auto; padding:56px 16px 44px; }
+  .wp-exp-hero-content { width:100%; padding:0; }
+  .wp-exp-title { font-size:clamp(2rem,11vw,3.2rem); line-height:1.02; letter-spacing:-.04em; }
+  .wp-exp-lead { font-size:1rem; line-height:1.55; }
+  .wp-exp-hero-ctas { align-items:stretch; flex-direction:column; width:100%; }
+  .wp-exp-hero-ctas .wp-exp-btn { width:100%; justify-content:center; text-align:center; }
+  .wp-exp-section,.wp-exp-cta-banner { padding-inline:16px; }
+  .wp-exp-constellation-card { border-radius:16px; overflow:hidden; }
+  .wp-exp-constellation-hud { align-items:flex-start; gap:8px; padding:12px; }
+  .wp-exp-constellation-hud-right { display:none; }
+  .wp-exp-constellation-pills { justify-content:flex-start; overflow-x:auto; padding-inline:12px; scrollbar-width:thin; }
+  .wp-exp-constellation-pills button { flex:0 0 auto; }
+  .wp-exp-constellation-viewport { height:360px; }
+  .wp-exp-stats-strip { gap:10px; }
+  .wp-exp-stat-box { min-width:0; padding:14px; }
+}
+
+@media (max-width:374px) {
+  .wp-exp-nav-inner { padding-inline:10px; }
+  .wp-exp-brand-name { max-width:92px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .wp-exp-mobile-menu.is-open { grid-template-columns:1fr; }
+  .wp-exp-hero { padding-inline:12px; }
+  .wp-exp-title { font-size:clamp(1.8rem,10vw,2.4rem); }
+}
+
 /* ==========================================================================
    Experience Page - Light Theme Overrides (High-Contrast WCAG AAA)
    ========================================================================== */
@@ -3547,4 +3588,41 @@
 @media (prefers-reduced-motion: reduce) {
   .wp-exp-root .wp-exp-ticker-track,
   .wp-exp-root .wp-exp-eq-bar { animation: none !important; }
+}
+
+/* Scanner data is intentionally detailed. On phones it becomes a vertical
+   record rather than forcing the HUD outside the viewport. */
+@media (max-width: 767px) {
+  .wp-scanner-card { gap: 16px; }
+  .wp-scanner-header { gap: 12px; }
+  .wp-scanner-title { font-size: clamp(1.2rem, 6vw, 1.5rem); }
+  .wp-scanner-tabs { width: 100%; overflow-x: auto; padding-bottom: 2px; }
+  .wp-scanner-tab { flex: 0 0 auto; min-height: 40px; }
+  .wp-scanner-body { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .wp-scanner-stage { min-width: 0; }
+  .wp-scanner-doc { padding: clamp(14px, 5vw, 24px); transform: none; }
+  .wp-scanner-doc-header,
+  .wp-scanner-doc-sign { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .wp-scanner-hud { padding: 14px; gap: 12px; font-size: .78rem; }
+  .wp-scanner-hud-field { display: grid; grid-template-columns: minmax(0, 1fr); gap: 3px; }
+  .wp-scanner-hud-k { font-size: .68rem; letter-spacing: .04em; }
+  .wp-scanner-hud-v { min-width: 0; text-align: left; overflow-wrap: anywhere; }
+  .wp-scanner-trigger-btn { width: 100%; min-height: 44px; padding-inline: 14px; white-space: normal; }
+  .wp-scanner-verified-pill { align-items: flex-start; margin-bottom: 0; padding: 12px; overflow-wrap: anywhere; }
+  .wp-radar-wrap, .wp-radar-stage, .wp-radar-details { min-width: 0; }
+  .wp-radar-details-badges { align-items: flex-start; flex-wrap: wrap; }
+  .wp-radar-stats-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .wp-radar-stat-item, .wp-radar-detail-desc, .wp-rbac-guarantee p { overflow-wrap: anywhere; }
+  .wp-rbac-tier-card { min-width: 0; align-items: flex-start; flex-direction: column; gap: 8px; }
+  .wp-rbac-tier-right { align-self: stretch; justify-content: space-between; min-width: 0; }
+  .wp-radar-enter-btn { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; text-align: center; }
+}
+
+@media (max-width: 374px) {
+  .wp-scanner-badge { font-size: .62rem; letter-spacing: .1em; }
+  .wp-scanner-doc-row { padding-inline: 5px; font-size: .64rem; }
+  .wp-scanner-hud-title { font-size: .62rem; letter-spacing: .1em; }
+  .wp-sim-metrics-bar { grid-template-columns: minmax(0, 1fr); }
+  .wp-exp-hero-actions { width: 100%; }
+  .wp-exp-hero-actions .wp-exp-btn { width: 100%; justify-content: center; }
 }

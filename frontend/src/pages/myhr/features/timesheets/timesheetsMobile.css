@@ -126,3 +126,29 @@
 /* Attachments occupy one column; the old two-column grid squeezed previews. */
 .timesheets__details-modal .timesheets__attachment { display:block; }
 .timesheets__details-modal .timesheet-document-tables { width:100%; }
+
+/* Preview content may be wider than a phone by design; keep that scrolling
+   local to the preview while every surrounding control remains reachable. */
+@media(max-width:700px) {
+  .myhr-feature.timesheets-mobile .timesheets__sim-metrics-bar { grid-template-columns:minmax(0,1fr); gap:10px; }
+  .myhr-feature.timesheets-mobile .timesheets__sim-metric { min-width:0; padding:12px; }
+  .myhr-feature.timesheets-mobile .timesheets__sim-metric-value { font-size:clamp(1.35rem,8vw,1.8rem); overflow-wrap:anywhere; }
+  .myhr-feature.timesheets-mobile .timesheets__supporting-document-row { align-items:flex-start; flex-wrap:wrap; }
+  .myhr-feature.timesheets-mobile .timesheets__supporting-document-row > *:first-child { min-width:0; overflow-wrap:anywhere; }
+  .myhr-feature.timesheets-mobile .timesheets__supporting-document-remove { min-height:40px; }
+  .myhr-feature.timesheets-mobile .timesheets__drawer-documents { display:grid; grid-template-columns:minmax(0,1fr); width:100%; }
+  .myhr-feature.timesheets-mobile .timesheets__drawer-documents .wp-button { justify-content:flex-start; width:100%; }
+  .myhr-feature.timesheets-mobile .timesheets__drawer-document-name { max-width:calc(100vw - 128px); }
+  .timesheets__doc-modal .timesheets__doc-preview-area { min-width:0; min-height:240px; max-height:calc(100dvh - 210px); }
+  .timesheets__doc-modal .timesheets__doc-pdf-actions { justify-content:stretch; padding:8px; }
+  .timesheets__doc-modal .timesheets__doc-pdf-actions .wp-button { width:100%; min-height:44px; }
+  .timesheets__doc-modal .timesheets__doc-iframe { min-height:0; }
+  .timesheets__doc-modal .timesheets__doc-img-wrap { padding:8px; }
+  .timesheets__doc-modal .timesheets__doc-generic-wrap { min-width:0; padding:24px 14px; overflow-wrap:anywhere; }
+  .timesheets__doc-modal .timesheets__doc-text-wrap { padding:12px; overflow-x:auto; }
+  .timesheets__doc-modal .timesheets__doc-text { min-width:0; overflow-wrap:anywhere; word-break:break-word; }
+}
+
+@media(min-width:701px) and (max-width:1023px) {
+  .timesheets__sim-metrics-bar { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}

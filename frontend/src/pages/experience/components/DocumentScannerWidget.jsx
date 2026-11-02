@@ -129,23 +129,23 @@ export default function DocumentScannerWidget() {
             <span className="wp-scanner-hud-title">PARSER TELEMETRY HUD</span>
             <div className="wp-scanner-hud-field">
               <span className="wp-scanner-hud-k">FILE IDENTIFIER:</span>
-              <span className="wp-scanner-hud-v">{sample.name}</span>
+              <span className="wp-scanner-hud-v" title={sample.name}>{sample.name}</span>
             </div>
             <div className="wp-scanner-hud-field">
               <span className="wp-scanner-hud-k">DOC FORMAT:</span>
-              <span className="wp-scanner-hud-v">{sample.type}</span>
+              <span className="wp-scanner-hud-v" title={sample.type}>{sample.type}</span>
             </div>
             <div className="wp-scanner-hud-field">
               <span className="wp-scanner-hud-k">EXTRACTED PERIOD:</span>
-              <span className="wp-scanner-hud-v">{sample.period}</span>
+              <span className="wp-scanner-hud-v" title={sample.period}>{sample.period}</span>
             </div>
             <div className="wp-scanner-hud-field">
               <span className="wp-scanner-hud-k">QUANTIFIED HOURS:</span>
-              <span className="wp-scanner-hud-v wp-scanner-hud-v--cyan">{sample.hours}</span>
+              <span className="wp-scanner-hud-v wp-scanner-hud-v--cyan" title={sample.hours}>{sample.hours}</span>
             </div>
             <div className="wp-scanner-hud-field">
               <span className="wp-scanner-hud-k">INTEGRITY DIGEST:</span>
-              <span className="wp-scanner-hud-v wp-scanner-hud-v--mono">{sample.hash.slice(0, 24)}...</span>
+              <span className="wp-scanner-hud-v wp-scanner-hud-v--mono" title={sample.hash}>{sample.hash.slice(0, 24)}...</span>
             </div>
             <div className="wp-scanner-hud-field">
               <span className="wp-scanner-hud-k">AI PARSING ENGINE:</span>
@@ -153,7 +153,7 @@ export default function DocumentScannerWidget() {
             </div>
             <div className="wp-scanner-hud-field">
               <span className="wp-scanner-hud-k">STORAGE DEST:</span>
-              <span className="wp-scanner-hud-v">{sample.storage}</span>
+              <span className="wp-scanner-hud-v" title={sample.storage}>{sample.storage}</span>
             </div>
           </div>
 

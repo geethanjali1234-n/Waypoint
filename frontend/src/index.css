@@ -54,6 +54,16 @@ input[type='number'] {
   box-sizing: border-box;
 }
 
+img, picture, video, canvas { max-width:100%; }
+
+/* Layout primitives must be allowed to shrink inside every flex/grid shell.
+   This prevents long filenames, IDs and parsed document values from forcing
+   the viewport wider than the device. Individual table/viewer components
+   retain their own deliberate scrolling areas. */
+#root :is(main, section, article, header, footer, form, [class*='grid'], [class*='toolbar'], [class*='panel'], [class*='card']) { min-width:0; }
+#root :is(.wp-field, .wp-search-input, .wp-data-table, .wp-table-outer, .wp-table-wrapper) { max-width:100%; min-width:0; }
+#root :is(.wp-data-table td, .wp-table td, .wp-doc-viewer-text, .wp-file-upload__name) { overflow-wrap:anywhere; }
+
 h1,
 h2 {
   font-family: var(--wp-font-sans);
@@ -119,6 +129,9 @@ code {
     .wp-prototype-events__toolbar select) {
     font-size: 16px;
   }
+
+  /* Native WebViews and iOS Safari zoom controls below 16px on focus. */
+  #root :is(input:not([type='checkbox']):not([type='radio']), select, textarea) { font-size:16px; }
 }
 
 /* Accessible Reduced Motion Support (Principle 33) */

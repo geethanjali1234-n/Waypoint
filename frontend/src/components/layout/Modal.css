@@ -84,3 +84,14 @@
   gap: var(--wp-space-sm);
   padding: var(--wp-space-md) var(--wp-space-lg) var(--wp-space-lg);
 }
+
+@media (max-width: 600px) {
+  .wp-modal__backdrop { align-items: flex-end; padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+  .wp-modal__panel { width:100%; max-width:100%; max-height:calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); border-radius:var(--wp-radius-card); }
+  .wp-modal__header { align-items:flex-start; gap:12px; padding:16px 16px 12px; }
+  .wp-modal__title { min-width:0; font-size:1.0625rem; overflow-wrap:anywhere; }
+  .wp-modal__close { display:grid; place-items:center; flex:0 0 44px; width:44px; height:44px; }
+  .wp-modal__body { min-width:0; padding:0 16px; overflow-x:hidden; }
+  .wp-modal__footer { display:grid; grid-template-columns:1fr; padding:12px 16px 16px; }
+  .wp-modal__footer .wp-button { width:100%; min-height:44px; }
+}

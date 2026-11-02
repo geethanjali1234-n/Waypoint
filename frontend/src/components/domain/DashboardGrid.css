@@ -4,8 +4,12 @@
   gap: var(--wp-space-md);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .wp-dashboard-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+@media (max-width: 640px) {
+  .wp-dashboard-grid { grid-template-columns: minmax(0, 1fr); }
 }

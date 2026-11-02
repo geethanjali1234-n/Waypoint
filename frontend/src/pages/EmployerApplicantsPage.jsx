@@ -116,7 +116,7 @@ export default function EmployerApplicantsPage() {
             description="Applicants will appear here when job seekers apply to this posting."
           />
         ) : (
-          <DataTable label={`Applicants for ${job.title}`}
+          <DataTable label={`Applicants for ${job.title}`} mobileMode="cards"
             rows={applicants.map((applicant) => ({ ...applicant, id: applicant.applicationId, person: { name: applicant.fullName, id: applicant.email } }))}
             getRowLabel={(applicant) => applicant.fullName}
             onOpenRow={(applicant) => navigate(`/employer/jobs/${jobId}/applicants/${applicant.applicationId}`)}

@@ -120,7 +120,7 @@ export default function EmployerEventRegistrantsPage() {
         {registrants.length === 0 ? (
           <EmptyState title="No registrants yet" description="Candidates will appear here when they register for this event." />
         ) : (
-          <DataTable label={`Registrants for ${event.title}`}
+          <DataTable label={`Registrants for ${event.title}`} mobileMode="cards"
             getRowId={(registrant) => registrant.jobSeekerProfileId}
             rows={registrants.map((registrant) => ({ ...registrant, person: { name: [registrant.firstName, registrant.lastName].filter(Boolean).join(' '), id: registrant.email } }))}
             columns={[

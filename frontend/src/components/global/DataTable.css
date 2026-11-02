@@ -20,3 +20,25 @@
 .wp-data-table :focus-visible { outline: 2px solid var(--wp-color-primary); outline-offset: 2px; }
 .wp-data-table__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 @media (max-width: 600px) { .wp-data-table th, .wp-data-table td { padding: 8px; white-space: nowrap; } }
+
+/* Action-oriented lists are easier to scan as records on a phone. Dense
+   comparison tables retain their normal, swipeable layout by default. */
+@media (max-width: 600px) {
+  .wp-data-table--mobile-cards .wp-data-table__scroll { overflow: visible; max-height: none; padding: 8px; }
+  .wp-data-table--mobile-cards table,
+  .wp-data-table--mobile-cards tbody,
+  .wp-data-table--mobile-cards tr,
+  .wp-data-table--mobile-cards td { display: block; width: 100%; }
+  .wp-data-table--mobile-cards thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .wp-data-table--mobile-cards tbody { display: grid; gap: 8px; }
+  .wp-data-table--mobile-cards tbody tr { min-width: 0; padding: 8px 12px; border: 1px solid var(--wp-color-border); border-radius: var(--wp-radius-control); }
+  .wp-data-table--mobile-cards td { display: grid; grid-template-columns: minmax(88px, .7fr) minmax(0, 1.3fr); align-items: center; gap: 12px; min-width: 0; padding: 8px 0; white-space: normal; overflow-wrap: anywhere; border-bottom: 1px solid var(--wp-color-border); text-align: left !important; }
+  .wp-data-table--mobile-cards td:last-child { border-bottom: 0; }
+  .wp-data-table--mobile-cards td::before { content: attr(data-label); color: var(--wp-color-text-muted); font-size: .75rem; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; }
+  .wp-data-table--mobile-cards .wp-data-table__person { min-width: 0; }
+  .wp-data-table--mobile-cards .wp-data-table__check { margin-left: auto; }
+  .wp-data-table--mobile-cards td:has(.wp-data-table__check) { display: flex; justify-content: flex-end; }
+  .wp-data-table--mobile-cards td:has(.wp-data-table__check)::before { display: none; }
+  .wp-data-table--mobile-cards footer { align-items: stretch; padding: 12px; }
+  .wp-data-table--mobile-cards footer nav { width: 100%; }
+}

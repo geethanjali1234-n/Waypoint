@@ -195,6 +195,7 @@ export default function ExperiencePage() {
   const { theme, toggleTheme } = useTheme();
   const [soundActive, setSoundActive] = useState(false);
   const [selectedNode, setSelectedNode] = useState('timesheets');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const toggleAudio = () => {
     const newState = audioEngine.toggleSound();
@@ -267,6 +268,8 @@ export default function ExperiencePage() {
             </a>
           </nav>
 
+          <button type="button" className="wp-exp-mobile-menu-toggle" aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={mobileMenuOpen} aria-controls="experience-mobile-navigation" onClick={() => setMobileMenuOpen((open) => !open)}><span /><span /><span /></button>
+
           <div className="wp-exp-nav-actions">
             <button
               type="button"
@@ -322,6 +325,15 @@ export default function ExperiencePage() {
               Sign In →
             </Link>
           </div>
+        </div>
+        <div id="experience-mobile-navigation" className={`wp-exp-mobile-menu ${mobileMenuOpen ? 'is-open' : ''}`}>
+          <a href="#section-constellation" onClick={() => setMobileMenuOpen(false)}>Topology</a>
+          <a href="#section-timesheets" onClick={() => setMobileMenuOpen(false)}>Timesheets</a>
+          <a href="#section-radar" onClick={() => setMobileMenuOpen(false)}>Workforce</a>
+          <a href="#section-documents" onClick={() => setMobileMenuOpen(false)}>Documents</a>
+          <a href="#section-architecture" onClick={() => setMobileMenuOpen(false)}>Architecture</a>
+          <Link to="/register/organization" onClick={() => setMobileMenuOpen(false)}>Create Organization Account</Link>
+          <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
         </div>
       </header>
 

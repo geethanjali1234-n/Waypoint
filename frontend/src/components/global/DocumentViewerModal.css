@@ -219,6 +219,20 @@
   word-break: break-word;
 }
 
+@media (max-width: 640px) {
+  .wp-doc-viewer-header { height:auto; min-height:3.5rem; align-items:flex-start; padding:8px 10px; gap:8px; }
+  .wp-doc-viewer-title-group { flex:1; padding-top:5px; }
+  .wp-doc-viewer-title { max-width:none; font-size:.8125rem; overflow-wrap:anywhere; white-space:normal; }
+  .wp-doc-viewer-controls { gap:2px; }
+  .wp-doc-zoom-toolbar { padding:1px; }
+  .wp-doc-zoom-level { display:none; }
+  .wp-doc-zoom-btn,.wp-doc-action-btn,.wp-doc-close-btn { width:40px; height:40px; min-width:40px; padding:0; }
+  .wp-doc-viewer-body { padding:12px 8px; align-items:flex-start; }
+  .wp-doc-viewer-iframe,.wp-doc-viewer-docx-container,.wp-doc-viewer-text { width:100%; max-width:100%; min-height:calc(100dvh - 100px); }
+  .wp-doc-viewer-iframe { height:calc(100dvh - 100px); }
+  .wp-doc-viewer-docx-container,.wp-doc-viewer-text { padding:12px; }
+}
+
 /* Floating zoom bar inside inline attachment views (e.g. Timesheets) */
 .wp-inline-zoom-toolbar {
   display: inline-flex;

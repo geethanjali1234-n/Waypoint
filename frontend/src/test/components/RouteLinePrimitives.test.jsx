@@ -123,6 +123,11 @@ describe('Controlled DataTable', () => {
     expect(screen.getByText('Fixture person')).toBeInTheDocument();
     expect(screen.getByText('TEST-001')).toBeInTheDocument();
   });
+  it('marks action lists for the phone card presentation and preserves cell labels', () => {
+    render(<DataTable columns={columns} rows={rows} mobileMode="cards" />);
+    expect(screen.getByLabelText('Records')).toHaveClass('wp-data-table--mobile-cards');
+    expect(screen.getByText('Test person A').closest('td')).toHaveAttribute('data-label', 'Name');
+  });
 });
 
 describe('DetailPanel', () => {

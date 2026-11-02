@@ -7,7 +7,7 @@ const rowId = (row) => row.id;
 const rowLabel = (row) => row.name || row.employeeName || String(row.id);
 
 /** Controlled table: callers own fetching, sorting, selection and pagination. */
-export default function DataTable({ columns = [], rows = [], getRowId = rowId, getRowLabel = rowLabel, selectedRowIds = [], onSelectionChange, isRowSelectable = () => true, sort, onSort, onOpenRow, rowOpenable = false, pagination, loading = false, emptyMessage = 'No records to show.', label = 'Records', className = '', showFooter = true }) {
+export default function DataTable({ columns = [], rows = [], getRowId = rowId, getRowLabel = rowLabel, selectedRowIds = [], onSelectionChange, isRowSelectable = () => true, sort, onSort, onOpenRow, rowOpenable = false, pagination, loading = false, emptyMessage = 'No records to show.', label = 'Records', className = '', showFooter = true, mobileMode = 'scroll' }) {
   const selectAll = useRef(null);
   const selectable = rows.filter(isRowSelectable).map(getRowId);
   const selected = new Set(selectedRowIds);
@@ -37,7 +37,7 @@ export default function DataTable({ columns = [], rows = [], getRowId = rowId, g
     event.preventDefault();
     onOpenRow(row);
   };
-  return <section className={`wp-data-table ${className}`} aria-label={label} aria-busy={loading}>
+  return <section className={`wp-data-table wp-data-table--mobile-${mobileMode} ${className}`} aria-label={label} aria-busy={loading}>
     <div className="wp-data-table__scroll" tabIndex={0} role="region" aria-label={`${label} table`}>
       <table><caption className="wp-data-table__sr">{label}</caption><thead><tr>
         {onSelectionChange && <th scope="col"><label className="wp-data-table__check"><input ref={selectAll} type="checkbox" aria-label="Select this page" aria-checked={some && !all ? 'mixed' : all} checked={all} disabled={!selectable.length || loading} onChange={togglePage} /></label></th>}
@@ -47,8 +47,8 @@ export default function DataTable({ columns = [], rows = [], getRowId = rowId, g
       </tr></thead><tbody>
         {loading ? <tr><td colSpan={columns.length + Number(Boolean(onSelectionChange)) + Number(Boolean(onOpenRow))}><span role="status">Loading records...</span></td></tr> : rows.length ? rows.map((row) => <tr key={getRowId(row)} className={`${selected.has(getRowId(row)) ? 'is-selected ' : ''}${rowOpenable && onOpenRow ? 'is-openable' : ''}`} tabIndex={rowOpenable && onOpenRow ? 0 : undefined} aria-label={rowOpenable && onOpenRow ? `Open ${getRowLabel(row)}` : undefined} onClick={rowOpenable && onOpenRow ? (event) => openRowFromEvent(event, row) : undefined} onKeyDown={rowOpenable && onOpenRow ? (event) => openRowFromKey(event, row) : undefined}>
           {onSelectionChange && <td><label className="wp-data-table__check"><input type="checkbox" aria-label={`Select ${getRowLabel(row)}`} checked={selected.has(getRowId(row))} disabled={!isRowSelectable(row)} onChange={() => onSelectionChange(selected.has(getRowId(row)) ? selectedRowIds.filter((id) => id !== getRowId(row)) : [...selectedRowIds, getRowId(row)])} /></label></td>}
-          {columns.map((column) => <td key={column.key} style={{ textAlign: column.align }}>{cell(column, row)}</td>)}
-          {onOpenRow && <td><button type="button" aria-label={`View ${getRowLabel(row)}`} onClick={() => onOpenRow(row)}>View<StrokeIcon name="arrow-right" size={16} /></button></td>}
+          {columns.map((column) => <td key={column.key} data-label={typeof column.header === 'string' ? column.header : column.key} style={{ textAlign: column.align }}>{cell(column, row)}</td>)}
+          {onOpenRow && <td data-label="Action"><button type="button" aria-label={`View ${getRowLabel(row)}`} onClick={() => onOpenRow(row)}>View<StrokeIcon name="arrow-right" size={16} /></button></td>}
         </tr>) : <tr><td colSpan={columns.length + Number(Boolean(onSelectionChange)) + Number(Boolean(onOpenRow))}>{emptyMessage}</td></tr>}
       </tbody></table>
     </div>

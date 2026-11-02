@@ -5,3 +5,4 @@
 .wp-mobile-bottom-nav__item[aria-current='page'] { background:var(--wp-color-primary-deep); color:#FBF9F3; font-weight:600; }
 .wp-mobile-bottom-nav__item:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
 @media(max-width:768px) { .wp-mobile-bottom-nav { display:block; } }
+@media(max-width:380px) { .wp-mobile-bottom-nav { padding-inline:8px; } .wp-mobile-bottom-nav__dock { gap:2px; } .wp-mobile-bottom-nav__item { min-width:0; font-size:.6875rem; } }

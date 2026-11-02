@@ -209,3 +209,11 @@
     font-size: 0.72rem;
   }
 }
+
+@media (max-width: 480px) {
+  .wp-table-scroll-hint { align-items:stretch; flex-wrap:wrap; }
+  .wp-table-scroll-indicator { order:-1; flex-basis:100%; }
+  .wp-table-scroll-btn { flex:1; justify-content:center; min-height:36px; }
+  .wp-table-wrapper { border-radius:var(--wp-radius-control); }
+  .wp-table th,.wp-table td { max-width:72vw; overflow-wrap:anywhere; }
+}
