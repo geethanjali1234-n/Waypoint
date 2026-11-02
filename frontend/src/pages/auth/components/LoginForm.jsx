@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { EmailInput, TextInput, PasswordInput, Button, ValidationMessage } from '../../../components';
 import authApi from '../../../api/authApi';
+import { getApiBaseUrl } from '../../../api/apiClient';
 import {
   clearMyHrAuthentication,
   clearMyHrSession,
@@ -12,7 +13,6 @@ import {
   saveMyHrAuthentication,
   WAYPOINT_WORKSPACE_ROLES,
 } from '../../../auth/myHrSession';
-import { getApiBaseUrl } from '../../../api/apiClient';
 import { APP_CURRENT_VERSION } from '../../../constants/appVersion';
 import './LoginForm.css';
 
@@ -96,7 +96,11 @@ export default function LoginForm({ workspace = 'JOB_SEEKER' }) {
     } catch (submitError) {
       const responseBody = submitError?.response?.data;
 
-      if (responseBody?.data && typeof responseBody.data === 'object') {
+        if ([502, 503, 504].includes(submitError?.response?.status)
+            || ['ERR_NETWORK', 'ECONNABORTED', 'ETIMEDOUT'].includes(submitError?.code)
+            || submitError?.message?.includes('Network Error')) {
+          setFormError("We can't reach Waypoint right now. Please try again in a moment.");
+        } else if (responseBody?.data && typeof responseBody.data === 'object') {
         Object.entries(responseBody.data).forEach(([field, message]) => {
           if (KNOWN_FIELDS.includes(field)) {
             setError(field, { type: 'server', message });
@@ -106,8 +110,6 @@ export default function LoginForm({ workspace = 'JOB_SEEKER' }) {
         });
       } else if (responseBody?.message) {
         setFormError(responseBody.message);
-      } else if (submitError?.code === 'ERR_NETWORK' || submitError?.message?.includes('Network Error')) {
-        setFormError(`Cannot connect to server at ${getApiBaseUrl()}. Please ensure your phone is connected to the same Wi-Fi.`);
       } else {
         setFormError('Something went wrong. Please try again.');
       }
@@ -124,7 +126,7 @@ export default function LoginForm({ workspace = 'JOB_SEEKER' }) {
           control={control}
           render={({ field }) => (
             <TextInput label="Login ID" name="loginId" value={field.value}
-              onChange={field.onChange} placeholder="TDADMIN or TD001"
+              onChange={field.onChange} placeholder="Enter your Login ID"
               error={errors.loginId?.message} required />
           )}
         />

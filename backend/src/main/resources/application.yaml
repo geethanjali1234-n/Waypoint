@@ -1,4 +1,10 @@
 waypoint:
+  wavy:
+    enabled: ${WAVY_AI_ENABLED:true}
+    provider: ${WAVY_AI_PROVIDER:ollama}
+    ollama-url: ${WAVY_OLLAMA_URL:http://127.0.0.1:11434}
+    api-key: ${WAVY_AI_API_KEY:}
+    model: ${WAVY_AI_MODEL:qwen3:4b-instruct-2507-q4_K_M}
   # Application uploads always use MongoDB GridFS. The local root remains only
   # as a legacy-file migration/read fallback.
   resume-storage-root: ${RESUME_STORAGE_ROOT:uploads}

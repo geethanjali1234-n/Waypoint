@@ -246,6 +246,7 @@ class EmployeeManagementServiceTest {
         assertThat(detail.reportingManager().userId()).isEqualTo("hr-1");
         assertThat(detail.reportingManager().employeeId()).isEqualTo("TD001");
         assertThat(detail.reportingManager().name()).isEqualTo("Riley Chen");
+        assertThat(detail.reportingManager().roleLabel()).isEqualTo("HR");
     }
 
     @Test

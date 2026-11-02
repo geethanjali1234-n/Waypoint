@@ -1,0 +1,15 @@
+.wavy-preview { max-width:960px; margin:32px auto; padding:24px; color:var(--wp-color-text); font-family:var(--wp-font-sans); }
+.wavy-preview header { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+.wavy-preview h1 { font-size:2.5rem; margin:6px 0; }
+.wavy-preview p { color:var(--wp-color-text-muted); line-height:1.6; }
+.wavy-preview button { min-height:44px; padding:10px 14px; border:1px solid var(--wp-color-border); border-radius:12px; background:var(--wp-color-surface); color:var(--wp-color-text); cursor:pointer; font:inherit; }
+.wavy-preview button[aria-pressed="true"] { background:var(--wp-color-primary-soft); border-color:var(--wp-color-primary); }
+.wavy-preview :focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:3px; }
+.wavy-preview__stage { display:flex; align-items:center; gap:24px; margin:24px 0; padding:24px; border:1px solid var(--wp-color-border); border-radius:24px; background:var(--wp-color-surface); }
+.wavy-preview__stage > button { background:transparent; border:0; }
+.wavy-preview__stage > button .wavy-mascot { width:220px; height:240px; }
+.wavy-preview__states { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.wavy-preview__options { display:flex; flex-wrap:wrap; gap:24px; margin:24px 0; }
+.wavy-preview__options label { display:flex; align-items:center; gap:8px; }
+.wavy-preview__machine { padding:24px; border:1px solid var(--wp-color-border); border-radius:24px; }
+@media(max-width:640px) { .wavy-preview { margin:0; padding:16px; } .wavy-preview header,.wavy-preview__stage { flex-direction:column; align-items:flex-start; } .wavy-preview__states { grid-template-columns:repeat(2,minmax(0,1fr)); } }

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getMyHrSession } from '../../auth/myHrSession';
 import { askWavi, permittedActions } from './waviAssistant';
@@ -8,16 +8,21 @@ import './WaypointChatbot.css';
 import FloatingAssistant from './FloatingAssistant';
 import StrokeIcon from '../global/StrokeIcon';
 import AssistantMascot from './AssistantMascot';
-import WaviFace from './WaviFace';
+import WaviMascot from './WaviMascot';
+import useWaviMascot from './useWaviMascot';
 import { isFollowUp } from './conversationIntents';
+import wavyApi from '../../api/wavyApi';
+import { getAccessToken } from '../../auth/myHrSession';
 
 export default function WaypointChatbot({ displayName } = {}) {
   const navigate = useNavigate();
+  const { animation: mascot, send: animateMascot } = useWaviMascot();
   const session = getMyHrSession();
   const location = useLocation();
   const role = resolveEffectiveRole(location.pathname, session);
   const suggestions = permittedActions(getContextActions(role, location.pathname + location.search), role);
   const [isOpen, setIsOpen] = useState(false);
+  const [aiAvailable, setAiAvailable] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [messages, setMessages] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -39,6 +44,15 @@ export default function WaypointChatbot({ displayName } = {}) {
   const inputRef = useRef(null);
 
   useEffect(() => {
+    if (!isOpen || !getAccessToken()) return;
+    let active = true;
+    wavyApi.capabilities().then((response) => {
+      if (active) setAiAvailable(response.data?.data?.aiAvailable === true);
+    }).catch(() => { if (active) setAiAvailable(false); });
+    return () => { active = false; };
+  }, [isOpen]);
+
+  useEffect(() => {
     const media = window.matchMedia?.('(max-width: 640px)');
     if (!media) return;
     const update = () => setIsMobile(media.matches);
@@ -54,12 +68,12 @@ export default function WaypointChatbot({ displayName } = {}) {
     return () => { document.body.style.overflow = previous; };
   }, [isOpen, isMobile]);
 
-  const toggleOpen = (open) => {
+  const toggleOpen = useCallback((open) => {
     openRef.current = open;
     setIsOpen(open);
     setMenuOpen(false);
-    if (open) setHasUnread(false);
-  };
+    if (open) { setHasUnread(false); animateMascot({ type: 'OPEN_CHAT' }); }
+  }, [animateMascot]);
 
   useEffect(() => () => {
     clearTimeout(replyTimerRef.current);
@@ -108,7 +122,7 @@ export default function WaypointChatbot({ displayName } = {}) {
         document.querySelector('.wp-floating-assistant')?.focus({ preventScroll: true });
       };
     }
-  }, [isOpen, isMobile]);
+  }, [isOpen, isMobile, toggleOpen]);
 
   const handleSend = (textToSend) => {
     const query = (textToSend || inputValue).trim();
@@ -124,14 +138,22 @@ export default function WaypointChatbot({ displayName } = {}) {
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setIsTyping(true);
+    animateMascot({ type: 'REQUEST_SENT' });
 
     setFeedback('');
     clearTimeout(successTimerRef.current);
     const requestId = ++requestRef.current;
     const previousQuery = lastTaskQueryRef.current;
     replyTimerRef.current = setTimeout(async () => {
-      const response = await askWavi(query, { role, route: location.pathname + location.search, previousQuery, context: conversationContextRef.current, history: messages.slice(-12) });
+      let response;
+      try {
+        response = await askWavi(query, { role, route: location.pathname + location.search, previousQuery, context: conversationContextRef.current, history: messages.slice(-12) });
+      } catch {
+        response = { text: "I couldn't finish that request. Try again, or open the relevant workspace.", error: true, actions: [{ label: 'Try again', query }] };
+      }
       if (requestId !== requestRef.current) return;
+      if (response.mode === 'ai') setAiAvailable(true);
+      else if (response.mode === 'limited') setAiAvailable(false);
       if (response.clearTask) lastTaskQueryRef.current = '';
       else if (!response.social && !response.preserveTask && !isFollowUp(query)) lastTaskQueryRef.current = query;
       if ('context' in response) conversationContextRef.current = response.context;
@@ -145,10 +167,12 @@ export default function WaypointChatbot({ displayName } = {}) {
         followUps: response.followUps || [],
         error: response.error,
         source: response.source,
-        mood: response.mood,
+        notice: response.notice && !messages.some((message) => message.notice === response.notice) ? response.notice : undefined,
       };
       setMessages((prev) => [...prev, botMessage]);
       setIsTyping(false);
+      animateMascot({ type: 'RESPONSE_RECEIVED', error: response.error === true, needsClarification: response.needsClarification === true });
+      if (response.actionCompleted === true) animateMascot({ type: 'TASK_CONFIRMED', kind: 'mutation', confirmed: response.confirmed === true });
       setFeedback(response.error ? 'error' : response.confirmed ? 'success' : '');
       successTimerRef.current = setTimeout(() => setFeedback(''), 1800);
       if (!openRef.current) setHasUnread(true);
@@ -178,6 +202,7 @@ export default function WaypointChatbot({ displayName } = {}) {
     setFeedback('');
     setIsTyping(false);
     setMessages([]);
+    animateMascot({ type: 'RESET' });
     setInputValue('');
     setHasUnread(false);
     setMenuOpen(false);
@@ -198,7 +223,7 @@ export default function WaypointChatbot({ displayName } = {}) {
   return (
     <>
       {/* Floating Launcher Trigger */}
-      <FloatingAssistant hidden={isOpen} onClick={() => toggleOpen(!isOpen)}
+      <FloatingAssistant animation={mascot} onWake={() => animateMascot({ type: 'WAKE' })} hidden={isOpen} onClick={() => toggleOpen(!isOpen)}
         controls="waypoint-assistant-chat" expanded={isOpen} hasUnread={hasUnread} label="Open Wavy, Waypoint Assistant" title="Ask Wavy" />
 
       {/* Chat Window */}
@@ -207,10 +232,10 @@ export default function WaypointChatbot({ displayName } = {}) {
           {/* Header */}
           <div className="wp-chatbot-header">
             <div className="wp-chatbot-header__info">
-              <div className={`wp-chatbot-header__avatar ${isOpen && isTyping ? 'is-thinking' : ''} ${feedback ? `is-${feedback}` : ''}`} aria-hidden="true"><WaviFace active={isOpen} /></div>
+              <div className="wp-chatbot-header__avatar" aria-hidden="true"><WaviMascot variant="compact" animation={mascot} active={isOpen} onWake={() => animateMascot({ type: 'WAKE' })} /></div>
               <div className="wp-chatbot-header__title">
                 <strong>Wavy <span className="wp-chatbot-brand">by Waypoint</span></strong>
-                <small><span className="wp-chatbot-online" /> Online</small>
+                <small><span className="wp-chatbot-online" /> {aiAvailable ? 'AI enabled · Read-only tools' : 'Workflow guide · Live lookups'}</small>
               </div>
             </div>
             <div className="wp-chatbot-header__actions">
@@ -254,7 +279,7 @@ export default function WaypointChatbot({ displayName } = {}) {
           {/* Conversation Feed */}
           <div ref={feedRef} className="wp-chatbot-feed" role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions text">
             {!hasConversation && <div className="wp-chatbot-welcome">
-              <AssistantMascot active={isOpen} thinking={isTyping} listening={Boolean(inputValue.trim())} />
+              <AssistantMascot animation={mascot} active={isOpen} onGreet={() => animateMascot({ type: 'GREET' })} onWake={() => animateMascot({ type: 'WAKE' })} />
               <span>YOUR WORKDAY, A LITTLE EASIER</span>
               <h2>Hey! I'm Wavy, your Waypoint buddy <span aria-hidden="true">&#128075;</span></h2>
               <p>{displayName ? `${displayName}, let's make your workday a little easier.` : "A little guidance. A handy shortcut. Less busywork."}</p>
@@ -264,7 +289,7 @@ export default function WaypointChatbot({ displayName } = {}) {
                   <span>{action.description}</span>
                 </button>)}
               </div>
-              <p className="wp-chatbot-disclaimer">Workflow tips from the Waypoint knowledge base. Live figures are labeled with their source when available.</p>
+              <p className="wp-chatbot-disclaimer">{aiAvailable ? 'AI replies can make mistakes. Check the cited sources. Wavy can read permitted information but cannot change HR records.' : 'Workflow guidance is available. AI conversation needs backend configuration. Live lookups are labeled with their source.'}</p>
             </div>}
             {messages.map((msg) => (
               <div
@@ -272,13 +297,14 @@ export default function WaypointChatbot({ displayName } = {}) {
                 className={`wp-chatbot-message wp-chatbot-message--${msg.sender} ${msg.error ? 'has-error' : ''} ${isOpen && msg.sender === 'assistant' && msg.id === messages[messages.length - 1].id ? 'is-explaining' : ''}`}
               >
                 {msg.sender === 'assistant' && (
-                  <div className={`wp-chatbot-message__mascot ${msg.mood === 'greeting' ? 'is-greeting' : ''}`} aria-hidden="true">
-                    <img src="/images/assistant/waypoint-mascot.png" alt="" />
+                  <div className="wp-chatbot-message__mascot" aria-hidden="true">
+                    <WaviMascot animation={msg.id === messages[messages.length - 1].id ? mascot : { state: 'idle', paused: true }} active={isOpen} />
                   </div>
                 )}
                 <div className="wp-chatbot-bubble">
                   {msg.sender === 'assistant' && <span className="wp-chatbot-message__speaker">Wavy</span>}
                   {renderFormattedText(msg.text)}
+                  {msg.notice && <span className="wp-chatbot-message__notice">{msg.notice}</span>}
                 </div>
 
                 {msg.source && <span className="wp-chatbot-message__source">Checked {new Date(msg.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} &middot; {msg.source}</span>}
@@ -311,7 +337,7 @@ export default function WaypointChatbot({ displayName } = {}) {
             {/* Typing Indicator */}
             {isTyping && (
               <div className="wp-chatbot-typing" aria-label="Assistant is typing">
-                <img className="wp-chatbot-typing__mascot" src="/images/assistant/waypoint-face.png" alt="" aria-hidden="true" />
+                <WaviMascot variant="compact" animation={mascot} active={isOpen} />
                 <span className="wp-chatbot-typing-dot" />
                 <span className="wp-chatbot-typing-dot" />
                 <span className="wp-chatbot-typing-dot" />
@@ -337,7 +363,9 @@ export default function WaypointChatbot({ displayName } = {}) {
               type="text"
               className="wp-chatbot-input"
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              maxLength={2000}
+              onChange={(e) => { setInputValue(e.target.value); animateMascot({ type: 'INPUT_CHANGED', hasInput: Boolean(e.target.value.trim()) }); }}
+              onFocus={() => animateMascot({ type: 'WAKE' })}
               onKeyDown={handleKeyDown}
               placeholder="Ask Wavy about your workday..."
               aria-label="Ask assistant a question"

@@ -4,19 +4,50 @@ import timesheetApi from '../../api/timesheetApi';
 import myHrEmployeeApi from '../../api/myHrEmployeeApi';
 import myHrProfileChangeApi from '../../api/myHrProfileChangeApi';
 import { askWavi, permittedActions } from '../../components/chatbot/waviAssistant';
+import wavyApi from '../../api/wavyApi';
 
 vi.mock('../../api/payrollReadinessApi', () => ({ default: { getReadiness: vi.fn() } }));
 vi.mock('../../api/timesheetApi', () => ({ default: { list: vi.fn() } }));
-vi.mock('../../api/myHrEmployeeApi', () => ({ default: { list: vi.fn() } }));
+vi.mock('../../api/myHrEmployeeApi', () => ({ default: { list: vi.fn(), getMine: vi.fn() } }));
 vi.mock('../../api/myHrProfileChangeApi', () => ({ default: { listForAdmin: vi.fn() } }));
+vi.mock('../../api/wavyApi', () => ({ default: { chat: vi.fn() } }));
 
-beforeEach(() => { vi.resetAllMocks(); localStorage.setItem('accessToken', 'test-token'); });
+beforeEach(() => { vi.resetAllMocks(); wavyApi.chat.mockResolvedValue({ data: { success: true, data: { mode: 'limited', notice: 'Workflow guidance' } } }); localStorage.setItem('accessToken', 'test-token'); });
 afterEach(() => localStorage.removeItem('accessToken'));
 const admin = { role: 'COMPANY_ADMIN', route: '/myhr/admin/payroll-readiness' };
 const employee = { role: 'EMPLOYEE', route: '/myhr/employee/timesheets' };
 const ok = (data) => ({ data: { success: true, data } });
 
 describe('Wavy trusted application data', () => {
+  it('answers who is my HR using the actual profile assignment', async () => {
+    myHrEmployeeApi.getMine.mockResolvedValue(ok({ reportingManager: { name: 'Riley Chen', roleLabel: 'HR' } }));
+    const reply = await askWavi('Who is my HR?', employee);
+    expect(reply.text).toContain('Riley Chen');
+    expect(reply.text).toContain('HR** role');
+    expect(reply.source).toBe('Your authenticated profile');
+  });
+
+  it('does not label an administrator as HR', async () => {
+    myHrEmployeeApi.getMine.mockResolvedValue(ok({ reportingManager: { name: 'Alex', roleLabel: 'COMPANY_ADMIN' } }));
+    const reply = await askWavi('Who is my HR?', employee);
+    expect(reply.text).toContain("won't assume");
+    expect(reply.text).not.toContain('HR** role');
+  });
+
+  it('uses a real backend model response instead of the canned conversation', async () => {
+    wavyApi.chat.mockResolvedValue(ok({ mode: 'ai', text: 'A live conversational answer.', actions: [], sources: [{ id: 'guide', title: 'Waypoint guide' }] }));
+    const reply = await askWavi('Hello, can you help me?', { ...employee, history: [{ sender: 'user', text: 'My original task' }] });
+    expect(reply.text).toBe('A live conversational answer.');
+    expect(reply.source).toBe('Waypoint guide');
+    expect(wavyApi.chat).toHaveBeenCalledWith(expect.objectContaining({ history: [{ role: 'user', text: 'My original task' }] }));
+  });
+
+  it('does not bypass an authentication or authorization failure with local tools', async () => {
+    wavyApi.chat.mockRejectedValue({ response: { status: 403 } });
+    const reply = await askWavi('Who is my HR?', employee);
+    expect(reply.error).toBe(true);
+    expect(myHrEmployeeApi.getMine).not.toHaveBeenCalled();
+  });
   it.each(['Hi', 'Alright', 'Thanks', 'Okay!', 'Thank you Wavy', 'Sounds good'])('handles %s conversationally without API calls or navigation cards', async (query) => {
     const response = await askWavi(query, admin);
     expect(response.social).toBe(true);

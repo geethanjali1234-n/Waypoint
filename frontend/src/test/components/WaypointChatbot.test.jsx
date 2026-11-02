@@ -184,7 +184,7 @@ describe('WaypointChatbot Component', () => {
 
     expect(screen.getByRole('dialog', { name: /Waypoint Assistant Chat/i })).toBeInTheDocument();
     expect(screen.getAllByText(/Wavy/).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/Online/i)).toBeInTheDocument();
+    expect(screen.getByText(/Workflow guide/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Hey! I'm Wavy/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Payroll Readiness.*Check/i })).toBeInTheDocument();
   });

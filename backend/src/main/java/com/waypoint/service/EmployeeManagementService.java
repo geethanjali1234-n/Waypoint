@@ -143,7 +143,7 @@ public class EmployeeManagementService {
                     managerUserId,
                     managerProfile == null ? null : managerProfile.getEmployeeId(),
                     managerUser == null ? null : displayName(managerUser, managerProfile),
-                    null,
+                    managerUser == null ? null : managerUser.getRole().name(),
                     activeAssignment.getEffectiveFrom(),
                     null);
         }

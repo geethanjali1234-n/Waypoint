@@ -7,6 +7,7 @@ import { conversationalReply, employeeSearchIntent, isFollowUp, workplaceQuery }
 import { navigationRegistry } from '../../services/navigation/navigationRegistry';
 import { queryKnowledgeBase } from './knowledgeBase';
 import { getContextActions } from './quickActions';
+import wavyApi from '../../api/wavyApi';
 
 const staffRoles = ['COMPANY_ADMIN', 'HR'];
 const isWorkplaceRole = (role) => [...staffRoles, 'EMPLOYEE'].includes(role);
@@ -27,7 +28,33 @@ function unwrap(response) {
   return response.data.data;
 }
 
-export async function askWavi(query, { role, route, previousQuery = '', context = null, history = [] }) {
+export async function askWavi(query, options) {
+  let notice = '';
+  if (getAccessToken() && isWorkplaceRole(options.role)) {
+    try {
+      const response = await wavyApi.chat({ message: query.slice(0, 2000), route: (options.route || '').slice(0, 500),
+        history: (options.history || []).filter((turn) => ['user', 'assistant'].includes(turn.sender) && turn.text?.trim())
+          .slice(-10).map((turn) => ({ role: turn.sender, text: turn.text.slice(0, 2000) })) });
+      const data = unwrap(response);
+      if (['ai', 'verified'].includes(data.mode) && typeof data.text === 'string' && data.text.trim()) {
+        return { text: data.text, actions: permittedActions(data.actions || [], options.role),
+          source: data.sources?.map((source) => source.title).join(' · '), sources: data.sources || [],
+          mode: data.mode, confirmed: data.confirmed, context: null };
+      }
+      notice = data.notice || 'AI conversation is unavailable. Using workflow guidance.';
+    } catch (error) {
+      if ([401, 403].includes(error?.response?.status)) return {
+        text: error.response.status === 401 ? 'Your session expired. Sign in again so I can check your workplace information.' : "Your account doesn't have access to this assistant.",
+        actions: [], error: true, mode: 'limited',
+      };
+      notice = 'AI conversation is currently unavailable. Using workflow guidance.';
+    }
+  }
+  const guided = await askGuidedWavi(query, options);
+  return { ...guided, mode: 'limited', notice };
+}
+
+async function askGuidedWavi(query, { role, route, previousQuery = '', context = null, history = [] }) {
   const cleanedQuery = workplaceQuery(query);
   const conversation = conversationalReply(query, { history, previousQuery, context })
     || (cleanedQuery !== query ? conversationalReply(cleanedQuery, { history, previousQuery, context }) : null);
@@ -52,6 +79,19 @@ export async function askWavi(query, { role, route, previousQuery = '', context 
     && !/\b(how|explain|workflow)\b/i.test(contextualQuery);
 
   try {
+    if (/\b(my hr|my reporting manager|my manager|who do i report to)\b/i.test(query)
+      && /\b(who|name|contact|tell|show)\b|^my (hr|manager)[?! ]*$/i.test(query)) {
+      if (!getAccessToken()) throw new Error('Sign-in required');
+      const profile = unwrap(await myHrEmployeeApi.getMine());
+      const manager = profile.reportingManager;
+      const isHr = manager?.roleLabel === 'HR';
+      return { text: manager?.name ? isHr
+        ? `Your assigned reporting manager is **${manager.name}**, who has the **HR** role. You can check the assignment on My Profile.`
+        : `Your reporting manager is **${manager.name}**. Your profile doesn't identify a separate assigned HR contact, so I won't assume they're your HR representative.`
+        : "I couldn't find a named reporting-manager assignment in your profile. Ask your organization administrator to confirm your HR contact.",
+      actions: [{ label: 'View My Profile', path: `/myhr/${role === 'COMPANY_ADMIN' ? 'admin' : role === 'HR' ? 'hr' : 'employee'}/profile` }],
+      source: 'Your authenticated profile', confirmed: true };
+    }
     const employeeSearch = employeeSearchIntent(query, context);
     const base = `/myhr/${role === 'COMPANY_ADMIN' ? 'admin' : role === 'HR' ? 'hr' : 'employee'}`;
     if (employeeSearch) {
@@ -59,7 +99,7 @@ export async function askWavi(query, { role, route, previousQuery = '', context 
       if (!employeeSearch.value) {
         const field = employeeSearch.field;
         return { text: field ? `What's the ${field === 'employeeId' ? 'employee ID' : field}?` : 'Sure! Are you looking for someone by name, employee ID, or designation?',
-          context: employeeSearch, actions: field ? [] : ['name', 'employee ID', 'designation'].map((label) => ({ label: `By ${label}`, query: `by ${label}` })) };
+          context: employeeSearch, needsClarification: true, actions: field ? [] : ['name', 'employee ID', 'designation'].map((label) => ({ label: `By ${label}`, query: `by ${label}` })) };
       }
       if (!getAccessToken()) throw new Error('Sign-in required');
       const roster = unwrap(await myHrEmployeeApi.list());
@@ -124,7 +164,7 @@ export async function askWavi(query, { role, route, previousQuery = '', context 
     const steps = lines.filter((line) => /^\d+[.)]\s/.test(line));
     const guide = !fallback && steps.length > 1 ? { intent: 'workflow-guide', steps, step: -1, actions: responseActions.slice(0, 1) } : null;
     return { text: fallback ? "I'm not sure which task you mean yet. Tell me what you're trying to do, and I'll help with the next step." : text,
-      actions: fallback ? [] : responseActions.slice(0, 2),
+      actions: fallback ? [] : responseActions.slice(0, 2), needsClarification: fallback,
       context: guide,
       followUps: guide ? [{ label: 'Walk me through it', query: 'walk me through it' }] : /timesheet|hours/i.test(contextualQuery) && role === 'EMPLOYEE' ? [{ label: 'Check my timesheet status', query: 'Check my timesheet status' }] : [] };
   } catch (error) {

@@ -15,6 +15,16 @@ function renderPage() { return render(<MemoryRouter><LoginPage /></MemoryRouter>
 describe('LoginPage', () => {
   beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); });
 
+  it.each([502, 503, 504])('explains an unavailable server (%s) without blaming credentials', async (status) => {
+    authApi.login.mockRejectedValue({ response: { status, data: '' } });
+    const user = userEvent.setup(); renderPage();
+    await user.type(screen.getByLabelText(byLabel('Login ID')), 'TD001');
+    await user.type(screen.getByLabelText(byLabel('Password')), 'Password1!');
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    expect(await screen.findByText("We can't reach Waypoint right now. Please try again in a moment.")).toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it('shows one login experience with Login ID, password, and Forgot password', () => {
     renderPage();
     expect(screen.getByLabelText(byLabel('Login ID'))).toBeInTheDocument();

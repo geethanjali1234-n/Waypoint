@@ -1,0 +1,55 @@
+.wavy-mascot { display:inline-block; width:148px; height:160px; flex-shrink:0; vertical-align:middle; }
+.wavy-mascot svg { display:block; width:100%; height:100%; overflow:visible; }
+.wavy-mascot--compact { width:36px; height:36px; }
+.wavy-mascot__head { transform-box:view-box; transform-origin:120px 104px; transform:rotate(var(--wavy-head-tilt,0deg)); transition:transform 220ms ease-out; }
+.wavy-mascot__gaze { transform:translate(var(--wavy-look-x,0px),var(--wavy-look-y,0px)); transition:transform 180ms ease-out; }
+.wavy-mascot__eye { transform-box:fill-box; transform-origin:center; transition:transform 150ms ease-in-out; }
+.wavy-mascot__eye-open,.wavy-mascot__eye-rest,.wavy-mascot__talk,.wavy-mascot__uncertain,.wavy-mascot__brow { opacity:0; transition:opacity 180ms ease; }
+.wavy-mascot__eye-happy,.wavy-mascot__smile { opacity:1; transition:opacity 180ms ease; }
+.wavy-mascot__hand { transform-box:view-box; transition:transform 260ms ease-in-out; }
+.wavy-mascot__hand--left { transform-origin:78px 184px; }
+.wavy-mascot__hand--right { transform-origin:162px 184px; transform:rotate(17deg); }
+.wavy-mascot__success-marks { opacity:0; transform-origin:120px 45px; }
+.wavy-mascot__body { transform-box:view-box; transform-origin:120px 235px; }
+.wavy-mascot[data-state="idle"] .wavy-mascot__body { animation:wavyBreathe 6s ease-in-out infinite; }
+.wavy-mascot[data-blinking="true"] .wavy-mascot__eye { transform:scaleY(.08); }
+.wavy-mascot[data-state="greeting"] .wavy-mascot__hand--right { animation:wavyWave 500ms ease-in-out 1; }
+.wavy-mascot[data-state="greeting"] .wavy-mascot__antenna-light { animation:wavyAntennaHello 350ms ease-out 1; }
+.wavy-mascot[data-state="attentive"] .wavy-mascot__eye-open { opacity:1; }
+.wavy-mascot[data-state="attentive"] .wavy-mascot__eye-happy { opacity:0; }
+.wavy-mascot[data-state="attentive"] .wavy-mascot__hand--right { transform:rotate(-8deg); }
+.wavy-mascot[data-state="thinking"] .wavy-mascot__eye-open { opacity:1; transform:scaleY(.55); }
+.wavy-mascot[data-state="thinking"] .wavy-mascot__eye-happy { opacity:0; }
+.wavy-mascot[data-state="thinking"] .wavy-mascot__gaze { animation:wavySearch 1.4s ease-in-out infinite; }
+.wavy-mascot[data-state="thinking"] .wavy-mascot__antenna-light { animation:wavyThinkPulse 1.2s ease-in-out infinite; }
+.wavy-mascot[data-state="thinking"] .wavy-mascot__smile { opacity:.5; }
+.wavy-mascot[data-state="speaking"] .wavy-mascot__smile { opacity:0; }
+.wavy-mascot[data-state="speaking"] .wavy-mascot__talk { opacity:1; transform-box:fill-box; transform-origin:center; animation:wavyTalk 220ms ease-in-out 3; }
+.wavy-mascot[data-state="success"] .wavy-mascot__hand--right { transform:rotate(-24deg); }
+.wavy-mascot[data-state="success"] .wavy-mascot__hand--left { transform:rotate(26deg); }
+.wavy-mascot[data-state="success"] .wavy-mascot__success-marks { animation:wavyCelebrate 450ms ease-out 1; }
+.wavy-mascot[data-state="success"] .wavy-mascot__smile { stroke-width:6; }
+.wavy-mascot[data-state="confused"] .wavy-mascot__eye-open,.wavy-mascot[data-state="confused"] .wavy-mascot__brow,.wavy-mascot[data-state="confused"] .wavy-mascot__uncertain { opacity:1; }
+.wavy-mascot[data-state="confused"] .wavy-mascot__eye-happy,.wavy-mascot[data-state="confused"] .wavy-mascot__smile { opacity:0; }
+.wavy-mascot[data-state="confused"] .wavy-mascot__brow--0 { transform:rotate(-15deg); transform-box:fill-box; transform-origin:center; }
+.wavy-mascot[data-state="confused"] .wavy-mascot__brow--1 { transform:rotate(15deg); transform-box:fill-box; transform-origin:center; }
+.wavy-mascot[data-state="confused"] .wavy-mascot__eye--1 { transform:scaleY(.7); }
+.wavy-mascot[data-state="sleeping"] .wavy-mascot__eye-happy { opacity:0; }
+.wavy-mascot[data-state="sleeping"] .wavy-mascot__eye-rest { opacity:1; }
+.wavy-mascot[data-state="sleeping"] .wavy-mascot__antenna-light { opacity:.45; }
+.wavy-mascot[data-state="sleeping"] .wavy-mascot__smile { opacity:.45; }
+.wavy-mascot[data-blinking="true"] .wavy-mascot__eye { transform:scaleY(.08); }
+.wavy-mascot[data-paused="true"] * { animation-play-state:paused!important; transition:none!important; }
+.wavy-mascot[data-reduced-motion="true"] * { animation:none!important; transition:none!important; }
+.wavy-mascot[data-reduced-motion="true"] .wavy-mascot__head,.wavy-mascot[data-reduced-motion="true"] .wavy-mascot__gaze { transform:none; }
+@keyframes wavyBreathe { 0%,100% { transform:scaleY(1); } 50% { transform:scaleY(1.012); } }
+@keyframes wavyWave { 0%,100% { transform:rotate(0deg); } 30% { transform:rotate(-28deg); } 65% { transform:rotate(8deg); } }
+@keyframes wavyAntennaHello { 0% { opacity:.5; } 60%,100% { opacity:1; } }
+@keyframes wavySearch { 0%,100% { transform:translate(-2px,0); } 50% { transform:translate(3px,0); } }
+@keyframes wavyThinkPulse { 0%,100% { opacity:.45; } 50% { opacity:1; } }
+@keyframes wavyTalk { 0%,100% { transform:scaleY(.5); } 50% { transform:scaleY(1.15); } }
+@keyframes wavyCelebrate { 0% { opacity:0; transform:scale(.8); } 40% { opacity:1; transform:scale(1.05); } 100% { opacity:0; transform:scale(1); } }
+@media(prefers-reduced-motion:reduce) {
+  .wavy-mascot * { animation:none!important; transition:none!important; }
+  .wavy-mascot__head,.wavy-mascot__gaze { transform:none!important; }
+}

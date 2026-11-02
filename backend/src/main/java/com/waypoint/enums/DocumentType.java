@@ -5,6 +5,7 @@ public enum DocumentType {
     REQUESTED_DOCUMENT,
     EMPLOYEE_PROFILE_DOCUMENT,
     /* Retained for compatibility with foundation code and existing metadata. */
+    COMPANY_POLICY,
     TIMESHEET,
     PAYSTUB,
     REPORT,
