@@ -30,4 +30,19 @@ public interface EmailService {
     /** As above, with a sender display name that overrides the configured one (the address is unchanged). */
     void sendHtmlEmailWithAttachments(String to, String subject, String htmlBody, java.util.List<EmailAttachment> attachments,
                                       String fromDisplayName);
+
+    /**
+     * Organization-aware sends. The identity supplies the From display name, a From address only when the
+     * organization's sender is authorized (see {@link MailSenderAuthorization}; otherwise the From address stays the
+     * global SMTP account), and a Reply-To (the Organization Email unless the organization configures its own). Defaults ignore
+     * the identity so other implementations keep working.
+     */
+    default void sendHtmlEmail(String to, String subject, String htmlBody, String plainTextBody, EmailSenderIdentity identity) {
+        sendHtmlEmail(to, subject, htmlBody, plainTextBody);
+    }
+
+    default void sendHtmlEmailWithAttachments(String to, String subject, String htmlBody, java.util.List<EmailAttachment> attachments,
+                                              EmailSenderIdentity identity) {
+        sendHtmlEmailWithAttachments(to, subject, htmlBody, attachments, identity == null ? null : identity.displayName());
+    }
 }

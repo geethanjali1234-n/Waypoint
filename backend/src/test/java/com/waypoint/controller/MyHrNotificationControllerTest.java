@@ -81,6 +81,38 @@ class MyHrNotificationControllerTest {
     }
 
     @Test
+    void getMyNotifications_listContainingUnknownType_returnsOkWithoutFabricatedAction() throws Exception {
+        Notification unknown = Notification.builder()
+                .id("notification-2").recipientUserId("user-1").notificationType(NotificationType.UNKNOWN)
+                .title("Stored title").message("Stored message").isRead(false).createdAt(LocalDateTime.now()).build();
+        when(jwtService.extractUserId("token")).thenReturn("user-1");
+        when(jwtService.extractRole("token")).thenReturn("HR");
+        when(currentUserResolver.resolveUserId(any())).thenReturn("user-1");
+        when(authenticatedUserService.require(any(), any(), eq(false))).thenReturn(sampleUser());
+        when(inAppNotificationService.listNotifications("user-1", 30)).thenReturn(List.of(sampleNotification(), unknown));
+
+        mockMvc.perform(get("/api/myhr/notifications").param("limit", "30").header("Authorization", "Bearer token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].type").value("TIMESHEET_SUBMITTED"))
+                .andExpect(jsonPath("$.data[1].type").value("UNKNOWN"))
+                .andExpect(jsonPath("$.data[1].title").value("Stored title"))
+                .andExpect(jsonPath("$.data[1].actionUrl").doesNotExist());
+    }
+
+    @Test
+    void getMyNotifications_emptyList_returnsOkWithEmptyArray() throws Exception {
+        when(jwtService.extractUserId("token")).thenReturn("user-1");
+        when(jwtService.extractRole("token")).thenReturn("HR");
+        when(currentUserResolver.resolveUserId(any())).thenReturn("user-1");
+        when(authenticatedUserService.require(any(), any(), eq(false))).thenReturn(sampleUser());
+        when(inAppNotificationService.listNotifications("user-1", 50)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/myhr/notifications").header("Authorization", "Bearer token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
     void getUnreadCount_returnsCount() throws Exception {
         when(jwtService.extractUserId("token")).thenReturn("user-1");
         when(jwtService.extractRole("token")).thenReturn("EMPLOYEE");

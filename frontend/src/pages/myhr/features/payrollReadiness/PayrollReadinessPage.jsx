@@ -601,10 +601,8 @@ export function PayrollReadinessWorkspace() {
 }
 
 // The workspace above wrapped in the ordinary feature-page chrome (title,
-// back button, shell). No route renders this directly anymore - Payroll
-// Readiness now lives as a tab on the Timesheets page, and the old
-// /payroll-readiness URLs (still linked from reminder notifications) redirect
-// there (see AppRouter). Kept exported for direct, standalone use/testing.
+// shell). Rendered by the /myhr/{hr,admin}/payroll-readiness routes, which
+// reminder notifications also link to.
 export default function PayrollReadinessPage({ role }) {
   return <MyHrFeaturePage hideBack className="phase-six" title="Payroll Readiness" fullWidth>
     <PayrollReadinessWorkspace role={role} />

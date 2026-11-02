@@ -280,7 +280,7 @@ class I983WorkflowServiceTest {
         verify(fulfillmentEmails).send(same(request), argThat(attachment -> attachment.fileName().endsWith(".pdf")
                 && attachment.contentType().equals("application/pdf") && attachment.content().length > 0), isNull());
         // The dedicated signed-document email is the only email for an approval: no second notification email.
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void signingIsBlockedWithoutAnActiveOrganizationSignature() throws Exception {
@@ -451,9 +451,9 @@ class I983WorkflowServiceTest {
 
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("hr"), eq(NotificationType.DOCUMENT_REQUEST_CREATED), anyString(), anyString(), eq("request-1"), anyString());
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("admin"), eq(NotificationType.DOCUMENT_REQUEST_CREATED), anyString(), anyString(), eq("request-1"), anyString());
-        verify(emailService).sendHtmlEmail(eq("hr-personal@x.com"), eq("New Signed I-983 for review"), anyString());
-        verify(emailService).sendHtmlEmail(eq("admin-login@x.com"), eq("New Signed I-983 for review"), anyString());
-        verify(emailService, never()).sendHtmlEmail(eq("work-hr@x.com"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq("hr-personal@x.com"), eq("New Signed I-983 for review"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
+        verify(emailService).sendHtmlEmail(eq("admin-login@x.com"), eq("New Signed I-983 for review"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
+        verify(emailService, never()).sendHtmlEmail(eq("work-hr@x.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void returnAndResubmitEmailTheRequesterThenTheReviewers() throws Exception {
@@ -464,15 +464,15 @@ class I983WorkflowServiceTest {
         service.returnForCorrection("hr", "request-1", "Section 5 is incomplete");
 
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("employee"), eq(NotificationType.DOCUMENT_REQUEST_RETURNED), anyString(), contains("Section 5"), eq("request-1"), anyString());
-        verify(emailService).sendHtmlEmail(eq("employee-personal@x.com"), eq("Signed I-983 returned for correction"), anyString());
+        verify(emailService).sendHtmlEmail(eq("employee-personal@x.com"), eq("Signed I-983 returned for correction"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
 
         org.mockito.Mockito.clearInvocations(notifications, emailService);
         service.resubmit("employee", "request-1", pdfFile("i983-v2.pdf"), null);
 
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("hr"), eq(NotificationType.DOCUMENT_REQUEST_CREATED), eq("Signed I-983 resubmitted"), anyString(), eq("request-1"), anyString());
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("admin"), eq(NotificationType.DOCUMENT_REQUEST_CREATED), eq("Signed I-983 resubmitted"), anyString(), eq("request-1"), anyString());
-        verify(emailService).sendHtmlEmail(eq("hr-personal@x.com"), eq("Signed I-983 resubmitted"), anyString());
-        verify(emailService).sendHtmlEmail(eq("admin-login@x.com"), eq("Signed I-983 resubmitted"), anyString());
+        verify(emailService).sendHtmlEmail(eq("hr-personal@x.com"), eq("Signed I-983 resubmitted"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
+        verify(emailService).sendHtmlEmail(eq("admin-login@x.com"), eq("Signed I-983 resubmitted"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void rejectionEmailsTheRequester() throws Exception {
@@ -483,14 +483,14 @@ class I983WorkflowServiceTest {
         service.reject("admin", "request-1", "Not eligible for STEM OPT");
 
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("employee"), eq(NotificationType.DOCUMENT_REQUEST_REJECTED), anyString(), anyString(), eq("request-1"), anyString());
-        verify(emailService).sendHtmlEmail(eq("employee-personal@x.com"), eq("Signed I-983 rejected"), anyString());
+        verify(emailService).sendHtmlEmail(eq("employee-personal@x.com"), eq("Signed I-983 rejected"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void emailFailureNeverFailsTheI983ReturnAndKeepsTheInAppNotification() throws Exception {
         stubEmailRecipients();
         DocumentRequest request = submitted();
         org.mockito.Mockito.clearInvocations(notifications);
-        org.mockito.Mockito.doThrow(new IllegalStateException("smtp down")).when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+        org.mockito.Mockito.doThrow(new IllegalStateException("smtp down")).when(emailService).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
 
         service.returnForCorrection("hr", "request-1", "Section 5 is incomplete");
 

@@ -7,14 +7,6 @@
  * built.
  */
 
-import {
-  MY_HR_EMPLOYEE_EMAIL,
-  MY_HR_EMPLOYEE_PASSWORD,
-  MY_HR_EMPLOYEE_SESSION_TOKEN,
-  MY_HR_ADMIN_SESSION_TOKEN,
-  MY_HR_HR_SESSION_TOKEN,
-} from '../../constants/myHrEmployeeAuth';
-
 const STORAGE_KEY = 'myhrDirectory';
 const SESSION_KEY = 'myhrSession';
 
@@ -23,8 +15,6 @@ export const MYHR_ROLES = {
   HR: 'HR',
   EMPLOYEE: 'EMPLOYEE',
 };
-
-export const MYHR_DEMO_PASSWORD = 'Waypoint@123';
 
 export const MYHR_ORGANIZATION = { code: 'TD', name: 'Tardus Inc' };
 
@@ -113,51 +103,6 @@ function findUserByIdentifier(identifier) {
   };
 
   return hrEmailAliases[normalized] ? findUserByLoginId(hrEmailAliases[normalized]) : null;
-}
-
-/**
- * Authenticates the local My HR preview accounts used by the split login.
- * This is intentionally explicit until My HR has a backend authentication
- * endpoint. Both organization IDs (TD001/TD002/TD003...) and email aliases
- * are accepted in the login field.
- */
-export function authenticateMyHrUser(identifier, password) {
-  const normalizedIdentifier = (identifier || '').trim().toLowerCase();
-
-  if (
-    normalizedIdentifier === MY_HR_EMPLOYEE_EMAIL.toLowerCase()
-    && password === MY_HR_EMPLOYEE_PASSWORD
-  ) {
-    return {
-      user: {
-        loginId: 'MYHR-EMPLOYEE',
-        name: 'Jhansi Nalla',
-        role: MYHR_ROLES.EMPLOYEE,
-        reportsTo: 'TD001',
-        personalEmail: MY_HR_EMPLOYEE_EMAIL,
-        designation: 'Employee',
-      },
-      accessToken: MY_HR_EMPLOYEE_SESSION_TOKEN,
-    };
-  }
-
-  const user = findUserByIdentifier(identifier);
-
-  if (!user || password !== MYHR_DEMO_PASSWORD) return null;
-
-  if (user.role === MYHR_ROLES.COMPANY_ADMIN) {
-    return { user, accessToken: MY_HR_ADMIN_SESSION_TOKEN };
-  }
-
-  if (user.role === MYHR_ROLES.HR) {
-    return { user, accessToken: MY_HR_HR_SESSION_TOKEN };
-  }
-
-  if (user.role === MYHR_ROLES.EMPLOYEE) {
-    return { user, accessToken: MY_HR_EMPLOYEE_SESSION_TOKEN };
-  }
-
-  return null;
 }
 
 export function getDirectReports(managerLoginId) {

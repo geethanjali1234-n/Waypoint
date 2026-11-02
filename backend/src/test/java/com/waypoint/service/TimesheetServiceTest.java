@@ -711,6 +711,26 @@ class TimesheetServiceTest {
     }
 
     @Test
+    void aFailingNotificationDoesNotUndoARejectionOrSkipTheOtherRecipient() {
+        MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor = actor("admin-1", UserRole.COMPANY_ADMIN);
+        Timesheet submitted = timesheet("submitted-2", actor.organizationId(), "employee-1", TimesheetStatus.SUBMITTED);
+        submitted.setReportingManagerUserId("hr-1");
+        when(authenticatedUserService.require(eq(actor.userId()), anySet(), eq(false))).thenReturn(actor);
+        when(timesheetRepository.findById("submitted-2")).thenReturn(Optional.of(submitted));
+        when(timesheetRepository.save(any(Timesheet.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.findById(anyString())).thenReturn(Optional.empty());
+        when(inAppNotificationService.createNotification(anyString(), eq("employee-1"), any(), anyString(), anyString(), anyString(), anyString()))
+                .thenThrow(new IllegalStateException("store unavailable"));
+
+        TimesheetResponse response = service.review(actor.userId(), "submitted-2",
+                new TimesheetReviewRequest(TimesheetStatus.REJECTED, "Hours mismatch"));
+
+        assertThat(response.status()).isEqualTo(TimesheetStatus.REJECTED);
+        verify(inAppNotificationService).createNotification(anyString(), eq("hr-1"), eq(NotificationType.TIMESHEET_REJECTED),
+                anyString(), anyString(), eq("submitted-2"), anyString());
+    }
+
+    @Test
     void submittingTimesheetNotifiesBothReportingManagerAndCompanyAdmins() {
         MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor = actor("employee-1", UserRole.EMPLOYEE);
         ReportingAssignment assignment = assignment(actor.userId(), "hr-1");

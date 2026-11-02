@@ -148,7 +148,7 @@ public class MyHrAccountService {
         // Sent only now that everything is saved, to the validated address stored on the new account.
         // A creation request that repeats an email is rejected above, so no second email can be sent.
         boolean emailDelivered = credentialDelivery.deliver(
-                user.getEmail(), role, organization.getOrganizationName(), loginId, temporaryPassword);
+                user.getEmail(), role, organization.getOrganizationName(), loginId, temporaryPassword, organization.getId());
         temporaryPassword = null;
 
         return new CreatedAccountResult(user.getId(), profile.getId(), loginId, profile.getEmployeeId(), email,

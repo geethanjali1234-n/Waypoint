@@ -32,5 +32,12 @@ public enum NotificationType {
     DOCUMENT_REQUEST_RETURNED,
     OFFER_LETTER_APPROVAL_REQUESTED,
     OFFER_LETTER_APPROVED,
-    OFFER_LETTER_REJECTED
+    OFFER_LETTER_REJECTED,
+    // Automatic document request reminders (F1): sent to the employee before the due date,
+    // and once to the requester when the request becomes overdue.
+    DOCUMENT_REQUEST_REMINDER,
+    DOCUMENT_REQUEST_OVERDUE,
+    // Read-side placeholder for a stored type this build does not know (see UnknownNotificationTypeReadingConverter).
+    // It is never created or written: updates to notifications never rewrite their stored type.
+    UNKNOWN
 }

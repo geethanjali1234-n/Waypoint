@@ -43,6 +43,7 @@ public class InAppNotificationEmailService {
     private final OrganizationRepository organizationRepository;
     private final EmailService emailService;
     private final EmailTemplateService emailTemplates;
+    private final OrganizationEmailIdentityResolver identityResolver;
 
     @Value("${waypoint.app.frontend-base-url:http://localhost:5173}")
     private String frontendBaseUrl = "http://localhost:5173";
@@ -69,7 +70,11 @@ public class InAppNotificationEmailService {
                       boolean defaultWording) {
         try {
             String address = resolveEmail(organizationId, recipientUserId);
-            if (address == null) return;
+            if (address == null) {
+                log.warn("Notification email not sent [type={}, organizationId={}, recipientUserId={}, reason=NO_DELIVERABLE_RECIPIENT]",
+                        type, organizationId, recipientUserId);
+                return;
+            }
             String actionUrl = absoluteActionUrl(actionPath);
             EmailTemplateData.EmailTemplateDataBuilder template = EmailTemplateData.builder()
                     .preheader(oneLine(title))
@@ -80,9 +85,17 @@ public class InAppNotificationEmailService {
             if (actionUrl != null) {
                 template.actionLabel(StringUtils.hasText(actionLabel) ? actionLabel : actionLabel(type)).actionUrl(actionUrl);
             }
-            emailService.sendHtmlEmail(address, subject, emailTemplates.build(template.build()));
+            // To is the resolved recipient; the organization sets the From display name and, when authorized, the From address.
+            emailService.sendHtmlEmail(address, subject, emailTemplates.build(template.build()), null,
+                    identityResolver.forOrganization(organizationId));
+            // "Handed over" is not "delivered": when mail is disabled the mail service logs MAIL_DISABLED and returns normally.
+            log.info("Notification email handed to the mail service [type={}, organizationId={}, recipientUserId={}]",
+                    type, organizationId, recipientUserId);
         } catch (RuntimeException failure) {
-            log.warn("Notification email delivery failed [type={}, exceptionType={}]", type, failure.getClass().getSimpleName());
+            Throwable root = failure;
+            while (root.getCause() != null && root.getCause() != root) root = root.getCause();
+            log.warn("Notification email delivery failed [type={}, organizationId={}, recipientUserId={}, exceptionType={}, rootCauseType={}]",
+                    type, organizationId, recipientUserId, failure.getClass().getSimpleName(), root.getClass().getSimpleName());
         }
     }
 

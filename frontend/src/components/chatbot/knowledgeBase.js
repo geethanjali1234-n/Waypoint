@@ -1,3 +1,5 @@
+import { getContextActions } from './quickActions';
+
 /**
  * Waypoint Comprehensive Knowledge Base & Scored NLP Intent Engine
  * Features:
@@ -409,7 +411,7 @@ export const TOPIC_SCENARIOS = [
       text: "**Monthly Payroll Cutoff Schedule:**\n• **Cutoff Date**: The **10th of every month at 11:59 PM**.\n• **Automated Reminders**: Sent to all employees on days **5, 7, 9, and 10**.\n• **Cutoff Enforcement**: Submissions not approved by the 10th will not be processed in the regular monthly payroll cycle.",
       actions: role === 'EMPLOYEE'
         ? [{ label: 'Check My Timesheets', path: `${basePath}/timesheets` }]
-        : [{ label: 'Check Payroll Gate', path: `${basePath}/timesheets?view=payroll` }]
+        : [{ label: 'Check Payroll Gate', path: `${basePath}/payroll-readiness` }]
     })
   },
 
@@ -436,7 +438,7 @@ export const TOPIC_SCENARIOS = [
     respond: (role, basePath) => ({
       text: "**Payroll Readiness Gate:**\n• Automated calculation engine that verifies 100% compliance across all active employees before payroll processing.\n• **Status**: Shows **Ready** when all hours are approved, or **Blocked** highlighting missing timesheets or pending manager approvals.\n• Includes 1-click **Export to CSV / Excel** for finance and accounting.",
       actions: [
-        { label: 'Check Payroll Gate', path: `${basePath}/timesheets?view=payroll` }
+        { label: 'Check Payroll Gate', path: `${basePath}/payroll-readiness` }
       ]
     })
   },
@@ -1001,9 +1003,16 @@ export const TOPIC_SCENARIOS = [
  * 3. Calculates weighted scores for primary keywords, secondary modifiers, phrase matches, and fuzzy distance.
  * 4. Selects the most accurate scenario with highest confidence score.
  */
-export function queryKnowledgeBase(input, role = 'HR') {
+export function queryKnowledgeBase(input, role = 'HR', route = '') {
   if (!input || !input.trim()) {
     return { text: "How can I help you today?", actions: [] };
+  }
+
+  if (/\b(my|employee(?:'s)?|their|team)\b.*\b(salary|pay amount|paycheck|balance|approved hours|pending count)\b|\bhow many\b.*\b(employees|hours|approvals)\b/i.test(input)) {
+    return {
+      text: "I can explain workflows, but I can't read live employee or payroll records here. Open the relevant workspace to check current information.",
+      actions: getContextActions(role, route).slice(0, 3).map(({ label, path }) => ({ label, path })),
+    };
   }
 
   const rawInput = input.trim();
@@ -1076,18 +1085,8 @@ export function queryKnowledgeBase(input, role = 'HR') {
     return bestScenario.respond(role, basePath);
   }
 
-  // Helpful fallback with smart universal shortcuts tailored to workspace
-  const isMyHr = role === 'HR' || role === 'COMPANY_ADMIN' || role === 'EMPLOYEE';
-  const tryAsking = isMyHr
-    ? `• **'When should I submit timesheets?'**\n• **'When is the payroll cutoff?'**\n• **'How do I fix a rejected timesheet?'**\n• **'How do I update my personal information?'**`
-    : `• **'When should I submit timesheets?'**\n• **'When is the payroll cutoff?'**\n• **'How do I search and apply for jobs?'**\n• **'How do employers post a job opening?'**`;
-
   return {
-    text: `I couldn't find an exact match for that question. Here are shortcuts to common workforce tools, or try asking about:\n${tryAsking}`,
-    actions: [
-      { label: 'Timesheets', path: `${basePath}/timesheets` },
-      { label: 'Profile Requests', path: `${basePath}/profile-change-requests` },
-      { label: 'Document Vault', path: `${basePath}/document-requests` }
-    ]
+    text: "I couldn't find an exact match. Try a more specific question, or open one of these workflows.",
+    actions: getContextActions(role, route).slice(0, 3).map(({ label, path }) => ({ label, path })),
   };
 }

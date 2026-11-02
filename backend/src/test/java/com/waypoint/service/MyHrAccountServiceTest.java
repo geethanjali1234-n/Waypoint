@@ -65,7 +65,7 @@ class MyHrAccountServiceTest {
                 authenticatedUserService, credentialDelivery, auditService, inAppNotificationService);
         lenient().when(organizationRepository.findById("org-1"))
                 .thenReturn(java.util.Optional.of(Organization.builder().id("org-1").organizationName("Tardus Health").build()));
-        lenient().when(credentialDelivery.deliver(anyString(), any(), anyString(), anyString(), anyString())).thenReturn(true);
+        lenient().when(credentialDelivery.deliver(anyString(), any(), anyString(), anyString(), anyString(), any())).thenReturn(true);
         lenient().when(passwordGenerator.generate()).thenReturn("Temporary9!");
         lenient().when(passwordEncoder.encode("Temporary9!")).thenReturn("bcrypt-hash");
         lenient().when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
@@ -102,7 +102,7 @@ class MyHrAccountServiceTest {
         assertThat(java.util.Arrays.stream(result.getClass().getRecordComponents()).map(c -> c.getName()))
                 .doesNotContain("temporaryPassword", "password", "passwordHash");
         assertThat(result.employeeId()).isEqualTo("TD001");
-        verify(credentialDelivery).deliver("hr@tardus.test", UserRole.HR, "Tardus Health", "TD001", "Temporary9!");
+        verify(credentialDelivery).deliver("hr@tardus.test", UserRole.HR, "Tardus Health", "TD001", "Temporary9!", "org-1");
 
         ArgumentCaptor<EmployeeProfile> profileCaptor = ArgumentCaptor.forClass(EmployeeProfile.class);
         verify(employeeProfileRepository).save(profileCaptor.capture());
@@ -140,7 +140,7 @@ class MyHrAccountServiceTest {
         assertThat(result.loginId()).isEqualTo("TD002");
         assertThat(result.employeeId()).isEqualTo("TD002");
         assertThat(result.role()).isEqualTo(UserRole.EMPLOYEE);
-        verify(credentialDelivery).deliver("employee@tardus.test", UserRole.EMPLOYEE, "Tardus Health", "TD002", "Temporary9!");
+        verify(credentialDelivery).deliver("employee@tardus.test", UserRole.EMPLOYEE, "Tardus Health", "TD002", "Temporary9!", "org-1");
 
         ArgumentCaptor<EmployeeProfile> profileCaptor = ArgumentCaptor.forClass(EmployeeProfile.class);
         verify(employeeProfileRepository).save(profileCaptor.capture());
@@ -194,7 +194,7 @@ class MyHrAccountServiceTest {
         allowActor(UserRole.HR);
         when(employeeIdService.generateNextLoginId("org-1", UserRole.EMPLOYEE)).thenReturn("TD002");
         when(reportingAssignmentService.createActiveAssignment(any())).thenAnswer(i -> i.getArgument(0));
-        when(credentialDelivery.deliver(anyString(), any(), anyString(), anyString(), anyString())).thenReturn(false);
+        when(credentialDelivery.deliver(anyString(), any(), anyString(), anyString(), anyString(), any())).thenReturn(false);
         CreateEmployeeAccountRequest request = new CreateEmployeeAccountRequest();
         request.setProfile(profile("employee@tardus.test"));
         request.setReportingManagerUserId("manager-1");

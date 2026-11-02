@@ -9,7 +9,9 @@ public class MongoConversionConfig {
 
     @Bean
     MongoCustomConversions mongoCustomConversions() {
-        return MongoCustomConversions.create(adapter ->
-                adapter.registerConverter(new LegacyEmploymentTypeArrayReadingConverter()));
+        return MongoCustomConversions.create(adapter -> {
+            adapter.registerConverter(new LegacyEmploymentTypeArrayReadingConverter());
+            adapter.registerConverter(new UnknownNotificationTypeReadingConverter());
+        });
     }
 }

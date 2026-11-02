@@ -1,7 +1,7 @@
 import { formatDisplayLabel } from '../../utils/myHrDisplayLabel';
 import './StatusBadge.css';
 
-const supported = new Set(['active', 'pending', 'approved', 'rejected', 'inactive', 'draft']);
+const supported = new Set(['active', 'pending', 'approved', 'rejected', 'inactive', 'draft', 'overdue']);
 export default function StatusBadge({ status, label, className = '' }) {
   const key = String(status || '').toLowerCase();
   return <span className={`wp-status-badge wp-status-badge--${supported.has(key) ? key : 'neutral'} ${className}`}>

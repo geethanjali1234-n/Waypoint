@@ -2,7 +2,10 @@ package com.waypoint.service;
 
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.*;
+import com.waypoint.entity.Organization;
 import com.waypoint.entity.OfferLetterRecord;
+import com.waypoint.repository.OrganizationRepository;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -12,19 +15,29 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-/** Fixed approved-template structure. Replace clause constants when the approved source is supplied. */
+/**
+ * Fixed approved-template structure. Replace clause constants when the approved source is supplied.
+ * The page header logo and footer come from the letter's own organization (Organization Settings), never from another tenant.
+ */
 @Service
+@RequiredArgsConstructor
 public class OfferLetterPdfService {
     private static final Logger log = LoggerFactory.getLogger(OfferLetterPdfService.class);
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("MMMM d, uuuu");
     private static final Color GREEN = new Color(0x2F, 0x6F, 0x57);
-    private static final String LOGO_RESOURCE = "/branding/tardus-logo.png";
-    private static final String FOOTER_TEXT = "TARDUS INC. | 4425 W AIRPORT FREEWAY, SUITE # 530 | IRVING, TX 75062 | 972-666-8217 | WWW.TARDUSINC.COM";
+    /** Bundled letterhead logo kept only for the provisioned Tardus organization, which predates uploaded logos. */
+    private static final String TARDUS_LOGO_RESOURCE = "/branding/tardus-logo.png";
+
+    private final OrganizationRepository organizations;
+    private final FileStorageService fileStorage;
 
     public byte[] render(OfferLetterRecord o) {
         ByteArrayOutputStream out = new ByteArrayOutputStream(); Document d = new Document(PageSize.LETTER, 56, 56, 70, 60);
-        try { PdfWriter writer = PdfWriter.getInstance(d, out); writer.setPageEvent(new BrandingPageEvent()); d.open();
+        try { PdfWriter writer = PdfWriter.getInstance(d, out); writer.setPageEvent(brandingFor(o)); d.open();
             if (!or(o.getPreviewText()).isBlank()) {
                 for (String section : o.getPreviewText().split("\\n\\n")) d.add(p(section, 10, Font.NORMAL, Color.BLACK));
                 d.close(); return out.toByteArray();
@@ -54,17 +67,79 @@ public class OfferLetterPdfService {
     private String title(String s) { return s == null ? "" : Arrays.stream(s.replace('_', ' ').toLowerCase().split(" ")).map(w -> w.isEmpty() ? w : Character.toUpperCase(w.charAt(0)) + w.substring(1)).collect(java.util.stream.Collectors.joining(" ")); }
     private String field(String label, String value) { return value == null || value.isBlank() ? "" : label + ": " + value + "."; }
 
-    /** Repeats the TARDUS logo header and company-address footer on every page, regardless of page count. */
-    private static class BrandingPageEvent extends PdfPageEventHelper {
-        private Image logo;
-        private static final Font FOOTER_FONT = FontFactory.getFont(FontFactory.HELVETICA, 8.5f, Font.NORMAL, Color.DARK_GRAY);
+    /** Header logo and footer line for this letter's organization; either may be absent. */
+    private BrandingPageEvent brandingFor(OfferLetterRecord o) {
+        Organization organization = o.getOrganizationId() == null ? null
+                : organizations.findById(o.getOrganizationId()).orElse(null);
+        return new BrandingPageEvent(logoFor(organization), footerFor(o, organization));
+    }
 
-        BrandingPageEvent() {
-            try (InputStream is = OfferLetterPdfService.class.getResourceAsStream(LOGO_RESOURCE)) {
-                if (is == null) { log.warn("TARDUS logo resource not found at {}", LOGO_RESOURCE); return; }
-                logo = Image.getInstance(is.readAllBytes());
-                logo.scaleToFit(160f, 34f);
-            } catch (Exception e) { log.warn("TARDUS logo could not be loaded for offer letter PDF", e); logo = null; }
+    private String footerFor(OfferLetterRecord o, Organization organization) {
+        String name = organization == null ? o.getOrganizationName() : organization.getOrganizationName();
+        OrganizationEmailBranding branding = organization == null ? null : OrganizationEmailBranding.from(organization);
+        String address = branding != null ? branding.address() : o.getOrganizationAddress();
+        return Stream.of(name, address == null ? null : address.replaceAll("\\s*\\R\\s*", ", "),
+                        branding == null ? null : branding.phoneNumber(), branding == null ? null : branding.website())
+                .filter(value -> value != null && !value.isBlank())
+                .map(value -> value.trim().toUpperCase(Locale.ROOT))
+                .collect(Collectors.joining(" | "));
+    }
+
+    private Image logoFor(Organization organization) {
+        byte[] bytes = null;
+        if (organization != null && organization.getOrganizationLogoDocumentId() != null
+                && !organization.getOrganizationLogoDocumentId().isBlank()) {
+            try { bytes = fileStorage.load(organization.getOrganizationLogoDocumentId()).content(); }
+            catch (RuntimeException e) { log.warn("Organization logo unavailable for offer letter PDF [exceptionType={}]", e.getClass().getSimpleName()); }
+        }
+        if (bytes == null && organization != null
+                && TardusOrganizationProvisioningService.ORGANIZATION_NAME.equalsIgnoreCase(organization.getOrganizationName())) {
+            try (InputStream is = OfferLetterPdfService.class.getResourceAsStream(TARDUS_LOGO_RESOURCE)) {
+                if (is != null) bytes = is.readAllBytes();
+            } catch (Exception e) { log.warn("Bundled logo could not be read for offer letter PDF [exceptionType={}]", e.getClass().getSimpleName()); }
+        }
+        if (bytes == null) return null;
+        try { Image logo = Image.getInstance(bytes); logo.scaleToFit(160f, 34f); return logo; }
+        catch (Exception e) { log.warn("Logo could not be used for offer letter PDF [exceptionType={}]", e.getClass().getSimpleName()); return null; }
+    }
+
+    /** Repeats the organization logo header and company-address footer on every page, regardless of page count. */
+    private static class BrandingPageEvent extends PdfPageEventHelper {
+        private final Image logo;
+        private final String footer;
+        /** Normal size first (a short footer is one centered line, as before); smaller sizes only if it will not fit. */
+        private static final float[] FOOTER_SIZES = {8.5f, 7.5f, 6.5f, 5.5f};
+        /** Footer area below the rule: the bottom page margin is 60pt and the rule sits at 40pt. */
+        private static final float FOOTER_BOTTOM = 6f;
+
+        BrandingPageEvent(Image logo, String footer) {
+            this.logo = logo;
+            this.footer = footer;
+        }
+
+        /**
+         * Centers the footer between the margins and wraps it at spaces inside the area under the rule, so long names,
+         * addresses and websites stay on the page. A single line sits where the former fixed footer was drawn.
+         */
+        private static void drawFooter(PdfContentByte cb, String text, float left, float right, float ruleY) {
+            float top = ruleY - 6f;
+            try {
+                for (int i = 0; i < FOOTER_SIZES.length; i++) {
+                    boolean smallest = i == FOOTER_SIZES.length - 1;
+                    // Measure first; draw at the first size whose wrapped text fits (the smallest is always drawn, clipped to the area).
+                    if (smallest || !ColumnText.hasMoreText(footerColumn(cb, text, FOOTER_SIZES[i], left, right, top).go(true))) {
+                        footerColumn(cb, text, FOOTER_SIZES[i], left, right, top).go();
+                        return;
+                    }
+                }
+            } catch (DocumentException e) { throw new IllegalStateException("Offer letter footer could not be drawn", e); }
+        }
+
+        private static ColumnText footerColumn(PdfContentByte cb, String text, float size, float left, float right, float top) {
+            ColumnText column = new ColumnText(cb);
+            column.setSimpleColumn(left, FOOTER_BOTTOM, right, top, size * 1.2f, Element.ALIGN_CENTER);
+            column.addText(new Phrase(text, FontFactory.getFont(FontFactory.HELVETICA, size, Font.NORMAL, Color.DARK_GRAY)));
+            return column;
         }
 
         @Override
@@ -91,7 +166,7 @@ public class OfferLetterPdfService {
                 cb.stroke();
                 cb.restoreState();
 
-                ColumnText.showTextAligned(cb, Element.ALIGN_CENTER, new Phrase(FOOTER_TEXT, FOOTER_FONT), pageWidth / 2f, lineY - 16f, 0);
+                if (footer != null && !footer.isBlank()) drawFooter(cb, footer, left, pageWidth - right, lineY);
             } catch (Exception e) { log.warn("Offer letter header/footer could not be drawn", e); }
         }
     }

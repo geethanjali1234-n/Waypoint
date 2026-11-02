@@ -32,7 +32,7 @@ class MyHrDocumentFulfillmentEmailServiceTest {
 
     private MyHrDocumentFulfillmentEmailService service() {
         return new MyHrDocumentFulfillmentEmailService(users, profiles, organizations, emailService,
-                new OfferLetterEmailTemplateService());
+                new OfferLetterEmailTemplateService(), new OrganizationEmailIdentityResolver(organizations));
     }
 
     private void itap(DocumentRequest request) {
@@ -54,7 +54,7 @@ class MyHrDocumentFulfillmentEmailServiceTest {
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<List<EmailAttachment>> attachments = ArgumentCaptor.forClass(List.class);
         verify(emailService).sendHtmlEmailWithAttachments(eq("jane@example.com"), eq("Your Employment Letter from ITAP"),
-                html.capture(), attachments.capture(), eq("HR ITAP"));
+                html.capture(), attachments.capture(), org.mockito.ArgumentMatchers.argThat((EmailSenderIdentity identity) -> identity != null && "HR ITAP".equals(identity.displayName())));
         assertThat(html.getValue()).contains("Please find your Employment Letter attached.")
                 .contains("HR Team").contains("ITAP").doesNotContain("Tardus");
         assertThat(attachments.getValue()).singleElement().satisfies(attachment -> {
@@ -79,7 +79,7 @@ class MyHrDocumentFulfillmentEmailServiceTest {
         when(users.findById("employee")).thenReturn(Optional.of(User.builder().id("employee").loginId("Jane")
                 .email("jane@example.com").role(UserRole.EMPLOYEE).build()));
         doThrow(new IllegalStateException("Email delivery is disabled")).when(emailService)
-                .sendHtmlEmailWithAttachments(anyString(), anyString(), anyString(), anyList(), anyString());
+                .sendHtmlEmailWithAttachments(anyString(), anyString(), anyString(), anyList(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
 
         assertThatCode(() -> service.send(request, new EmailAttachment("letter.pdf", new byte[]{1}, "application/pdf"), null))
                 .doesNotThrowAnyException();

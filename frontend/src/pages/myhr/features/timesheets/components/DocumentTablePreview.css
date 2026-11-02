@@ -1,0 +1,8 @@
+.timesheet-document-tables { min-width:0; max-width:100%; color:var(--wp-color-text); }
+.timesheet-document-tables__heading { margin:0 0 12px; font-weight:600; line-height:1.5; }
+.timesheet-document-tables__scroll { max-width:100%; overflow:auto; overscroll-behavior:contain; border:1px solid var(--wp-color-border); border-radius:10px; margin-bottom:12px; }
+.timesheet-document-tables__scroll table { width:100%; border-collapse:collapse; font-size:.8rem; line-height:1.5; }
+.timesheet-document-tables__scroll caption { text-align:left; padding:10px 12px; font-weight:600; background:var(--wp-color-primary-soft); }
+.timesheet-document-tables__scroll :is(th,td) { padding:9px 12px; border:1px solid var(--wp-color-border); min-width:100px; white-space:pre-wrap; text-align:left; vertical-align:top; overflow-wrap:break-word; }
+.timesheet-document-tables__scroll th { background:var(--wp-color-hover); font-weight:600; }
+.timesheet-document-tables__scroll:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }

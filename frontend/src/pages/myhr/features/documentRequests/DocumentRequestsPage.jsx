@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { renderAsync } from 'docx-preview';
-import { Button, Dropdown, EmptyState, Modal, SearchInput, FilterPills, StatusBadge as StatusTag, DocumentViewerModal } from '../../../../components';
+import { Button, Dropdown, EmptyState, Modal, SearchInput, StatusBadge as StatusTag, DocumentViewerModal } from '../../../../components';
 import { getMyHrSession } from '../../../../auth/myHrSession';
 import myHrDocumentRequestApi from '../../../../api/myHrDocumentRequestApi';
 import { formatDateOnly } from '../../../../utils/dateFormat';
@@ -27,6 +27,12 @@ import './documentRequests.css';
 const UPLOAD_ONLY_ACCEPT = '.pdf,.docx,.png,.jpg,.jpeg';
 
 const documentTitle = (title) => title === 'Separation acknowledgement' ? 'Separation' : title;
+
+// Adds the red Overdue badge next to a request's status. Only the backend decides overdue
+// (HR-to-employee, still pending, past its due date in America/Chicago); it is never derived here.
+const withOverdue = (item, statusBadge) => item?.overdue === true
+  ? <span className="document-requests__status-tags">{statusBadge}<StatusTag status="overdue" label="Overdue" /></span>
+  : statusBadge;
 
 const MY_REQUESTS_SCOPES = [
   { value: 'SELF', label: 'For myself', workspace: 'mine' },
@@ -209,7 +215,7 @@ export default function DocumentRequestsPage({ role }) {
     {error && <p role="alert" className="document-requests__error">{error} <button type="button" onClick={load}>Retry</button></p>}
     {loading ? <p role="status">Loading document request…</p> : selected && <div className={isI983 ? undefined : 'document-workflow-layout'}>
       {!isI983 && <DocumentRoute request={{ ...selected, status: selected.status === 'Completed' ? 'FULFILLED' : selected.status }} nextAction={adminReview ? 'Review for approval' : canFulfill ? workflowType?.prepareLabel || 'Submit completed document' : undefined} />}
-      <section className="document-requests__detail"><header><h2>{documentTitle(selected.requestTitle)}</h2></header><p>{selected.requestDescription}</p><dl><div><dt>Requested by</dt><dd>{selected.requestedByName}</dd></div><div><dt>Assigned to</dt><dd>{selected.requestedForName}</dd></div><div><dt>Status</dt><dd>{formatDisplayLabel(documentRequestStatus(selected))}</dd></div><div><dt>Priority</dt><dd>{formatDisplayLabel(selected.priority || 'NORMAL')}</dd></div><div><dt>Category</dt><dd>{documentCategoryLabel(selected.category) || formatDisplayLabel(selected.category) || '—'}</dd></div><div><dt>Required by</dt><dd>{selected.requiredBy ? formatDateOnly(selected.requiredBy) : '—'}</dd></div><div><dt>Direction</dt><dd>{formatDisplayLabel(selected.requestDirection) || '—'}</dd></div></dl>{selected.rejectionReason && <p className="document-requests__rejection"><strong>Rejection reason:</strong> {selected.rejectionReason}</p>}
+      <section className="document-requests__detail"><header><h2>{documentTitle(selected.requestTitle)}</h2></header><p>{selected.requestDescription}</p><dl><div><dt>Requested by</dt><dd>{selected.requestedByName}</dd></div><div><dt>Assigned to</dt><dd>{selected.requestedForName}</dd></div><div><dt>Status</dt><dd>{withOverdue(selected, formatDisplayLabel(documentRequestStatus(selected)))}</dd></div><div><dt>Priority</dt><dd>{formatDisplayLabel(selected.priority || 'NORMAL')}</dd></div><div><dt>Category</dt><dd>{documentCategoryLabel(selected.category) || formatDisplayLabel(selected.category) || '—'}</dd></div><div><dt>Required by</dt><dd>{selected.requiredBy ? formatDateOnly(selected.requiredBy) : '—'}</dd></div><div><dt>Direction</dt><dd>{formatDisplayLabel(selected.requestDirection) || '—'}</dd></div></dl>{selected.rejectionReason && <p className="document-requests__rejection"><strong>Rejection reason:</strong> {selected.rejectionReason}</p>}
       <div className="document-requests__attachments">{(selected.attachmentDocumentIds || []).map((id, index) => <div key={id}>{selected.attachmentFileNames?.[index] || `Supporting attachment ${index + 1}`} <Button variant="secondary" onClick={() => fetchDocument(id, false)}>Preview</Button> <Button variant="secondary" onClick={() => fetchDocument(id, true)}>Download</Button></div>)}{selected.fulfilledDocumentId && !isI983 && <div>{selected.signedResponseDocumentId ? (isOffer ? 'Complete offer letter with both signatures' : 'Signed document') : (isOffer ? (isRequester ? 'Offer letter awaiting your signature' : 'Offer letter awaiting requester signature') : (uploadOnly ? `${workflowType.label} document` : 'Completed document'))} <Button variant="secondary" onClick={() => fetchDocument(selected.signedResponseDocumentId || selected.fulfilledDocumentId, false)}>Preview</Button> <Button variant="secondary" onClick={() => fetchDocument(selected.signedResponseDocumentId || selected.fulfilledDocumentId, true)}>Download</Button></div>}</div>
       {hrApproval && (!workflowType || uploadOnly) && <HrDocumentApproval request={selected} label={workflowType?.label || selected.requestTitle}
         uploadOnly={uploadOnly} accept={uploadOnly ? UPLOAD_ONLY_ACCEPT : undefined}
@@ -315,34 +321,33 @@ export default function DocumentRequestsPage({ role }) {
     backTo={myRequestsView ? `${base}/document-requests` : `${base}/dashboard`}
     hideBack
   >
-    <FilterPills label="Document status filters" value={status} onChange={setStatus} options={[
-      { value: 'ALL', label: 'All' }, { value: 'PENDING', label: 'Pending' }, { value: 'FULFILLED', label: 'Completed' }, { value: 'REJECTED', label: 'Rejected' },
-    ]} />
     <div className="document-requests__toolbar">
       <div className="document-requests__filters">
-        <div className="wp-field document-requests__search-field"><label htmlFor="documentSearch" className="wp-form-label">Search</label><SearchInput id="documentSearch" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Document or person" /></div>
-        <Dropdown name="documentRequestStatus" label="Status" value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: 'ALL', label: 'All' }, { value: 'PENDING', label: 'Pending' }, { value: 'SUBMITTED', label: 'Submitted' }, { value: 'RETURNED_FOR_CORRECTION', label: 'Returned for Correction' }, { value: 'APPROVED', label: 'Approved' }, { value: 'AWAITING_SIGNATURE', label: awaitingSignatureLabel }, { value: 'FULFILLED', label: 'Completed' }, { value: 'REJECTED', label: 'Rejected' }]} />
+        <div className="wp-field document-requests__search-field"><label htmlFor="documentSearch" className="wp-form-label">Search</label><SearchInput id="documentSearch" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={role === 'EMPLOYEE' ? 'Document name' : 'Document or person'} /></div>
+        <Dropdown name="documentRequestStatus" label="Status" value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: 'ALL', label: 'All' }, { value: 'PENDING', label: 'Pending' }, { value: 'OVERDUE', label: 'Overdue' }, { value: 'SUBMITTED', label: 'Submitted' }, { value: 'RETURNED_FOR_CORRECTION', label: 'Returned for Correction' }, { value: 'APPROVED', label: 'Approved' }, { value: 'AWAITING_SIGNATURE', label: awaitingSignatureLabel }, { value: 'FULFILLED', label: 'Completed' }, { value: 'REJECTED', label: 'Rejected' }]} />
         <Dropdown name="documentRequestPriority" label="Priority" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} options={[{ value: 'ALL', label: 'All' }, { value: 'NORMAL', label: 'Normal' }, { value: 'HIGH', label: 'High' }, { value: 'URGENT', label: 'Urgent' }]} />
         <Dropdown name="documentRequestCategory" label="Category" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} options={[{ value: 'ALL', label: 'All' }, ...DOCUMENT_CATEGORY_OPTIONS]} />
         <Button type="button" variant="secondary" className="document-requests__clear" onClick={() => { setStatus('ALL'); setPriorityFilter('ALL'); setCategoryFilter('ALL'); setQuery(''); }} disabled={status === 'ALL' && priorityFilter === 'ALL' && categoryFilter === 'ALL' && !query}>Clear filters</Button>
-        <div className="document-requests__view-toggle" role="group" aria-label="View format">
+        <div className="document-requests__view-toggle document-requests__view-toggle--icons" role="group" aria-label="View format">
           <button
             type="button"
             className={`document-requests__view-toggle-btn ${viewMode === 'table' ? 'is-active' : ''}`}
             onClick={() => setViewMode('table')}
             aria-pressed={viewMode === 'table'}
-            title="Table View"
+            title="Table view"
+            aria-label="Table view"
           >
-            <StrokeIcon name="table" size={20} /> Table
+            <StrokeIcon name="table" size={18} />
           </button>
           <button
             type="button"
             className={`document-requests__view-toggle-btn ${viewMode === 'cards' ? 'is-active' : ''}`}
             onClick={() => setViewMode('cards')}
             aria-pressed={viewMode === 'cards'}
-            title="Cards View"
+            title="Cards view"
+            aria-label="Cards view"
           >
-            <StrokeIcon name="cards" size={20} /> Cards
+            <StrokeIcon name="cards" size={18} />
           </button>
         </div>
         {/* HR: the requests they received (default) or the requests they made. */}
@@ -396,7 +401,7 @@ export default function DocumentRequestsPage({ role }) {
                   <span className="document-requests__card-kicker">{documentCategoryLabel(item.category) || formatDisplayLabel(item.category) || 'DOCUMENT'}</span>
                   <strong className="document-requests__card-title">{documentTitle(item.requestTitle)}</strong>
                 </div>
-                <StatusTag status={formatDisplayLabel(documentRequestStatus(item))} />
+                {withOverdue(item, <StatusTag status={formatDisplayLabel(documentRequestStatus(item))} />)}
               </div>
               <div className="document-requests__card-body">
                 {!myRequestsView && <div className="document-requests__card-row">
@@ -437,7 +442,7 @@ export default function DocumentRequestsPage({ role }) {
           if (column.key === 'category') return documentCategoryLabel(item.category) || formatDisplayLabel(item.category) || '—';
           if (column.key === 'priority') return formatDisplayLabel(item.priority || 'NORMAL');
           if (['requiredBy', 'requestedAt'].includes(column.key)) return item[column.key] ? formatDateOnly(item[column.key]) : '—';
-          if (column.key === 'status') return <StatusTag status={item.status} label={formatDisplayLabel(documentRequestStatus(item))} />;
+          if (column.key === 'status') return withOverdue(item, <StatusTag status={item.status} label={formatDisplayLabel(documentRequestStatus(item))} />);
           if (column.key === 'action') return <Button variant="secondary" onClick={() => navigate(`${base}/document-requests/${item.id}`)}>View</Button>;
           return item[column.key];
         }} />

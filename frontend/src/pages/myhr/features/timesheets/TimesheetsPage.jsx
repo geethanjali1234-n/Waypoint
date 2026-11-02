@@ -18,11 +18,12 @@ import documentApi from '../../../../api/documentApi';
 import myHrEmployeeApi from '../../../../api/myHrEmployeeApi';
 import { getMyHrHomePath, getMyHrSession } from '../../../../auth/myHrSession';
 import { formatDateOnly, formatDateTime as formatDateTimeShared } from '../../../../utils/dateFormat';
-import { PayrollReadinessWorkspace } from '../payrollReadiness/PayrollReadinessPage';
 import MyHrFeaturePage from '../MyHrFeaturePage';
 import MyHrPagination from '../MyHrPagination';
 import './timesheets.css';
+import './timesheetsMobile.css';
 import TimesheetChronometer from './components/TimesheetChronometer';
+import DocumentTablePreview from './components/DocumentTablePreview';
 import ApplePayBloom from '../../components/ApplePayBloom';
 import {
   addDays,
@@ -283,7 +284,7 @@ async function sniffBlobType(blob, response, fileName = '') {
   const headerType = (blob?.type || responseHeader(response, 'content-type') || '').toLowerCase();
   const extensionName = fileName || '';
   const sample = blob instanceof Blob && typeof blob.slice === 'function'
-    ? new Uint8Array(await blob.slice(0, 32).arrayBuffer())
+    ? new Uint8Array(await blob.slice(0, 1024).arrayBuffer())
     : new Uint8Array();
   const ascii = Array.from(sample).map((value) => String.fromCharCode(value)).join('');
 
@@ -292,6 +293,7 @@ async function sniffBlobType(blob, response, fileName = '') {
   if (sample.length >= 8 && sample[0] === 0x89 && ascii.slice(1, 4) === 'PNG') return { kind: 'image', type: 'image/png' };
   if (ascii.startsWith('GIF87a') || ascii.startsWith('GIF89a')) return { kind: 'image', type: 'image/gif' };
   if (ascii.startsWith('RIFF') && ascii.slice(8, 12) === 'WEBP') return { kind: 'image', type: 'image/webp' };
+  if (headerType.includes('text/html') || /^\s*(?:<!doctype\s+html|<html\b|<table\b)/i.test(ascii.replace(/^\u00ef\u00bb\u00bf/, ''))) return { kind: 'html', type: 'text/html' };
   if (headerType.includes('pdf') || /\.pdf$/i.test(extensionName)) return { kind: 'pdf', type: 'application/pdf' };
 
   const looksText = sample.length > 0 && Array.from(sample).every((value) => (
@@ -774,9 +776,18 @@ export default function TimesheetsPage({ role }) {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [viewingDoc, setViewingDoc] = useState(null);
 
-  // Sync mode and view from search parameters on mount/update. Payroll
-  // Readiness is available as a view for HR and Company Admin (mirroring the
-  // old standalone /payroll-readiness route it replaced); Employees only
+  // Payroll Readiness has its own page now. Old ?view=payroll links (dashboard,
+  // bookmarks, Wavi) are sent there with their other filters kept.
+  const payrollRedirect = role !== 'EMPLOYEE' && searchParams.get('view') === 'payroll';
+  useEffect(() => {
+    if (!payrollRedirect) return;
+    const query = new URLSearchParams(searchParams);
+    query.delete('view');
+    const rest = query.toString();
+    navigate(`/myhr/${role === 'HR' ? 'hr' : 'admin'}/payroll-readiness${rest ? `?${rest}` : ''}`, { replace: true });
+  }, [payrollRedirect, searchParams, navigate, role]);
+
+  // Sync mode and view from search parameters on mount/update. Employees only
   // ever have their own timesheets.
   useEffect(() => {
     const rawMode = searchParams.get('mode');
@@ -789,7 +800,7 @@ export default function TimesheetsPage({ role }) {
     }
 
     const viewParam = searchParams.get('view');
-    const validViews = role === 'EMPLOYEE' ? ['mine'] : role === 'COMPANY_ADMIN' ? ['team', 'payroll'] : ['mine', 'team', 'payroll'];
+    const validViews = role === 'EMPLOYEE' ? ['mine'] : role === 'COMPANY_ADMIN' ? ['team'] : ['mine', 'team'];
     if (subtabParam && role !== 'EMPLOYEE') {
       setActiveView('team');
     } else {
@@ -1537,9 +1548,7 @@ entries: rangeEntries.map((entry) => ({ workDate: entry.workDate, hoursWorked: N
   const serviceMessage = loadError;
   const isOwnTaskOpen = role !== 'COMPANY_ADMIN' && activeView === 'mine' && ownMode !== 'landing';
 
-  const workspaceContent = activeView === 'payroll' && (role === 'HR' || role === 'COMPANY_ADMIN') ? (
-    <PayrollReadinessWorkspace role={role} />
-  ) : role === 'COMPANY_ADMIN' || (role !== 'EMPLOYEE' && activeView === 'team') ? (
+  const workspaceContent = role === 'COMPANY_ADMIN' || (role !== 'EMPLOYEE' && activeView === 'team') ? (
     <TeamWorkspace
       role={role}
       canReview={canReview}
@@ -1642,16 +1651,15 @@ entries: rangeEntries.map((entry) => ({ workDate: entry.workDate, hoursWorked: N
   );
 
   return <MyHrFeaturePage
-    className={activeView === 'payroll' ? 'timesheets--payroll-readiness' : activeView === 'team' ? 'timesheets--review-compact' : ''}
+    className={`timesheets-mobile ${activeView === 'team' ? 'timesheets--review-compact' : ''}`}
     title={isOwnTaskOpen ? undefined : title}
     description={isOwnTaskOpen ? undefined : description}
     onBack={handleFeatureBack}
   >
     {(serviceMessage || operationError || operationMessage) && <div className={`timesheets__message${operationError || serviceMessage ? ' timesheets__message--error' : ''}`} role="status"><span>{operationError || operationMessage || serviceMessage}</span>{serviceMessage && <Button type="button" variant="secondary" onClick={() => setReloadKey((current) => current + 1)}>Retry</Button>}</div>}
-    {(role === 'HR' || role === 'COMPANY_ADMIN') && !isOwnTaskOpen && <div className="timesheets__workspace-tabs" role="tablist" aria-label={role === 'HR' ? 'HR timesheet workspace' : 'Admin timesheet workspace'}>
-      {role === 'HR' && <button type="button" role="tab" aria-selected={activeView === 'mine'} className={activeView === 'mine' ? 'active' : ''} onClick={() => goToView('mine')}>My Timesheets</button>}
+    {role === 'HR' && !isOwnTaskOpen && <div className="timesheets__workspace-tabs" role="tablist" aria-label="HR timesheet workspace">
+      <button type="button" role="tab" aria-selected={activeView === 'mine'} className={activeView === 'mine' ? 'active' : ''} onClick={() => goToView('mine')}>My Timesheets</button>
       <button type="button" role="tab" aria-selected={activeView === 'team'} className={activeView === 'team' ? 'active' : ''} onClick={() => goToView('team')}>Team Timesheets</button>
-      <button type="button" role="tab" aria-selected={activeView === 'payroll'} className={activeView === 'payroll' ? 'active' : ''} onClick={() => goToView('payroll')}>Payroll Readiness</button>
     </div>}
     {workspaceContent}
     <TimesheetDetails record={viewedRecord} canReview={canReview} reviewingId={reviewingId} onReview={(status, comment) => reviewTimesheet(viewedRecord, status, comment)} onReject={(record) => setRejectingRecord(record)} onClose={closeRecord} onDownload={(id, name) => downloadSupportingDocument(id, name, setOperationError)} onDownloadPdf={(record) => downloadTimesheetPdf(record, setOperationError)} onDownloadPeriodPdf={(start, end) => downloadPeriodPdf(start, end, setOperationError)} onResubmit={(record) => beginResubmitRejected(record)} onViewDoc={(doc) => setViewingDoc(doc)} />
@@ -2696,7 +2704,7 @@ function HistoryWorkspace({ history, draftRecord, payrollPeriod, onView, onDownl
       periodStartDate: activePeriod.start,
       periodEndDate: activePeriod.end,
       totalHours: consolidated.totalHours,
-      status: consolidated.status === 'NO_HOURS' ? 'SUBMITTED' : consolidated.status,
+      status: consolidated.status,
       employeeId: rep.employeeId || 'Employee',
       employeeName: rep.employeeName || 'My Timesheet',
       employeeRole: rep.employeeRole || 'Employee',
@@ -2838,8 +2846,8 @@ function HistoryWorkspace({ history, draftRecord, payrollPeriod, onView, onDownl
             <span>Status</span>
             <div>
               <StatusTag
-                status={consolidated.status === 'NO_HOURS' ? 'SUBMITTED' : consolidated.status}
-                tone={toneForStatus(consolidated.status === 'NO_HOURS' ? 'SUBMITTED' : consolidated.status)}
+                status={consolidated.status === 'NO_HOURS' ? 'No submitted hours' : consolidated.status}
+                tone={consolidated.status === 'NO_HOURS' ? 'neutral' : toneForStatus(consolidated.status)}
               />
             </div>
             <small>Updated in place</small>
@@ -4665,7 +4673,8 @@ function AllSubmissionsWorkspace({
   );
 }
 
-function EntryList({ entries }) {
+function EntryList({ entries, periodDetails = false }) {
+  if (periodDetails && entries.length === 0) return <p className="timesheets__entries-empty" role="status">No time entries recorded for this period.</p>;
   return (
     <Table
       className="timesheets__entries-table"
@@ -4738,7 +4747,7 @@ function TimesheetDetails({ record, canReview, reviewingId, onReview, onReject, 
       <div><dt>Reporting manager</dt><dd>{record.reportingManagerName || record.reportingManagerLoginId || 'Assigned manager'}</dd></div>
       <div><dt>Period</dt><dd>{formatPeriod(record.periodStartDate, record.periodEndDate)}</dd></div>
       <div><dt>Total hours</dt><dd>{formatHours(record.totalHours)}</dd></div>
-      <div><dt>Status</dt><dd><StatusTag status={record.status} tone={toneForStatus(record.status)} /></dd></div>
+      <div><dt>Status</dt><dd><StatusTag status={record.status === 'NO_HOURS' ? 'No submitted hours' : record.status} tone={record.status === 'NO_HOURS' ? 'neutral' : toneForStatus(record.status)} /></dd></div>
       <div><dt>Supporting document{record.supportingDocuments?.length > 1 ? 's' : ''}</dt><dd>
         {record.supportingDocuments?.length ? (
           <div className="timesheets__drawer-documents">
@@ -4755,7 +4764,7 @@ function TimesheetDetails({ record, canReview, reviewingId, onReview, onReject, 
       {record.reviewComment && <div><dt>Review note</dt><dd>{record.reviewComment}</dd></div>}
     </dl>
     {isReviewable && <div className="timesheets__review-note"><TextInput name="review-comment" label="Review note (optional)" value={comment} onChange={(event) => setComment(event.target.value)} /></div>}
-    <EntryList entries={record.entries || []} />
+    <EntryList entries={record.entries || []} periodDetails />
     <SupportingDocumentList documents={record.supportingDocuments} />
   </div>}</Modal>;
 }
@@ -4983,9 +4992,9 @@ export function DocumentViewerModal({ doc, onClose, onError }) {
           const imgBlob = b.type && b.type.startsWith('image/') ? b : new Blob([b], { type: detected.type || 'image/png' });
           const url = URL.createObjectURL(imgBlob);
           setPreview({ type: 'image', url });
-        } else if (detected.kind === 'text') {
+        } else if (detected.kind === 'text' || detected.kind === 'html') {
           const text = typeof b.text === 'function' ? await b.text() : String(b || '');
-          setPreview({ type: 'text', text });
+          setPreview({ type: detected.kind, text });
         } else {
           setPreview({ type: 'generic' });
         }
@@ -5220,6 +5229,7 @@ export function DocumentViewerModal({ doc, onClose, onError }) {
                 <pre className="timesheets__doc-text">{preview.text}</pre>
               </div>
             )}
+            {preview?.type === 'html' && <DocumentTablePreview html={preview.text} />}
 
             {preview?.type === 'generic' && (
               <div className="timesheets__doc-generic-wrap">
@@ -5307,11 +5317,12 @@ function SupportingDocument({ document }) {
       } else if (detected.kind === 'image') {
         const imageBlob = blob.type && blob.type.startsWith('image/') ? blob : new Blob([blob], { type: detected.type || 'image/png' });
         setPreview({ url: URL.createObjectURL(imageBlob), type: 'image' });
-      } else if (detected.kind === 'text') {
+      } else if (detected.kind === 'text' || detected.kind === 'html') {
         const text = typeof blob.text === 'function' ? await blob.text() : String(blob || '');
-        setPreview({ text, type: 'text' });
+        setPreview({ text, type: detected.kind });
       } else {
-        saveBlob(blob, document.fileName || 'timesheet-document');
+        setPreview(null);
+        setError('A browser preview is not available for this format. Use Download original to open it in a compatible application.');
       }
     } catch (failure) {
       const message = await extractErrorMessage(failure);
@@ -5419,6 +5430,7 @@ function SupportingDocument({ document }) {
           {preview.type === 'text' && (
             <pre className="timesheets__preview-text">{preview.text}</pre>
           )}
+          {preview.type === 'html' && <DocumentTablePreview html={preview.text} />}
         </div>
 
         <div className="timesheets__preview-toolbar">

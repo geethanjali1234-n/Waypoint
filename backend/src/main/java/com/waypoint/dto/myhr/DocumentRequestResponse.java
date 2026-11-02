@@ -19,5 +19,7 @@ public record DocumentRequestResponse(
         LocalDateTime signatureSubmittedAt, String rejectionReason, String rejectedByUserId,
         LocalDateTime requestedAt, LocalDateTime fulfilledAt, LocalDateTime rejectedAt,
         // Signed I-983 workflow: set once the employee has uploaded their I-983 (see I983WorkflowService).
-        String originalDocumentId) {
+        String originalDocumentId,
+        // Computed, never stored: an open request past its due date in America/Chicago (see DocumentRequestReminderRules).
+        boolean overdue) {
 }

@@ -70,6 +70,6 @@ class MyHrDocumentRequestControllerTest {
         return new DocumentRequestResponse("request-1", "from", "TD001", "from@example.com", "1 Main St", "Austin", "TX", "73301", "From", null,
                 "to", "TD002", "To", null, null, "Letter", null, "Reason",
                 "EMPLOYMENT", "NORMAL", "TO_MANAGER", null, null, null, status,
-                null, null, null, null, "Unavailable", "actor-1", null, null, null, null);
+                null, null, null, null, "Unavailable", "actor-1", null, null, null, null, false);
     }
 }

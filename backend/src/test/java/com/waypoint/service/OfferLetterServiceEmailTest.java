@@ -83,7 +83,7 @@ class OfferLetterServiceEmailTest {
         void setUp() {
                 service = new OfferLetterService(records, requests, profiles, organizations, users, assignments, auth,
                                 documents,
-                                pdf, audit, emailService, new OfferLetterEmailTemplateService(), staticAttachments);
+                                pdf, audit, emailService, new OfferLetterEmailTemplateService(), staticAttachments, new OrganizationEmailIdentityResolver(organizations));
                 request = DocumentRequest.builder().id("request-1").organizationId("org-1")
                                 .requestedByUserId("employee-1")
                                 .requestedForUserId("hr-1").documentType(RequestedDocumentType.OFFER_LETTER)
@@ -117,7 +117,7 @@ class OfferLetterServiceEmailTest {
                 ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
                 verify(emailService).sendHtmlEmailWithAttachments(eq("another@example.com"), eq("Edited subject"),
                                 html.capture(),
-                                attachments.capture(), eq("HR ITAP"));
+                                attachments.capture(), org.mockito.ArgumentMatchers.argThat((EmailSenderIdentity identity) -> identity != null && "HR ITAP".equals(identity.displayName())));
                 assertThat(attachments.getValue()).extracting(EmailAttachment::fileName).containsExactly(
                                 "Offer Letter - Venkata Naga Sai Vasavi Anna.pdf", "Direct Deposit Authorization.pdf",
                                 "I-9.pdf", "W-4 Form.pdf");
@@ -146,7 +146,7 @@ class OfferLetterServiceEmailTest {
 
                 verify(emailService).sendHtmlEmailWithAttachments(eq("employee@example.com"), eq("Subject"),
                                 anyString(), attachments.capture(),
-                                eq("HR ITAP"));
+                                org.mockito.ArgumentMatchers.argThat((EmailSenderIdentity identity) -> identity != null && "HR ITAP".equals(identity.displayName())));
                 assertThat(attachments.getValue()).extracting(EmailAttachment::fileName).containsExactly(
                                 "Offer Letter - Sridevi Sowmya Grandhi.pdf", "Direct Deposit Authorization.pdf",
                                 "I-9.pdf", "W-4 Form.pdf");
@@ -165,7 +165,7 @@ class OfferLetterServiceEmailTest {
                                 new OfferLetterEmailRequest("employee@example.com", "Subject", "Message", "  "));
 
                 verify(emailService).sendHtmlEmailWithAttachments(anyString(), anyString(), anyString(),
-                                attachments.capture(), anyString());
+                                attachments.capture(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
                 assertThat(attachments.getValue().get(0).fileName())
                                 .isEqualTo("Offer Letter - Venkata Naga Sai Vasavi Anna.pdf");
         }
@@ -175,7 +175,7 @@ class OfferLetterServiceEmailTest {
                 service.email("admin", "request-1", input("  another@example.com ", "Subject", "Message"));
 
                 verify(emailService).sendHtmlEmailWithAttachments(eq("another@example.com"), anyString(), anyString(),
-                                anyList(), anyString());
+                                anyList(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
                 verify(requests, never()).save(any());
                 verify(profiles, never()).save(any());
                 verify(users, never()).save(any());
@@ -188,7 +188,7 @@ class OfferLetterServiceEmailTest {
                 service.email("hr-1", "request-1", input("employee@example.com", "Subject", "Message"));
 
                 verify(emailService).sendHtmlEmailWithAttachments(eq("employee@example.com"), eq("Subject"),
-                                anyString(), anyList(), anyString());
+                                anyString(), anyList(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         }
 
         @Test
@@ -305,7 +305,7 @@ class OfferLetterServiceEmailTest {
         void smtpFailureReturnsSafeErrorAndIsNotAuditedAsSent() {
                 doThrow(new MailAuthenticationException("535 Username and Password not accepted"))
                                 .when(emailService).sendHtmlEmailWithAttachments(anyString(), anyString(), anyString(),
-                                                anyList(), anyString());
+                                                anyList(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
 
                 assertThatThrownBy(() -> service.email("admin", "request-1",
                                 input("employee@example.com", "Subject", "Message")))
@@ -324,7 +324,7 @@ class OfferLetterServiceEmailTest {
                                 new jakarta.mail.SendFailedException("550 5.1.1 no such user", null, null, null,
                                                 new jakarta.mail.Address[] { bad })))
                                 .when(emailService).sendHtmlEmailWithAttachments(anyString(), anyString(), anyString(),
-                                                anyList(), anyString());
+                                                anyList(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
 
                 assertThatThrownBy(() -> service.email("admin", "request-1",
                                 input("nonexistent-address-123456789@gmail.com", "Subject", "Message")))
@@ -340,14 +340,14 @@ class OfferLetterServiceEmailTest {
                                 new jakarta.mail.MessagingException("Exception reading response",
                                                 new java.net.SocketTimeoutException("Read timed out"))))
                                 .when(emailService).sendHtmlEmailWithAttachments(anyString(), anyString(), anyString(),
-                                                anyList(), anyString());
+                                                anyList(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
 
                 assertThatThrownBy(() -> service.email("admin", "request-1",
                                 input("employee@example.com", "Subject", "Message")))
                                 .isInstanceOf(com.waypoint.exception.EmailDeliveryUnconfirmedException.class)
                                 .message().doesNotContain("could not be sent").contains("could not be confirmed");
                 verify(emailService, times(1)).sendHtmlEmailWithAttachments(anyString(), anyString(), anyString(),
-                                anyList(), anyString());
+                                anyList(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
                 verify(audit).record(any(AuthenticatedMyHrUser.class), eq(AuditActionType.OFFER_EMAILED),
                                 eq("DOCUMENT_REQUEST"), eq("request-1"),
                                 eq("Offer Letter"), eq("Offer letter emailed to employee"), eq(null),
@@ -361,7 +361,7 @@ class OfferLetterServiceEmailTest {
                                 new jakarta.mail.MessagingException("Could not connect",
                                                 new java.net.SocketTimeoutException("connect timed out"))))
                                 .when(emailService).sendHtmlEmailWithAttachments(anyString(), anyString(), anyString(),
-                                                anyList(), anyString());
+                                                anyList(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
 
                 assertThatThrownBy(() -> service.email("admin", "request-1",
                                 input("employee@example.com", "Subject", "Message")))
@@ -379,14 +379,14 @@ class OfferLetterServiceEmailTest {
                 service.email("admin", "request-1", input("employee@example.com", "Subject", "Message"));
 
                 verify(emailService, times(1)).sendHtmlEmailWithAttachments(anyString(), anyString(), anyString(),
-                                anyList(), anyString());
+                                anyList(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         }
 
         @Test
         void disabledEmailDeliveryIsReportedClearly() {
                 doThrow(new IllegalStateException(EmailService.DELIVERY_DISABLED_MESSAGE))
                                 .when(emailService).sendHtmlEmailWithAttachments(anyString(), anyString(), anyString(),
-                                                anyList(), anyString());
+                                                anyList(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
 
                 assertThatThrownBy(() -> service.email("admin", "request-1",
                                 input("employee@example.com", "Subject", "Message")))
@@ -447,7 +447,7 @@ class OfferLetterServiceEmailTest {
                 when(broken.load()).thenThrow(new BusinessException(OfferLetterStaticAttachmentService.UNAVAILABLE));
                 service = new OfferLetterService(records, requests, profiles, organizations, users, assignments, auth,
                                 documents,
-                                pdf, audit, emailService, new OfferLetterEmailTemplateService(), broken);
+                                pdf, audit, emailService, new OfferLetterEmailTemplateService(), broken, new OrganizationEmailIdentityResolver(organizations));
 
                 assertThatThrownBy(() -> service.email("admin", "request-1",
                                 input("employee@example.com", "Subject", "Message")))

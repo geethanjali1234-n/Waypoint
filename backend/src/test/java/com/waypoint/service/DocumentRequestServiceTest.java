@@ -1,5 +1,6 @@
 package com.waypoint.service;
 
+import com.waypoint.config.DocumentRequestReminderProperties;
 import com.waypoint.entity.EmployeeProfile;
 import com.waypoint.dto.myhr.*;
 import com.waypoint.entity.*;
@@ -19,6 +20,10 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.data.mongodb.core.query.Query;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.*;
@@ -27,6 +32,9 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DocumentRequestServiceTest {
+    // 03:00 UTC on Oct 21 is still Oct 20 in America/Chicago, so "today" for overdue checks is Oct 20.
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-21T03:00:00Z"), ZoneOffset.UTC);
+    private static final LocalDate CHICAGO_TODAY = LocalDate.of(2026, 10, 20);
     @Mock DocumentRequestRepository requests;
     @Mock ReportingAssignmentRepository assignments;
     @Mock UserRepository users;
@@ -43,7 +51,8 @@ class DocumentRequestServiceTest {
 
     @BeforeEach void setUp() {
         service = new DocumentRequestService(requests, assignments, users, profiles, authenticated, documentProvider, audit,
-                TestOrchestrators.create(notifications, emailService, new EmailTemplateService(), users, profiles), fulfillmentEmails, mongoTemplate);
+                TestOrchestrators.create(notifications, emailService, new EmailTemplateService(), users, profiles), fulfillmentEmails, mongoTemplate,
+                CLOCK, new DocumentRequestReminderProperties());
         lenient().when(profiles.findByOrganizationId(anyString())).thenReturn(List.of());
         lenient().when(users.findByIdIn(any())).thenReturn(List.of());
         lenient().when(documentProvider.getIfAvailable()).thenReturn(documents);
@@ -722,7 +731,7 @@ class DocumentRequestServiceTest {
                     .getAsDict(com.lowagie.text.pdf.PdfName.XOBJECT).getKeys()).isNotEmpty();
         } finally { reader.close(); }
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("hr"), any(), eq("Signed document returned"), anyString(), eq("request-1"), eq("/myhr/hr/document-requests/request-1"));
-        verify(emailService).sendHtmlEmail(eq("hr-login@example.com"), eq("Signed document returned"), anyString());
+        verify(emailService).sendHtmlEmail(eq("hr-login@example.com"), eq("Signed document returned"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         var signedMetadata = StoredDocument.builder().id("signed").organizationId("org-1")
                 .relatedEntityId("request-1").relatedEntityType("DOCUMENT_REQUEST")
                 .documentType(DocumentType.REQUESTED_DOCUMENT).fileName("signed-offer.pdf").contentType("application/pdf").build();
@@ -857,8 +866,8 @@ class DocumentRequestServiceTest {
 
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("employee"), eq(NotificationType.DOCUMENT_REQUEST_CREATED),
                 eq("New document request"), anyString(), eq("request-1"), anyString());
-        verify(emailService).sendHtmlEmail(eq("personal@example.com"), eq("New document request"), anyString());
-        verify(emailService, never()).sendHtmlEmail(eq("work@example.com"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq("personal@example.com"), eq("New document request"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
+        verify(emailService, never()).sendHtmlEmail(eq("work@example.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void createdRequestFallsBackToTheAccountEmail() {
@@ -866,7 +875,7 @@ class DocumentRequestServiceTest {
 
         service.createManagerRequest("hr", managerInput("employee"));
 
-        verify(emailService).sendHtmlEmail(eq("login@example.com"), eq("New document request"), anyString());
+        verify(emailService).sendHtmlEmail(eq("login@example.com"), eq("New document request"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void createdRequestWithNoEmailAddressKeepsTheInAppNotificationOnly() {
@@ -876,12 +885,12 @@ class DocumentRequestServiceTest {
 
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("employee"), eq(NotificationType.DOCUMENT_REQUEST_CREATED),
                 anyString(), anyString(), eq("request-1"), anyString());
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void emailFailureNeverFailsTheRequestCreation() {
         stubManagerRequestTarget(userWithEmail("employee", UserRole.EMPLOYEE, "login@example.com"));
-        doThrow(new IllegalStateException("smtp down")).when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+        doThrow(new IllegalStateException("smtp down")).when(emailService).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
 
         DocumentRequestResponse response = service.createManagerRequest("hr", managerInput("employee"));
 
@@ -900,7 +909,7 @@ class DocumentRequestServiceTest {
 
         service.createSelfServiceRequest("employee", selfInput(), List.of());
 
-        verify(emailService).sendHtmlEmail(eq("hr-personal@example.com"), eq("New employee document request"), anyString());
+        verify(emailService).sendHtmlEmail(eq("hr-personal@example.com"), eq("New employee document request"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void rejectionEmailsTheRequesterWithTheReason() {
@@ -910,7 +919,7 @@ class DocumentRequestServiceTest {
 
         service.reject("hr", "request-1", "Document is illegible");
 
-        verify(emailService).sendHtmlEmail(eq("login@example.com"), eq("Document request rejected"), anyString());
+        verify(emailService).sendHtmlEmail(eq("login@example.com"), eq("Document request rejected"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void fulfillmentOfAManagerRequestEmailsTheRequestingHr() {
@@ -923,7 +932,7 @@ class DocumentRequestServiceTest {
 
         service.fulfill("employee", "request-1", "letter.pdf", "application/pdf", new byte[]{1});
 
-        verify(emailService).sendHtmlEmail(eq("hr-login@example.com"), eq("Document request fulfilled"), anyString());
+        verify(emailService).sendHtmlEmail(eq("hr-login@example.com"), eq("Document request fulfilled"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         verifyNoInteractions(fulfillmentEmails);
     }
 
@@ -938,6 +947,111 @@ class DocumentRequestServiceTest {
         verify(fulfillmentEmails).sendWithMessage(same(request), any(), isNull());
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("employee"), eq(NotificationType.DOCUMENT_REQUEST_FULFILLED),
                 anyString(), anyString(), eq("request-1"), anyString());
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
+    }
+
+    @Test void overdueOnlyForPendingHrToEmployeeRequestsDueBeforeToday() {
+        assertThat(DocumentRequestService.isOverdue(toEmployee(DocumentRequestStatus.PENDING, CHICAGO_TODAY.minusDays(1)), CHICAGO_TODAY)).isTrue();
+        // Not overdue: due today or later.
+        assertThat(DocumentRequestService.isOverdue(toEmployee(DocumentRequestStatus.PENDING, CHICAGO_TODAY), CHICAGO_TODAY)).isFalse();
+        assertThat(DocumentRequestService.isOverdue(toEmployee(DocumentRequestStatus.PENDING, CHICAGO_TODAY.plusDays(1)), CHICAGO_TODAY)).isFalse();
+        // Completed requests are never overdue.
+        assertThat(DocumentRequestService.isOverdue(toEmployee(DocumentRequestStatus.FULFILLED, CHICAGO_TODAY.minusDays(5)), CHICAGO_TODAY)).isFalse();
+        assertThat(DocumentRequestService.isOverdue(toEmployee(DocumentRequestStatus.REJECTED, CHICAGO_TODAY.minusDays(5)), CHICAGO_TODAY)).isFalse();
+        // Missing due date.
+        assertThat(DocumentRequestService.isOverdue(toEmployee(DocumentRequestStatus.PENDING, null), CHICAGO_TODAY)).isFalse();
+    }
+
+    @Test void employeeToHrRequestsAreOverdueWhileStillOpen() {
+        LocalDate pastDue = CHICAGO_TODAY.minusDays(5);
+        // Waiting for HR to prepare, for Company Admin approval, for HR to revise, or for HR to send the approved document.
+        for (DocumentRequestStatus open : List.of(DocumentRequestStatus.PENDING, DocumentRequestStatus.SUBMITTED,
+                DocumentRequestStatus.RETURNED_FOR_CORRECTION, DocumentRequestStatus.APPROVED)) {
+            assertThat(DocumentRequestService.isOverdue(toManager(open, RequestedDocumentType.EMPLOYMENT_LETTER, pastDue), CHICAGO_TODAY))
+                    .as(open.name()).isTrue();
+        }
+        // Not yet due, completed, or closed.
+        assertThat(DocumentRequestService.isOverdue(toManager(DocumentRequestStatus.PENDING, RequestedDocumentType.OFFER_LETTER, CHICAGO_TODAY), CHICAGO_TODAY)).isFalse();
+        assertThat(DocumentRequestService.isOverdue(toManager(DocumentRequestStatus.PENDING, RequestedDocumentType.OFFER_LETTER, null), CHICAGO_TODAY)).isFalse();
+        for (DocumentRequestStatus closed : List.of(DocumentRequestStatus.FULFILLED, DocumentRequestStatus.REJECTED, DocumentRequestStatus.CANCELLED)) {
+            assertThat(DocumentRequestService.isOverdue(toManager(closed, RequestedDocumentType.EMPLOYMENT_LETTER, pastDue), CHICAGO_TODAY))
+                    .as(closed.name()).isFalse();
+        }
+    }
+
+    @Test void signedI983IsOverdueWhileUnderReviewOrReturnedButNotOnceApproved() {
+        LocalDate pastDue = CHICAGO_TODAY.minusDays(2);
+        assertThat(DocumentRequestService.isOverdue(toManager(DocumentRequestStatus.SUBMITTED, RequestedDocumentType.I983, pastDue), CHICAGO_TODAY)).isTrue();
+        assertThat(DocumentRequestService.isOverdue(toManager(DocumentRequestStatus.RETURNED_FOR_CORRECTION, RequestedDocumentType.I983, pastDue), CHICAGO_TODAY)).isTrue();
+        assertThat(DocumentRequestService.isOverdue(toManager(DocumentRequestStatus.APPROVED, RequestedDocumentType.I983, pastDue), CHICAGO_TODAY)).isFalse();
+        assertThat(DocumentRequestService.isOverdue(toManager(DocumentRequestStatus.REJECTED, RequestedDocumentType.I983, pastDue), CHICAGO_TODAY)).isFalse();
+    }
+
+    @Test void hrToEmployeeRequestsKeepTheF1RuleAndUnknownDirectionsAreNeverOverdue() {
+        LocalDate pastDue = CHICAGO_TODAY.minusDays(5);
+        // Only PENDING counts in the HR-to-employee direction (SUBMITTED/APPROVED are not used there).
+        assertThat(DocumentRequestService.isOverdue(toEmployee(DocumentRequestStatus.SUBMITTED, pastDue), CHICAGO_TODAY)).isFalse();
+        DocumentRequest noDirection = toEmployee(DocumentRequestStatus.PENDING, pastDue);
+        noDirection.setRequestDirection(null);
+        assertThat(DocumentRequestService.isOverdue(noDirection, CHICAGO_TODAY)).isFalse();
+    }
+
+    @Test void responsesCarryTheOverdueFlagUsingTheChicagoDate() {
+        actor("admin", UserRole.COMPANY_ADMIN);
+        DocumentRequest dueYesterday = toEmployee(DocumentRequestStatus.PENDING, CHICAGO_TODAY.minusDays(1)); dueYesterday.setId("yesterday");
+        // Already Oct 21 in UTC, but still Oct 20 (today) in Chicago: not overdue yet.
+        DocumentRequest dueToday = toEmployee(DocumentRequestStatus.PENDING, CHICAGO_TODAY); dueToday.setId("today");
+        DocumentRequest managerPastDue = pending("employee-1", "hr-1"); managerPastDue.setId("manager"); managerPastDue.setRequiredBy(CHICAGO_TODAY.minusDays(3));
+        when(mongoTemplate.find(any(Query.class), eq(DocumentRequest.class))).thenReturn(List.of(dueYesterday, dueToday, managerPastDue));
+
+        var page = service.list("admin", 0, 10, "ALL", "ALL", "ALL", null, null);
+
+        assertThat(page.items()).extracting(DocumentRequestResponse::id, DocumentRequestResponse::overdue)
+                .containsExactly(tuple("yesterday", true), tuple("today", false), tuple("manager", true));
+    }
+
+    @Test void overdueFilterMatchesOnlyPendingHrToEmployeeRequestsDueBeforeTodayAndKeepsRoleScope() {
+        actor("employee-1", UserRole.EMPLOYEE);
+
+        service.list("employee-1", 0, 10, "OVERDUE", "ALL", "ALL", null, null);
+
+        ArgumentCaptor<Query> query = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(query.capture(), eq(DocumentRequest.class));
+        String criteria = query.getValue().getQueryObject().toString();
+        assertThat(criteria).contains("requestDirection=TO_EMPLOYEE").contains("status=PENDING")
+                .contains("requiredBy=Document{{$lt=" + CHICAGO_TODAY + "}}")
+                // Employee-to-HR requests and I-983s that are still open, but never an approved I-983.
+                .contains("requestDirection=TO_MANAGER").contains("status=Document{{$in=")
+                .contains("RETURNED_FOR_CORRECTION").contains("status=APPROVED, documentType=Document{{$ne=I983}}")
+                // The employee's existing visibility restriction is still applied.
+                .contains("requestedByUserId=employee-1").contains("requestedForUserId=employee-1")
+                .contains("organizationId=org-1");
+    }
+
+    @Test void pendingFilterIsUnchanged() {
+        actor("admin", UserRole.COMPANY_ADMIN);
+
+        service.list("admin", 0, 10, "PENDING", "ALL", "ALL", null, null);
+
+        ArgumentCaptor<Query> query = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(query.capture(), eq(DocumentRequest.class));
+        String criteria = query.getValue().getQueryObject().toString();
+        assertThat(criteria).contains("status=PENDING").doesNotContain("requiredBy").doesNotContain("requestDirection");
+    }
+
+    private DocumentRequest toManager(DocumentRequestStatus status, RequestedDocumentType type, LocalDate requiredBy) {
+        DocumentRequest item = pending("employee-1", "hr-1");
+        item.setStatus(status);
+        item.setDocumentType(type);
+        item.setRequiredBy(requiredBy);
+        return item;
+    }
+
+    private DocumentRequest toEmployee(DocumentRequestStatus status, LocalDate requiredBy) {
+        DocumentRequest item = pending("hr-1", "employee-1");
+        item.setRequestDirection("TO_EMPLOYEE");
+        item.setStatus(status);
+        item.setRequiredBy(requiredBy);
+        return item;
     }
 }

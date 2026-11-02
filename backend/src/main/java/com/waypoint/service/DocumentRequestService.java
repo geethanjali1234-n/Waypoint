@@ -5,6 +5,7 @@ import com.lowagie.text.pdf.PdfReader;
 import com.lowagie.text.pdf.PdfStamper;
 import com.lowagie.text.pdf.BaseFont;
 import com.lowagie.text.PageSize;
+import com.waypoint.config.DocumentRequestReminderProperties;
 import com.waypoint.dto.myhr.*;
 import com.waypoint.entity.*;
 import com.waypoint.enums.*;
@@ -27,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -63,7 +65,7 @@ public class DocumentRequestService {
             "Exit interview form", "COBRA election form (outgoing)", "Other document");
     private static final String RELATED_ENTITY_TYPE = "DOCUMENT_REQUEST";
     private static final String EMPLOYEE_SIGNATURE_FIELD = "waypoint_employee_signature";
-    private static final DateTimeFormatter REQUIRED_BY_FORMAT = DateTimeFormatter.ofPattern("MM-dd-uuuu");
+    static final DateTimeFormatter REQUIRED_BY_FORMAT = DateTimeFormatter.ofPattern("MM-dd-uuuu");
 
     private final DocumentRequestRepository requestRepository;
     private final ReportingAssignmentRepository assignmentRepository;
@@ -75,6 +77,8 @@ public class DocumentRequestService {
     private final NotificationOrchestrator notificationOrchestrator;
     private final MyHrDocumentFulfillmentEmailService fulfillmentEmailService;
     private final MongoTemplate mongoTemplate;
+    private final Clock clock;
+    private final DocumentRequestReminderProperties reminderProperties;
 
     public List<RequestableEmployeeResponse> requestableEmployees(String actorUserId) {
         var actor = authenticatedUserService.require(actorUserId, MANAGER_ROLES, false);
@@ -128,6 +132,9 @@ public class DocumentRequestService {
             if ("AWAITING_SIGNATURE".equals(status)) {
                 constraints.add(new Criteria().andOperator(Criteria.where("documentType").is(RequestedDocumentType.OFFER_LETTER),
                         Criteria.where("status").is(DocumentRequestStatus.FULFILLED)));
+            } else if ("OVERDUE".equals(status)) {
+                // Same rule as isOverdue (DocumentRequestReminderRules). No due date never matches.
+                constraints.add(DocumentRequestReminderRules.overdueCriteria(today()));
             } else {
                 try { constraints.add(Criteria.where("status").is(DocumentRequestStatus.valueOf(status))); }
                 catch (IllegalArgumentException ignored) { throw new BusinessException("Unsupported document request status"); }
@@ -650,13 +657,26 @@ notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor
     }
 
     /** "Full Name (EMPLOYEE-ID)", falling back to just the identity when no employee id exists (e.g. Company Admin). */
-    private String participantLabel(User user, EmployeeProfile profile) {
+    static String participantLabel(User user, EmployeeProfile profile) {
         String employeeId = profile == null ? null : profile.getEmployeeId();
         String identity = displayName(user, profile);
         return employeeId == null || employeeId.isBlank() ? identity : identity + " (" + employeeId + ")";
     }
 
-    private String personaSegment(UserRole role) {
+    /**
+     * Overdue is computed, never stored: an open request (HR-to-employee PENDING, or an employee-to-HR request or
+     * I-983 still in progress) whose due date is before today. See DocumentRequestReminderRules.OVERDUE_SCOPES.
+     */
+    static boolean isOverdue(DocumentRequest item, LocalDate today) {
+        return DocumentRequestReminderRules.isOverdue(item, today);
+    }
+
+    /** Today in the reminder time zone (America/Chicago by default), independent of whether reminders are enabled. */
+    private LocalDate today() {
+        return LocalDate.now(clock.withZone(reminderProperties.zone()));
+    }
+
+    static String personaSegment(UserRole role) {
         if (role == UserRole.COMPANY_ADMIN) return "admin";
         if (role == UserRole.HR) return "hr";
         return "employee";
@@ -755,7 +775,8 @@ notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor
                 item.getSignedResponseDocumentId() != null ? item.getSignedResponseDocumentId()
                         : item.getDocumentType() == RequestedDocumentType.OFFER_LETTER ? item.getEmployeeSignatureDocumentId() : null,
                 item.getSignatureSubmittedAt(), item.getRejectionReason(), item.getRejectedByUserId(),
-                item.getRequestedAt(), item.getFulfilledAt(), item.getRejectedAt(), item.getOriginalDocumentId());
+                item.getRequestedAt(), item.getFulfilledAt(), item.getRejectedAt(), item.getOriginalDocumentId(),
+                isOverdue(item, today()));
     }
 
     /** Best-effort file name lookup for each attachment, aligned by index with attachmentDocumentIds;
@@ -795,7 +816,7 @@ notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor
         return user == null ? "" : displayName(user, profiles.get(user.getId()));
     }
 
-    private String displayName(User user, EmployeeProfile profile) {
+    static String displayName(User user, EmployeeProfile profile) {
         if (profile != null) {
             String full = ((profile.getFirstName() == null ? "" : profile.getFirstName()) + " "
                     + (profile.getLastName() == null ? "" : profile.getLastName())).trim();

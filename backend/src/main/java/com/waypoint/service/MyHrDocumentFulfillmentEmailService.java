@@ -32,6 +32,7 @@ public class MyHrDocumentFulfillmentEmailService {
     private final OrganizationRepository organizationRepository;
     private final EmailService emailService;
     private final OfferLetterEmailTemplateService emailTemplates;
+    private final OrganizationEmailIdentityResolver identityResolver;
 
     public DocumentFulfillmentEmailDraftResponse draft(DocumentRequest request, String recipientOverride) {
         User employee = employeeFor(request);
@@ -78,7 +79,7 @@ public class MyHrDocumentFulfillmentEmailService {
 
             String html = emailTemplates.renderHtml(message);
             emailService.sendHtmlEmailWithAttachments(recipient, subject, html, List.of(attachment),
-                    emailTemplates.senderDisplayName(emailBranding(request)));
+                    identityResolver.forOrganization(request.getOrganizationId()));
             return new DocumentEmailDeliveryResponse("DELIVERED", recipient, "Email delivered to " + recipient + ".");
         } catch (RuntimeException failure) {
             log.warn("Completed document email failed [requestId={}, exceptionType={}]", request == null ? null : request.getId(),

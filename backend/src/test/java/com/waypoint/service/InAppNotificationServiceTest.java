@@ -175,15 +175,26 @@ class InAppNotificationServiceTest {
                 .id("n-1").recipientUserId(USER_ID).isRead(false).build();
         when(notificationRepository.findByIdAndRecipientUserId("n-1", USER_ID))
                 .thenReturn(Optional.of(notification));
-        when(notificationRepository.save(any(Notification.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         Notification result = inAppNotificationService.markAsRead(USER_ID, "n-1");
 
         verify(notificationRepository).findByIdAndRecipientUserId("n-1", USER_ID);
         assertThat(result.getIsRead()).isTrue();
         assertThat(result.getReadAt()).isNotNull();
-        verify(notificationRepository).save(notification);
+        verify(notificationRepository).markReadByIdAndRecipientUserId("n-1", USER_ID, result.getReadAt());
+    }
+
+    @Test
+    void markAsRead_neverResavesTheWholeDocument_soAStoredTypeIsNotOverwritten() {
+        Notification unknownType = Notification.builder().id("n-1").recipientUserId(USER_ID)
+                .notificationType(NotificationType.UNKNOWN).isRead(false).build();
+        when(notificationRepository.findByIdAndRecipientUserId("n-1", USER_ID))
+                .thenReturn(Optional.of(unknownType));
+
+        inAppNotificationService.markAsRead(USER_ID, "n-1");
+
+        verify(notificationRepository, never()).save(any());
+        verify(notificationRepository, never()).saveAll(any());
     }
 
     @Test
@@ -198,6 +209,7 @@ class InAppNotificationServiceTest {
 
         assertThat(result.getReadAt()).isEqualTo(originalReadAt);
         verify(notificationRepository, never()).save(any());
+        verify(notificationRepository, never()).markReadByIdAndRecipientUserId(any(), any(), any());
     }
 
     @Test
@@ -229,35 +241,43 @@ class InAppNotificationServiceTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    void markAllAsRead_updatesOnlyAuthenticatedUsersUnreadNotifications_withConsistentReadAt() {
-        Notification first = Notification.builder().id("n-1").recipientUserId(USER_ID).isRead(false).build();
-        Notification second = Notification.builder().id("n-2").recipientUserId(USER_ID).isRead(false).build();
-        when(notificationRepository.findByRecipientUserIdAndIsReadFalse(USER_ID))
-                .thenReturn(List.of(first, second));
-
+    void markAllAsRead_updatesOnlyAuthenticatedUsersUnreadNotifications_withoutLoadingOrResaving() {
         inAppNotificationService.markAllAsRead(USER_ID);
 
-        verify(notificationRepository).findByRecipientUserIdAndIsReadFalse(USER_ID);
-
-        ArgumentCaptor<List<Notification>> captor = ArgumentCaptor.forClass(List.class);
-        verify(notificationRepository).saveAll(captor.capture());
-        List<Notification> saved = captor.getValue();
-
-        assertThat(saved).allSatisfy(notification -> {
-            assertThat(notification.getIsRead()).isTrue();
-            assertThat(notification.getReadAt()).isNotNull();
-        });
-        assertThat(saved.get(0).getReadAt()).isEqualTo(saved.get(1).getReadAt());
+        verify(notificationRepository).markAllReadByRecipientUserId(eq(USER_ID), any(LocalDateTime.class));
+        verify(notificationRepository, never()).findByRecipientUserIdAndIsReadFalse(any());
+        verify(notificationRepository, never()).save(any());
+        verify(notificationRepository, never()).saveAll(any());
     }
 
     @Test
-    void markAllAsRead_noUnreadNotifications_doesNotCallSaveAll() {
-        when(notificationRepository.findByRecipientUserIdAndIsReadFalse(USER_ID)).thenReturn(List.of());
+    void listNotifications_returnsKnownAndUnknownTypesTogether() {
+        Notification known = Notification.builder().id("n-1").recipientUserId(USER_ID)
+                .notificationType(NotificationType.TIMESHEET_SUBMITTED).build();
+        Notification unknown = Notification.builder().id("n-2").recipientUserId(USER_ID)
+                .notificationType(NotificationType.UNKNOWN).build();
+        when(notificationRepository.findByRecipientUserIdOrderByCreatedAtDesc(eq(USER_ID), any(Pageable.class)))
+                .thenReturn(List.of(known, unknown));
 
-        inAppNotificationService.markAllAsRead(USER_ID);
+        assertThat(inAppNotificationService.listNotifications(USER_ID, 30)).containsExactly(known, unknown);
+    }
 
-        verify(notificationRepository, never()).saveAll(any());
+    @Test
+    void listNotifications_unrelatedRepositoryFailuresStillSurface() {
+        when(notificationRepository.findByRecipientUserIdOrderByCreatedAtDesc(eq(USER_ID), any(Pageable.class)))
+                .thenThrow(new org.springframework.dao.DataAccessResourceFailureException("database unavailable"));
+
+        assertThatThrownBy(() -> inAppNotificationService.listNotifications(USER_ID, 30))
+                .isInstanceOf(org.springframework.dao.DataAccessResourceFailureException.class);
+    }
+
+    @Test
+    void createNotification_unknownPlaceholderTypeIsRejected() {
+        assertThatThrownBy(() -> inAppNotificationService.createNotification(
+                USER_ID, NotificationType.UNKNOWN, "Title", "Message", "e-1", "/path"))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verifyNoInteractions(notificationRepository);
     }
 
     @Test

@@ -35,6 +35,7 @@ import com.waypoint.repository.TimesheetRepository;
 import com.waypoint.repository.UserRepository;
 import com.waypoint.security.MyHrAuthenticatedUserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -54,6 +55,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TimesheetService {
@@ -904,46 +906,56 @@ public class TimesheetService {
 
         String periodLabel = timesheet.getPeriodStartDate() + " to " + timesheet.getPeriodEndDate();
         if (status == TimesheetStatus.APPROVED) {
-            inAppNotificationService.createNotification(
+            notifyQuietly("employee", () -> inAppNotificationService.createNotification(
                     timesheet.getOrganizationId(),
                     timesheet.getUserId(),
                     NotificationType.TIMESHEET_APPROVED,
                     "Timesheet approved",
                     "Your timesheet for " + periodLabel + " (" + timesheet.getTotalHours() + "h) has been approved by " + actor.loginId() + ".",
                     timesheet.getId(),
-                    ownTimesheetHistoryUrl(roleOf(timesheet.getUserId()), timesheet.getId(), false));
+                    ownTimesheetHistoryUrl(roleOf(timesheet.getUserId()), timesheet.getId(), false)));
 
             if (StringUtils.hasText(timesheet.getReportingManagerUserId()) && !actor.userId().equals(timesheet.getReportingManagerUserId())) {
-                inAppNotificationService.createNotification(
+                notifyQuietly("reporting-manager", () -> inAppNotificationService.createNotification(
                         timesheet.getOrganizationId(),
                         timesheet.getReportingManagerUserId(),
                         NotificationType.TIMESHEET_APPROVED,
                         "Timesheet approved by " + actor.loginId(),
                         "Timesheet for " + resolveEmployeeName(timesheet) + " (" + periodLabel + ") was approved by " + actor.loginId() + ".",
                         timesheet.getId(),
-                        "/myhr/hr/timesheets?view=team&timesheetId=" + timesheet.getId());
+                        "/myhr/hr/timesheets?view=team&timesheetId=" + timesheet.getId()));
             }
         } else if (status == TimesheetStatus.REJECTED) {
             String note = StringUtils.hasText(comment) ? comment.trim() : "No reason provided";
-            inAppNotificationService.createNotification(
+            notifyQuietly("employee", () -> inAppNotificationService.createNotification(
                     timesheet.getOrganizationId(),
                     timesheet.getUserId(),
                     NotificationType.TIMESHEET_REJECTED,
                     "Timesheet rejected",
                     "Your timesheet for " + periodLabel + " was rejected by " + actor.loginId() + ". Reason: " + note + ". Please revise and resubmit.",
                     timesheet.getId(),
-                    ownTimesheetHistoryUrl(roleOf(timesheet.getUserId()), timesheet.getId(), true));
+                    ownTimesheetHistoryUrl(roleOf(timesheet.getUserId()), timesheet.getId(), true)));
 
             if (StringUtils.hasText(timesheet.getReportingManagerUserId()) && !actor.userId().equals(timesheet.getReportingManagerUserId())) {
-                inAppNotificationService.createNotification(
+                notifyQuietly("reporting-manager", () -> inAppNotificationService.createNotification(
                         timesheet.getOrganizationId(),
                         timesheet.getReportingManagerUserId(),
                         NotificationType.TIMESHEET_REJECTED,
                         "Timesheet rejected by " + actor.loginId(),
                         "Timesheet for " + resolveEmployeeName(timesheet) + " (" + periodLabel + ") was rejected by " + actor.loginId() + ". Reason: " + note,
                         timesheet.getId(),
-                        "/myhr/hr/timesheets?view=team&timesheetId=" + timesheet.getId());
+                        "/myhr/hr/timesheets?view=team&timesheetId=" + timesheet.getId()));
             }
+        }
+    }
+
+    /** A failed notification for one recipient must not undo the saved review or skip the remaining recipients. */
+    private void notifyQuietly(String recipientKind, Runnable notification) {
+        try {
+            notification.run();
+        } catch (RuntimeException failure) {
+            log.warn("Timesheet review notification failed [recipient={}, exceptionType={}]",
+                    recipientKind, failure.getClass().getSimpleName());
         }
     }
 

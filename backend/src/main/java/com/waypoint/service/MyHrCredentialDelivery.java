@@ -21,6 +21,7 @@ public class MyHrCredentialDelivery {
 
     private final EmailService emailService;
     private final MyHrCredentialEmailTemplateService templates;
+    private final OrganizationEmailIdentityResolver identityResolver;
 
     @Value("${waypoint.mail.enabled:false}")
     private boolean mailEnabled;
@@ -28,9 +29,13 @@ public class MyHrCredentialDelivery {
     @Value("${waypoint.app.frontend-base-url:http://localhost:5173}")
     private String frontendBaseUrl;
 
-    /** @param recipientEmail the validated email stored on the new account */
+    /**
+     * @param recipientEmail the validated email stored on the new account
+     * @param organizationId a non-null id sends with that organization's From display name, Reply-To and authorized
+     *                       From address; null sends with the global identity
+     */
     public boolean deliver(String recipientEmail, UserRole role, String organizationName,
-                           String loginId, String temporaryPassword) {
+                           String loginId, String temporaryPassword, String organizationId) {
         if (!mailEnabled) {
             // EmailService silently skips sends while mail is disabled; do not report that as delivered.
             logger.warn("Welcome email not sent [loginId={}, reason=MAIL_DISABLED]", loginId);
@@ -40,7 +45,8 @@ public class MyHrCredentialDelivery {
             String signInUrl = frontendBaseUrl.replaceAll("/+$", "") + "/myhr/login";
             emailService.sendHtmlEmail(recipientEmail, MyHrCredentialEmailTemplateService.SUBJECT,
                     templates.html(role, organizationName, loginId, temporaryPassword, signInUrl),
-                    templates.text(role, organizationName, loginId, temporaryPassword, signInUrl));
+                    templates.text(role, organizationName, loginId, temporaryPassword, signInUrl),
+                    identityResolver.forOrganization(organizationId));
             return true;
         } catch (RuntimeException exception) {
             logger.error("Failed to email welcome credentials [loginId={}, cause={}]",

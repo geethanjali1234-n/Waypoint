@@ -20,3 +20,15 @@
 .wp-notification-menu__status--error { color:var(--wp-color-error); }
 .wp-notification-menu :focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
 @media(max-width:768px) { .wp-notification-menu__panel { position:fixed; top:calc(72px + env(safe-area-inset-top)); left:16px; right:16px; width:auto; } }
+/* Phone notification sheet: stable heading, reachable controls and one scroll area. */
+.wp-notification-menu__panel { display:flex; flex-direction:column; overflow:hidden; box-shadow:0 12px 36px #064e3b20; }
+.wp-notification-menu__header { flex-shrink:0; min-height:56px; }
+.wp-notification-menu__list { overflow-y:auto; overscroll-behavior:contain; min-height:0; }
+.wp-notification-menu__item-button { overflow-wrap:anywhere; }
+.wp-notification-menu__status--error { display:grid; gap:8px; font-size:.875rem; line-height:1.5; }
+.wp-notification-menu__retry { justify-self:start; border:1px solid var(--wp-color-border); padding-inline:16px; }
+.wp-notification-menu__mark-read:disabled { opacity:.5; cursor:not-allowed; }
+@media(max-width:768px) {
+  .wp-notification-menu__panel { top:calc(76px + env(safe-area-inset-top)); max-height:calc(100dvh - 176px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); z-index:1200; }
+  .wp-notification-menu__item-button { padding:16px; min-height:76px; }
+}

@@ -37,7 +37,8 @@ class MyHrCredentialDeliveryTest {
     @BeforeEach
     void setUp() {
         delivery = new MyHrCredentialDelivery(emailService,
-                new MyHrCredentialEmailTemplateService(new EmailTemplateService()));
+                new MyHrCredentialEmailTemplateService(new EmailTemplateService()),
+                org.mockito.Mockito.mock(OrganizationEmailIdentityResolver.class));
         ReflectionTestUtils.setField(delivery, "mailEnabled", true);
         ReflectionTestUtils.setField(delivery, "frontendBaseUrl", "https://app.example/");
         logger = (Logger) LoggerFactory.getLogger(MyHrCredentialDelivery.class);
@@ -53,12 +54,12 @@ class MyHrCredentialDeliveryTest {
 
     @Test
     void hrEmailGoesToTheGivenAddressWithHrWordingLoginIdLinkAndInstructions() {
-        assertThat(delivery.deliver("hr@tardus.test", UserRole.HR, "Tardus Health", "TD001", "Temporary9!")).isTrue();
+        assertThat(delivery.deliver("hr@tardus.test", UserRole.HR, "Tardus Health", "TD001", "Temporary9!", null)).isTrue();
 
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
         verify(emailService).sendHtmlEmail(eq("hr@tardus.test"), eq(MyHrCredentialEmailTemplateService.SUBJECT),
-                html.capture(), text.capture());
+                html.capture(), text.capture(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         assertThat(html.getValue()).contains("Tardus Health", "TD001", "Temporary9!", "HR account",
                 "https://app.example/myhr/login", "new password").doesNotContain("Employee account");
         assertThat(text.getValue()).contains("Tardus Health", "Login ID: TD001", "Role: HR",
@@ -68,11 +69,11 @@ class MyHrCredentialDeliveryTest {
 
     @Test
     void employeeEmailUsesEmployeeWording() {
-        assertThat(delivery.deliver("emp@tardus.test", UserRole.EMPLOYEE, "Tardus Health", "TD002", "Temporary9!")).isTrue();
+        assertThat(delivery.deliver("emp@tardus.test", UserRole.EMPLOYEE, "Tardus Health", "TD002", "Temporary9!", null)).isTrue();
 
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
-        verify(emailService).sendHtmlEmail(eq("emp@tardus.test"), anyString(), html.capture(), text.capture());
+        verify(emailService).sendHtmlEmail(eq("emp@tardus.test"), anyString(), html.capture(), text.capture(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         assertThat(html.getValue()).contains("Employee account", "TD002").doesNotContain("HR account");
         assertThat(text.getValue()).contains("Role: Employee", "Login ID: TD002");
     }
@@ -80,9 +81,9 @@ class MyHrCredentialDeliveryTest {
     @Test
     void smtpFailureReturnsFalseAndLogsNeitherPasswordNorStackTrace() {
         doThrow(new IllegalStateException("smtp down Temporary9!"))
-                .when(emailService).sendHtmlEmail(anyString(), anyString(), anyString(), anyString());
+                .when(emailService).sendHtmlEmail(anyString(), anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
 
-        assertThat(delivery.deliver("hr@tardus.test", UserRole.HR, "Tardus Health", "TD001", "Temporary9!")).isFalse();
+        assertThat(delivery.deliver("hr@tardus.test", UserRole.HR, "Tardus Health", "TD001", "Temporary9!", null)).isFalse();
 
         assertThat(appender.list).hasSize(1);
         assertThat(appender.list.get(0).getFormattedMessage()).contains("TD001").doesNotContain("Temporary9!");
@@ -93,7 +94,7 @@ class MyHrCredentialDeliveryTest {
     void disabledMailIsReportedAsNotDeliveredInsteadOfSilentlySkipped() {
         ReflectionTestUtils.setField(delivery, "mailEnabled", false);
 
-        assertThat(delivery.deliver("hr@tardus.test", UserRole.HR, "Tardus Health", "TD001", "Temporary9!")).isFalse();
+        assertThat(delivery.deliver("hr@tardus.test", UserRole.HR, "Tardus Health", "TD001", "Temporary9!", null)).isFalse();
 
         verifyNoInteractions(emailService);
     }
@@ -108,11 +109,12 @@ class MyHrCredentialDeliveryTest {
         ReflectionTestUtils.setField(real, "fromAddress", "no-reply@waypoint.local");
         ReflectionTestUtils.setField(real, "fromName", "Waypoint");
         MyHrCredentialDelivery wired = new MyHrCredentialDelivery(real,
-                new MyHrCredentialEmailTemplateService(new EmailTemplateService()));
+                new MyHrCredentialEmailTemplateService(new EmailTemplateService()),
+                org.mockito.Mockito.mock(OrganizationEmailIdentityResolver.class));
         ReflectionTestUtils.setField(wired, "mailEnabled", true);
         ReflectionTestUtils.setField(wired, "frontendBaseUrl", "http://localhost:5173");
 
-        assertThat(wired.deliver("emp@tardus.test", UserRole.EMPLOYEE, "Tardus Health", "TD002", "Temporary9!")).isTrue();
+        assertThat(wired.deliver("emp@tardus.test", UserRole.EMPLOYEE, "Tardus Health", "TD002", "Temporary9!", null)).isTrue();
 
         message.saveChanges();
         ByteArrayOutputStream out = new ByteArrayOutputStream();

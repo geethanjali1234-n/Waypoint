@@ -6,7 +6,8 @@ services:
     name: waypoint-backend
     runtime: docker
     plan: free
-    branch: release/production
+    # Deploy the branch published to the production remote.
+    branch: production
     autoDeployTrigger: commit
     # MongoDB Atlas runs in AWS us-east-1, so keep the API close to it.
     region: virginia
@@ -45,6 +46,8 @@ services:
       - key: MAIL_PASSWORD
         sync: false
       - key: MAIL_FROM_ADDRESS
+        sync: false
+      - key: MAIL_AUTHORIZED_SENDER_DOMAINS
         sync: false
       # Set in Render after the static site receives its onrender.com URL.
       - key: APP_FRONTEND_URL
@@ -90,11 +93,13 @@ services:
       # reminder emails never go out to people in the shared dev database.
       - key: PAYROLL_READINESS_AUTOMATIC_REMINDERS_ENABLED
         value: "false"
+      - key: DOCUMENT_REQUEST_REMINDERS_ENABLED
+        value: "false"
 
   - type: web
     name: waypoint-frontend
     runtime: static
-    branch: release/production
+    branch: production
     autoDeployTrigger: commit
     rootDir: frontend
     buildCommand: npm ci && npm run build

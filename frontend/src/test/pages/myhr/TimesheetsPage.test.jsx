@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import TimesheetsPage from '../../../pages/myhr/features/timesheets/TimesheetsPage';
 import timesheetApi from '../../../api/timesheetApi';
 import documentApi from '../../../api/documentApi';
@@ -38,7 +38,7 @@ vi.mock('../../../api/myHrEmployeeApi', () => ({
   },
 }));
 
-// The embedded Payroll Readiness tab (PayrollReadinessWorkspace) pulls its
+// Payroll Readiness (no longer embedded here) pulls its
 // own data independently of everything else on this page.
 vi.mock('../../../api/payrollReadinessApi', () => ({
   default: {
@@ -816,38 +816,34 @@ describe('TimesheetsPage', () => {
   });
 
   it.each([
-    ['HR', 'hr-1', ['My Timesheets', 'Team Timesheets', 'Payroll Readiness']],
-    ['COMPANY_ADMIN', 'admin-1', ['Team Timesheets', 'Payroll Readiness']],
-  ])('keeps Payroll Readiness reachable through existing navigation for %s', async (role, userId, expectedTabs) => {
+    ['HR', 'hr-1'],
+    ['COMPANY_ADMIN', 'admin-1'],
+  ])('keeps Payroll Readiness out of the Timesheets page for %s (it has its own page)', async (role, userId) => {
     timesheetApi.list.mockResolvedValue({ data: { data: [] } });
-    const user = userEvent.setup();
 
     renderPage(role, userId);
 
     await screen.findByRole('heading', { name: 'Timesheets' });
-    if (role === 'HR') expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(expectedTabs);
-    else expect(screen.queryByRole('tab', { name: 'Team Timesheets' })).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole(role === 'HR' ? 'tab' : 'link', { name: 'Payroll Readiness' }));
-
-    expect(screen.getByRole('tab', { name: 'Payroll Readiness', selected: true })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: 'Payroll Readiness' })).toBeInTheDocument();
-    expect(screen.getByText(/Track employee timesheets, follow up on missing submissions/)).toBeInTheDocument();
-    expect(payrollReadinessApi.getReadiness).toHaveBeenCalled();
-
-    // Switching back to Team Timesheets leaves the payroll workspace and its
-    // requests behind entirely.
-    await user.click(screen.getByRole('tab', { name: 'Team Timesheets' }));
-    expect(screen.queryByRole('heading', { name: 'Payroll Readiness' })).not.toBeInTheDocument();
+    if (role === 'HR') expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['My Timesheets', 'Team Timesheets']);
+    else expect(screen.queryByRole('tablist', { name: /timesheet workspace/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Payroll Readiness' })).not.toBeInTheDocument();
+    expect(payrollReadinessApi.getReadiness).not.toHaveBeenCalled();
   });
 
-  it('deep-links straight into the Payroll Readiness tab via ?view=payroll (the redirected /payroll-readiness URL target)', async () => {
+  it.each([
+    ['HR', 'hr', 'hr-1'],
+    ['COMPANY_ADMIN', 'admin', 'admin-1'],
+  ])('sends old ?view=payroll links for %s to the Payroll Readiness page, keeping the other filters', async (role, segment, userId) => {
     timesheetApi.list.mockResolvedValue({ data: { data: [] } });
+    localStorage.setItem('myHrAuthenticatedUser', JSON.stringify({ userId, role, organizationId: 'org-1' }));
+    function Location() { const location = useLocation(); return <output data-testid="location">{`${location.pathname}${location.search}`}</output>; }
 
-    renderPage('HR', 'hr-1', '/myhr/timesheets?view=payroll');
+    render(<MemoryRouter initialEntries={[`/myhr/${segment}/timesheets?view=payroll&payrollMonth=2026-09`]}><Routes>
+      <Route path={`/myhr/${segment}/timesheets`} element={<TimesheetsPage role={role} />} />
+      <Route path={`/myhr/${segment}/payroll-readiness`} element={<Location />} />
+    </Routes></MemoryRouter>);
 
-    expect(screen.getByRole('tab', { name: 'Payroll Readiness', selected: true })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: 'Payroll Readiness' })).toBeInTheDocument();
+    expect(await screen.findByTestId('location')).toHaveTextContent(`/myhr/${segment}/payroll-readiness?payrollMonth=2026-09`);
   });
 
   it('shows recorded hours across the selected month and supports period navigation', async () => {
@@ -2100,8 +2096,8 @@ describe('TimesheetsPage', () => {
     expect(screen.queryByText('Enter Timesheet')).not.toBeInTheDocument();
     expect(screen.queryByText('What would you like to do?')).not.toBeInTheDocument();
     // Admin has no "My Timesheets" of their own, so an invalid/irrelevant
-    // view=mine falls back to Team Timesheets - but the tab bar itself is
-    // still present, now offering Team Timesheets and Payroll Readiness.
+    // view=mine falls back to Team Timesheets. Payroll Readiness is its own
+    // page, reached from the sidebar.
     expect(screen.queryByRole('tab', { name: 'My Timesheets' })).not.toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'View' })).toHaveValue('submissions');
     expect(screen.getByRole('link', { name: 'Payroll Readiness' })).toBeInTheDocument();
@@ -3150,7 +3146,7 @@ it('keeps the admin review controls compact and preserves employee and review to
   expect(await screen.findByRole('button', { name: 'Approve' })).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'My team 1' }));
   expect(screen.getByLabelText('View')).toHaveValue('submissions');
-  expect(screen.getByRole('link', { name: 'Payroll Readiness' })).toHaveAttribute('href', '/myhr/admin/timesheets?view=payroll');
+  expect(screen.getByRole('link', { name: 'Payroll Readiness' })).toHaveAttribute('href', '/myhr/admin/payroll-readiness');
 });
 
 

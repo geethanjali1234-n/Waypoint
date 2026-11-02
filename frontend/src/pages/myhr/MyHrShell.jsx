@@ -56,6 +56,10 @@ function resolveNotificationUrl(actionUrl, role) {
 }
 
 function notificationErrorMessage(error) {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'You are offline. Reconnect and try again. Previously loaded notifications are shown below.';
+  if (error?.code === 'ECONNABORTED') return 'Notifications took too long to load. Please try again.';
+  if (!error?.response && error?.request) return 'Cannot reach the notification service. Check your connection and try again.';
+  if (error?.response?.status >= 500) return 'The notification service is temporarily unavailable. Please try again shortly.';
   return error?.response?.data?.message || 'Notifications could not be loaded. Try again.';
 }
 
@@ -63,7 +67,7 @@ function notificationItems(response) {
   const payload = response?.data?.data;
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.items)) return payload.items;
-  return [];
+  throw new Error('Invalid notifications response');
 }
 
 // COMPANY_ADMIN -> /myhr/admin/profile, HR -> /myhr/hr/profile, EMPLOYEE -> /myhr/employee/profile.
@@ -98,13 +102,17 @@ export default function MyHrShell({ children, fullWidth = false }) {
     if (requestId !== notificationRequestRef.current) return;
 
     if (listResult.status === 'fulfilled') {
-      setNotifications(notificationItems(listResult.value).map((item) => ({
-        ...item,
-        title: item.title,
-        subtitle: item.message || item.subtitle,
-        timestamp: formatNotificationTimestamp(item.createdAt),
-        read: item.read ?? false,
-      })));
+      try {
+        setNotifications(notificationItems(listResult.value).map((item) => ({
+          ...item,
+          title: item.title,
+          subtitle: item.message || item.subtitle,
+          timestamp: formatNotificationTimestamp(item.createdAt),
+          read: item.read ?? false,
+        })));
+      } catch (error) {
+        setNotificationError(notificationErrorMessage(error));
+      }
     } else {
       setNotificationError(notificationErrorMessage(listResult.reason));
     }

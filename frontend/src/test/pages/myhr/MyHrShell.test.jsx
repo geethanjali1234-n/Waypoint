@@ -138,6 +138,27 @@ describe('MyHrShell notification navigation', () => {
     myHrNotificationApi.markAsRead.mockResolvedValue({});
   });
 
+  it('shows a recoverable timeout instead of an empty notification list', async () => {
+    myHrNotificationApi.listNotifications.mockRejectedValue({ code: 'ECONNABORTED' });
+    const user = userEvent.setup();
+    renderShell('EMPLOYEE');
+    await user.click(screen.getByRole('button', { name: 'Notifications' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('took too long');
+    expect(screen.queryByText(/No notifications yet/)).not.toBeInTheDocument();
+    myHrNotificationApi.listNotifications.mockResolvedValue({ data: { data: [] } });
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText(/No notifications yet/)).toBeInTheDocument();
+  });
+
+  it('does not treat a misrouted HTML response as a successfully empty list', async () => {
+    myHrNotificationApi.listNotifications.mockResolvedValue({ data: '<html>App shell</html>' });
+    const user = userEvent.setup();
+    renderShell('EMPLOYEE');
+    await user.click(screen.getByRole('button', { name: 'Notifications' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('could not be loaded');
+    expect(screen.queryByText(/No notifications yet/)).not.toBeInTheDocument();
+  });
+
   it('rewrites an employee-path notification link to the HR page for an HR user', async () => {
     const user = userEvent.setup();
     myHrNotificationApi.listNotifications.mockResolvedValue({

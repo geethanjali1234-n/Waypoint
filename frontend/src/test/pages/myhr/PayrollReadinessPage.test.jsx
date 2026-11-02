@@ -425,6 +425,6 @@ it('initializes the selected payroll month and follow-up filter from a dashboard
   vi.clearAllMocks();
   myHrReportApi.searchEmployees.mockResolvedValue({ data: { data: [] } });
   payrollReadinessApi.getReadiness.mockResolvedValue({ data: { data: readinessResponse } });
-  render(<MemoryRouter initialEntries={['/myhr/admin/timesheets?view=payroll&payrollMonth=2026-04&status=NEEDS_FOLLOW_UP']}><PayrollReadinessPage role="COMPANY_ADMIN" /></MemoryRouter>);
+  render(<MemoryRouter initialEntries={['/myhr/admin/payroll-readiness?payrollMonth=2026-04&status=NEEDS_FOLLOW_UP']}><PayrollReadinessPage role="COMPANY_ADMIN" /></MemoryRouter>);
   await waitFor(() => expect(payrollReadinessApi.getReadiness).toHaveBeenCalledWith(expect.objectContaining({ payrollYear: 2026, payrollMonthNumber: 4, status: 'NEEDS_FOLLOW_UP' })));
 });

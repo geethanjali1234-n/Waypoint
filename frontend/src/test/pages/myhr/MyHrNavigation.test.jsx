@@ -15,7 +15,8 @@ it('keeps navigation available and highlights the destination after navigating',
   expect(screen.getByRole('navigation')).toBeInTheDocument();
 });
 it('highlights payroll separately from the timesheet tab', () => {
-  show('COMPANY_ADMIN', '/myhr/admin/timesheets?view=payroll');
+  show('COMPANY_ADMIN', '/myhr/admin/payroll-readiness');
+  expect(screen.getByRole('link', { name: 'Payroll Readiness' })).toHaveAttribute('href', '/myhr/admin/payroll-readiness');
   expect(screen.getByRole('link', { name: 'Payroll Readiness' })).toHaveAttribute('aria-current', 'page');
   expect(screen.getByRole('link', { name: 'Timesheets' })).not.toHaveAttribute('aria-current');
 });

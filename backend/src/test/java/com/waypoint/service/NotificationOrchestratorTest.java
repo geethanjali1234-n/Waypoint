@@ -57,14 +57,14 @@ class NotificationOrchestratorTest {
         when(profiles.findByUserId("u1")).thenReturn(Optional.of(profile("org-1", "personal@x.com", "work@x.com")));
         orchestrator.notify(event(true));
         verify(inApp).createInAppOnlyNotification("org-1", "u1", NotificationType.PROFILE_CHANGE_APPROVED, "Title", "Message", "r1", "/myhr/employee/x");
-        verify(emailService).sendHtmlEmail(eq("personal@x.com"), eq("Title"), anyString());
+        verify(emailService).sendHtmlEmail(eq("personal@x.com"), eq("Title"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void fallsBackToAccountEmailAndSkipsWorkEmail() {
         when(users.findById("u1")).thenReturn(Optional.of(user("org-1", AccountStatus.ACTIVE, "login@x.com")));
         when(profiles.findByUserId("u1")).thenReturn(Optional.of(profile("org-1", " ", "work@x.com")));
         orchestrator.notify(event(true));
-        verify(emailService).sendHtmlEmail(eq("login@x.com"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq("login@x.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void noAddressKeepsInAppAndSendsNoEmail() {
@@ -72,29 +72,29 @@ class NotificationOrchestratorTest {
         when(profiles.findByUserId("u1")).thenReturn(Optional.of(profile("org-1", null, "work@x.com")));
         orchestrator.notify(event(true));
         verify(inApp).createInAppOnlyNotification(anyString(), anyString(), org.mockito.ArgumentMatchers.any(), anyString(), anyString(), anyString(), anyString());
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void otherOrganizationOrInactiveUsersGetNoEmail() {
         when(users.findById("u1")).thenReturn(Optional.of(user("org-2", AccountStatus.ACTIVE, "login@x.com")));
         orchestrator.notify(event(true));
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         when(users.findById("u1")).thenReturn(Optional.of(user("org-1", AccountStatus.INACTIVE, "login@x.com")));
         orchestrator.notify(event(true));
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void inAppOnlyEventNeverLooksUpOrSendsEmail() {
         orchestrator.notify(event(false));
         verify(inApp).createInAppOnlyNotification(anyString(), anyString(), org.mockito.ArgumentMatchers.any(), anyString(), anyString(), anyString(), anyString());
         verify(users, never()).findById(anyString());
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void emailFailureNeverPropagatesAndInAppIsKept() {
         when(users.findById("u1")).thenReturn(Optional.of(user("org-1", AccountStatus.ACTIVE, "login@x.com")));
         when(profiles.findByUserId("u1")).thenReturn(Optional.empty());
-        doThrow(new RuntimeException("smtp down")).when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+        doThrow(new RuntimeException("smtp down")).when(emailService).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         orchestrator.notify(event(true));
         verify(inApp).createInAppOnlyNotification(anyString(), anyString(), org.mockito.ArgumentMatchers.any(), anyString(), anyString(), anyString(), anyString());
     }
@@ -105,14 +105,14 @@ class NotificationOrchestratorTest {
         when(users.findById("u1")).thenReturn(Optional.of(user("org-1", AccountStatus.ACTIVE, "login@x.com")));
         when(profiles.findByUserId("u1")).thenReturn(Optional.empty());
         orchestrator.notify(event(true));
-        verify(emailService).sendHtmlEmail(eq("login@x.com"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq("login@x.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void oneEmailEventProducesExactlyOneEmailAndNeverTheGenericNotificationEmailPath() {
         when(users.findById("u1")).thenReturn(Optional.of(user("org-1", AccountStatus.ACTIVE, "login@x.com")));
         when(profiles.findByUserId("u1")).thenReturn(Optional.empty());
         orchestrator.notify(event(true));
-        verify(emailService, times(1)).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, times(1)).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         verify(inApp, times(1)).createInAppOnlyNotification(anyString(), anyString(), org.mockito.ArgumentMatchers.any(), anyString(), anyString(), anyString(), anyString());
         // createNotification is the path that also emails; an event must never take it as well.
         verify(inApp, never()).createNotification(anyString(), anyString(), org.mockito.ArgumentMatchers.any(), anyString(), anyString(), anyString(), anyString());
@@ -120,7 +120,7 @@ class NotificationOrchestratorTest {
 
     @Test void anEventWhoseDedicatedEmailAlreadyExistsSendsNoNotificationEmail() {
         orchestrator.notify(event(false));
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         verify(emailService, never()).sendHtmlEmailWithAttachments(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.anyList());
     }
 

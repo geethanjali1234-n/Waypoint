@@ -26,6 +26,7 @@ public class OfferLetterService {
     private final OfferLetterPdfService pdf; private final AuditService audit;
     private final EmailService emailService; private final OfferLetterEmailTemplateService emailTemplates;
     private final OfferLetterStaticAttachmentService staticAttachments;
+    private final OrganizationEmailIdentityResolver identityResolver;
     private static final Set<UserRole> HR = Set.of(UserRole.HR, UserRole.COMPANY_ADMIN);
     private static final Pattern EMAIL_ADDRESS = Pattern.compile("^[^\\s@,;<>]+@[^\\s@,;<>]+\\.[^\\s@,;<>]+$");
     private static final int MAX_DRAFT_TEXT_LENGTH = 160;
@@ -91,7 +92,7 @@ public class OfferLetterService {
         attachments.addAll(staticAttachments.load());
         try {
             emailService.sendHtmlEmailWithAttachments(recipient, subject, html, attachments,
-                    emailTemplates.senderDisplayName(emailBranding(a.organizationId())));
+                    identityResolver.forOrganization(r.getOrganizationId()));
         } catch (RuntimeException failure) {
             Throwable root = rootCause(failure);
             log.warn("Offer letter email failed [requestId={}, exceptionType={}, rootCauseType={}, reason={}]",

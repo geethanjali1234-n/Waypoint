@@ -93,6 +93,14 @@ describe('Admin dashboard approval card', () => {
     await waitFor(() => expect(myHrDocumentRequestApi.listOfferLetterApprovals).toHaveBeenCalled());
     expect(screen.queryByLabelText('Document Approvals')).not.toBeInTheDocument();
   });
+
+  it('does not claim there are zero pending approvals when the response has no count', async () => {
+    myHrDocumentRequestApi.listOfferLetterApprovals.mockResolvedValue({ data: { data: {} } });
+    renderCard();
+    await waitFor(() => expect(myHrDocumentRequestApi.listOfferLetterApprovals).toHaveBeenCalled());
+    expect(screen.queryByLabelText('Document Approvals')).not.toBeInTheDocument();
+    expect(screen.queryByText('No documents are currently waiting for your approval.')).not.toBeInTheDocument();
+  });
 });
 
 describe('Document Approvals are Company Admin only', () => {
@@ -105,8 +113,10 @@ describe('Document Approvals are Company Admin only', () => {
     myHrDocumentRequestApi.listOfferLetterApprovals.mockResolvedValue({ data: { data: { pending: 2, approved: 0, rejected: 0, items: [] } } });
     renderDashboard('COMPANY_ADMIN');
 
-    expect(await screen.findByRole('link', { name: 'Review documents' })).toHaveAttribute('href', '/myhr/admin/offer-letter-approvals?status=PENDING_APPROVAL');
-    expect(within(screen.getByText('Documents awaiting approval').closest('li')).getByText('2')).toBeInTheDocument();
+    const card = await screen.findByRole('region', { name: 'Document Approvals' });
+    expect(within(card).getByRole('button', { name: 'Review Approvals' })).toBeInTheDocument();
+    expect(within(card).getByText('2 Pending Approval')).toBeInTheDocument();
+    expect(screen.queryByText('Documents awaiting approval')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Needs you today' })).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Organization Settings' }).length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: 'Employee Management' })).toBeInTheDocument();

@@ -1,8 +1,11 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import WaypointChatbot from '../../components/chatbot/WaypointChatbot';
-import { queryKnowledgeBase, QUICK_SUGGESTIONS, getQuickSuggestions } from '../../components/chatbot/knowledgeBase';
+import { queryKnowledgeBase, getQuickSuggestions } from '../../components/chatbot/knowledgeBase';
+
+beforeEach(() => localStorage.setItem('myHrAuthenticatedUser', JSON.stringify({ role: 'HR' })));
+afterEach(() => localStorage.removeItem('myHrAuthenticatedUser'));
 
 const mockedNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -167,7 +170,7 @@ describe('WaypointChatbot Component', () => {
 
     const trigger = screen.getByRole('button', { name: /Waypoint Assistant/i });
     expect(trigger).toBeInTheDocument();
-    expect(trigger).toHaveAttribute('title', 'Waypoint Assistant');
+    expect(trigger).toHaveAttribute('title', 'Ask Wavy');
   });
 
   it('opens chat window on click with header, greeting, and suggestions', () => {
@@ -180,10 +183,10 @@ describe('WaypointChatbot Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Waypoint Assistant/i }));
 
     expect(screen.getByRole('dialog', { name: /Waypoint Assistant Chat/i })).toBeInTheDocument();
-    expect(screen.getAllByText('Waypoint Assistant').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/Online · Instant Answers/i)).toBeInTheDocument();
-    expect(screen.getByText(/How can I help you today\?/i)).toBeInTheDocument();
-    expect(screen.getByText(QUICK_SUGGESTIONS[0].label)).toBeInTheDocument();
+    expect(screen.getAllByText(/Wavy/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/Online/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Hey! I'm Wavy/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Payroll Readiness.*Check/i })).toBeInTheDocument();
   });
 
   it('does not render browse jobs or post a job chips in HR workspace chat', () => {
@@ -209,7 +212,7 @@ describe('WaypointChatbot Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Waypoint Assistant/i }));
 
     // Click the Express Clearance suggestion chip
-    const chip = screen.getByText(/Express Clearance/i);
+    const chip = screen.getByRole('button', { name: /Timesheets.*Review & clear/i });
     fireEvent.click(chip);
 
     // Wait for typing to finish and response to appear
@@ -234,16 +237,16 @@ describe('WaypointChatbot Component', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Waypoint Assistant/i }));
 
-    const input = screen.getByPlaceholderText(/Ask anything or search workflows/i);
+    const input = screen.getByPlaceholderText(/Ask Wavy about your workday/i);
     fireEvent.change(input, { target: { value: 'i want to know by when should i submit my timesheety' } });
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
 
     await waitFor(() => {
-      expect(screen.getByText(/Timesheet Submission Deadlines:/i)).toBeInTheDocument();
+      expect(screen.getByText(/couldn.t check that information right now/i)).toBeInTheDocument();
     }, { timeout: 1500 });
 
-    expect(screen.getByText(/Friday 5:00 PM/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Check Timesheets/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Friday 5:00 PM/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
   it('allows user to type custom query and submit via Enter key', async () => {
@@ -255,16 +258,16 @@ describe('WaypointChatbot Component', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Waypoint Assistant/i }));
 
-    const input = screen.getByPlaceholderText(/Ask anything or search workflows/i);
+    const input = screen.getByPlaceholderText(/Ask Wavy about your workday/i);
     fireEvent.change(input, { target: { value: 'when is payroll cutoff?' } });
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
 
     await waitFor(() => {
-      expect(screen.getByText(/10th of every month/i)).toBeInTheDocument();
+      expect(screen.getByText(/couldn.t check that information right now/i)).toBeInTheDocument();
     }, { timeout: 1500 });
   });
 
-  it('clears conversation when trash button is clicked', () => {
+  it('clears conversation from the options menu and restores welcome cards', () => {
     render(
       <MemoryRouter>
         <WaypointChatbot />
@@ -272,9 +275,12 @@ describe('WaypointChatbot Component', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Waypoint Assistant/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Clear chat/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Timesheets.*Review & clear/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Conversation options' }));
+    fireEvent.click(screen.getByRole('button', { name: /Restart conversation/i }));
 
-    expect(screen.getByText(/Chat cleared!/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Hey! I'm Wavy/i })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Assistant is typing')).not.toBeInTheDocument();
   });
 
   it('closes the chat window when close button is clicked', () => {
@@ -299,5 +305,62 @@ describe('WaypointChatbot Component', () => {
     fireEvent.keyDown(input, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Waypoint Assistant/i })).toHaveFocus();
+  });
+});
+
+
+describe('Waypoint assistant unread messages', () => {
+  it('marks a reply received while closed and clears the indicator on reopening', async () => {
+    render(<MemoryRouter><WaypointChatbot /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: 'Open Wavy, Waypoint Assistant' }));
+    fireEvent.click(screen.getByRole('button', { name: /Timesheets.*Review & clear/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close assistant' }));
+    await waitFor(() => expect(screen.getByText('New chatbot messages')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Open Wavy, Waypoint Assistant' }));
+    expect(screen.queryByText('New chatbot messages')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Close Waypoint Assistant' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Close assistant' })).toBeInTheDocument();
+  });
+});
+
+
+describe('Contextual assistant presentation', () => {
+  it('prioritizes employee documents on the documents route and hides welcome after sending', async () => {
+    localStorage.setItem('myHrAuthenticatedUser', JSON.stringify({ role: 'EMPLOYEE' }));
+    try {
+      render(<MemoryRouter initialEntries={['/myhr/employee/document-requests']}><WaypointChatbot /></MemoryRouter>);
+      fireEvent.click(screen.getByRole('button', { name: 'Open Wavy, Waypoint Assistant' }));
+      const chips = screen.getByLabelText('Suggested topics');
+      expect(chips.querySelector('button')).toHaveTextContent('Document Requests');
+      expect(screen.queryByRole('button', { name: /Employee Management/i })).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /Document Requests.*Letters/i }));
+      expect(screen.queryByRole('heading', { name: /Hey! I'm Wavy/i })).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Assistant is typing')).toBeInTheDocument();
+      await waitFor(() => expect(screen.queryByLabelText('Assistant is typing')).not.toBeInTheDocument());
+      expect(screen.getByRole('log').querySelectorAll('time')).toHaveLength(2);
+      expect(screen.getByRole('button', { name: 'Request Letter' })).toBeInTheDocument();
+    } finally { localStorage.removeItem('myHrAuthenticatedUser'); }
+  });
+
+  it('closes the options popover before closing the panel on Escape', () => {
+    render(<MemoryRouter><WaypointChatbot /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: 'Open Wavy, Waypoint Assistant' }));
+    const options = screen.getByRole('button', { name: 'Conversation options' });
+    fireEvent.click(options);
+    const clear = screen.getByRole('button', { name: 'Restart conversation' });
+    clear.focus();
+    fireEvent.keyDown(clear, { key: 'Escape' });
+    expect(screen.queryByRole('button', { name: 'Restart conversation' })).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(options).toHaveFocus();
+  });
+
+  it('does not invent live payroll figures and keeps fallbacks short', () => {
+    const reply = queryKnowledgeBase('What is my salary?', 'EMPLOYEE', '/myhr/employee/timesheets');
+    expect(reply.text).toContain("can't read live employee or payroll records");
+    expect(reply.actions.every((action) => action.path.startsWith('/myhr/employee/'))).toBe(true);
+    const fallback = queryKnowledgeBase('zxqv', 'COMPANY_ADMIN', '/myhr/admin/payroll-readiness');
+    expect(fallback.text.length).toBeLessThan(160);
+    expect(fallback.actions[0].label).toBe('Payroll Readiness');
   });
 });

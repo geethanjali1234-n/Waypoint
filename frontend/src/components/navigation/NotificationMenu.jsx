@@ -92,13 +92,13 @@ export default function NotificationMenu({
           <div className="wp-notification-menu__header">
             <span className="wp-notification-menu__title">Notifications</span>
             {onMarkAllRead && (
-              <button type="button" className="wp-notification-menu__mark-read" onClick={onMarkAllRead}>
+              <button type="button" className="wp-notification-menu__mark-read" disabled={isLoading || Boolean(error) || !safeNotifications.some((item) => !item.read)} onClick={onMarkAllRead}>
                 Mark all read
               </button>
             )}
           </div>
-          <ul className="wp-notification-menu__list" aria-live="polite">
-            {isLoading && (
+          <ul className="wp-notification-menu__list" aria-live="polite" aria-busy={isLoading}>
+            {isLoading && safeNotifications.length === 0 && (
               <li className="wp-notification-menu__status">Loading notifications&hellip;</li>
             )}
             {!isLoading && error && (
@@ -114,7 +114,7 @@ export default function NotificationMenu({
             {!isLoading && !error && safeNotifications.length === 0 && (
               <li className="wp-notification-menu__empty">You&apos;re all caught up. No notifications yet.</li>
             )}
-            {!isLoading && !error && safeNotifications.map((notification) => {
+            {safeNotifications.map((notification) => {
               const content = (
                 <>
                   {!notification.read && <span className="wp-notification-menu__sr">Unread notification</span>}

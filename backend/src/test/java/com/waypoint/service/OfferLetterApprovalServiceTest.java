@@ -138,13 +138,13 @@ class OfferLetterApprovalServiceTest {
                 eq("HR has submitted an offer letter for Jane Doe for the position of Software Developer. Please review and approve or reject the offer letter."),
                 eq("request-1"), eq("/myhr/admin/offer-letter-approvals/request-1"));
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
-        verify(emailService).sendHtmlEmail(eq("admin@tardus.example"), eq("Offer Letter Approval Required – Jane Doe"), html.capture());
+        verify(emailService).sendHtmlEmail(eq("admin@tardus.example"), eq("Offer Letter Approval Required – Jane Doe"), html.capture(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         assertThat(html.getValue()).contains("Jane Doe", "Software Developer", "Paid", "Full-time", "2026-10-15",
                 "Review Offer Letter", "http://localhost:5173/myhr/admin/offer-letter-approvals/request-1");
         // No approve action is offered inside the email.
         assertThat(html.getValue()).doesNotContainIgnoringCase("/approve");
         // The employee is not contacted at all.
-        verify(emailService, never()).sendHtmlEmail(eq("employee@tardus.example"), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(eq("employee@tardus.example"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void duplicateSubmissionWhilePendingIsRejectedAndNeverNotifiesTwice() {
@@ -154,7 +154,7 @@ class OfferLetterApprovalServiceTest {
                 .isInstanceOf(BusinessException.class).hasMessage("This offer letter is already waiting for Admin approval.");
         verify(notifications, times(1)).createInAppOnlyNotification(anyString(), anyString(), eq(NotificationType.OFFER_LETTER_APPROVAL_REQUESTED),
                 anyString(), anyString(), anyString(), anyString());
-        verify(emailService, times(1)).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, times(1)).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         verify(documents, times(1)).store(any());
     }
 
@@ -217,7 +217,7 @@ class OfferLetterApprovalServiceTest {
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("hr-1"), eq(NotificationType.OFFER_LETTER_APPROVED), eq("Offer Letter Approved"),
                 eq("The offer letter for Jane Doe has been approved by the Tardus Admin. You can now send it to the employee."),
                 eq("request-1"), eq("/myhr/hr/document-requests/request-1/offer-letter"));
-        verify(emailService).sendHtmlEmail(eq("hr@tardus.example"), eq("Offer Letter Approved – Jane Doe"), anyString());
+        verify(emailService).sendHtmlEmail(eq("hr@tardus.example"), eq("Offer Letter Approved – Jane Doe"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void onlyACompanyAdminCanApprove() {
@@ -244,7 +244,7 @@ class OfferLetterApprovalServiceTest {
                 .hasMessageContaining("already been approved");
         verify(notifications, times(1)).createInAppOnlyNotification(anyString(), eq("hr-1"), eq(NotificationType.OFFER_LETTER_APPROVED),
                 anyString(), anyString(), anyString(), anyString());
-        verify(emailService, times(1)).sendHtmlEmail(eq("hr@tardus.example"), anyString(), anyString());
+        verify(emailService, times(1)).sendHtmlEmail(eq("hr@tardus.example"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void aLetterThatWasNeverSubmittedCannotBeApproved() {
@@ -256,7 +256,7 @@ class OfferLetterApprovalServiceTest {
         submitAsHr();
         doThrow(new RuntimeException("notifications down")).when(notifications).createInAppOnlyNotification(anyString(), anyString(), any(), anyString(),
                 anyString(), anyString(), anyString());
-        doThrow(new RuntimeException("smtp down")).when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+        doThrow(new RuntimeException("smtp down")).when(emailService).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         doThrow(new RuntimeException("audit down")).when(audit).record(any(AuthenticatedMyHrUser.class), any(), anyString(), anyString(),
                 any(), anyString(), any(), any());
 
@@ -296,7 +296,7 @@ class OfferLetterApprovalServiceTest {
                 eq("The offer letter for Jane Doe was rejected by the Tardus Admin.\n\nReason:\nWrong salary"),
                 eq("request-1"), eq("/myhr/hr/document-requests/request-1/offer-letter"));
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
-        verify(emailService).sendHtmlEmail(eq("hr@tardus.example"), eq("Offer Letter Rejected – Jane Doe"), html.capture());
+        verify(emailService).sendHtmlEmail(eq("hr@tardus.example"), eq("Offer Letter Rejected – Jane Doe"), html.capture(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         assertThat(html.getValue()).contains("Wrong salary");
     }
 
@@ -415,9 +415,9 @@ class OfferLetterApprovalServiceTest {
                 eq("HR has submitted the Employment Verification for Jane Doe. Please review and approve or reject the document."),
                 eq("request-1"), eq("/myhr/admin/offer-letter-approvals/request-1"));
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
-        verify(emailService).sendHtmlEmail(eq("admin@tardus.example"), eq("Document Approval Required – Jane Doe – Employment Verification"), html.capture());
+        verify(emailService).sendHtmlEmail(eq("admin@tardus.example"), eq("Document Approval Required – Jane Doe – Employment Verification"), html.capture(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         assertThat(html.getValue()).contains("Employment Verification", "Review Document", "http://localhost:5173/myhr/admin/offer-letter-approvals/request-1");
-        verify(emailService, never()).sendHtmlEmail(eq("employee@tardus.example"), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(eq("employee@tardus.example"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test void approvingAndRejectingAnyDocumentNotifiesHrWithTheDocumentName() {
@@ -431,7 +431,7 @@ class OfferLetterApprovalServiceTest {
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("hr-1"), eq(NotificationType.OFFER_LETTER_REJECTED), eq("Document Rejected"),
                 eq("The Salary Verification Letter for Jane Doe was rejected by the Tardus Admin.\n\nReason:\nWrong amount"),
                 eq("request-1"), eq("/myhr/hr/document-requests/request-1"));
-        verify(emailService).sendHtmlEmail(eq("hr@tardus.example"), eq("Document Rejected – Jane Doe"), anyString());
+        verify(emailService).sendHtmlEmail(eq("hr@tardus.example"), eq("Document Rejected – Jane Doe"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
 
         submit("hr-1", "request-1", documentDetails(), PDF);
         org.mockito.Mockito.clearInvocations(notifications, emailService);
@@ -582,16 +582,16 @@ class OfferLetterApprovalServiceTest {
         submit("hr-1", "request-1", details(), PDF);
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("admin"), eq(NotificationType.OFFER_LETTER_APPROVAL_REQUESTED),
                 anyString(), anyString(), eq("request-1"), anyString());
-        verify(emailService).sendHtmlEmail(eq("admin@tardus.example"), eq("Offer Letter Approval Required – Jane Doe"), anyString());
+        verify(emailService).sendHtmlEmail(eq("admin@tardus.example"), eq("Offer Letter Approval Required – Jane Doe"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
         org.mockito.Mockito.clearInvocations(notifications, emailService);
 
         service.approve("admin", "request-1");
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("hr-1"), eq(NotificationType.OFFER_LETTER_APPROVED),
                 anyString(), anyString(), eq("request-1"), anyString());
-        verify(emailService).sendHtmlEmail(eq("hr-personal@example.com"), eq("Offer Letter Approved – Jane Doe"), anyString());
-        verify(emailService, never()).sendHtmlEmail(eq("admin-work@example.com"), anyString(), anyString());
-        verify(emailService, never()).sendHtmlEmail(eq("hr-work@example.com"), anyString(), anyString());
-        verify(emailService, never()).sendHtmlEmail(eq("admin-personal@example.com"), anyString(), anyString());
-        verify(emailService, never()).sendHtmlEmail(eq("hr@tardus.example"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq("hr-personal@example.com"), eq("Offer Letter Approved – Jane Doe"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
+        verify(emailService, never()).sendHtmlEmail(eq("admin-work@example.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
+        verify(emailService, never()).sendHtmlEmail(eq("hr-work@example.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
+        verify(emailService, never()).sendHtmlEmail(eq("admin-personal@example.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
+        verify(emailService, never()).sendHtmlEmail(eq("hr@tardus.example"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 }

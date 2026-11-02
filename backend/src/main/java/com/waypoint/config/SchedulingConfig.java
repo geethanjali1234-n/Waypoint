@@ -9,7 +9,7 @@ import java.time.Clock;
 
 @Configuration
 @EnableScheduling
-@EnableConfigurationProperties(PayrollReadinessProperties.class)
+@EnableConfigurationProperties({PayrollReadinessProperties.class, DocumentRequestReminderProperties.class})
 public class SchedulingConfig {
     @Bean
     public Clock clock(PayrollReadinessProperties properties) {

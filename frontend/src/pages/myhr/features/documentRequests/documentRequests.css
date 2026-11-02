@@ -8,13 +8,15 @@
    opposite sides of the same breakpoint render completely differently for a
    few pixels of difference. Wrapping continuously means every width in
    between reflows a little more, rather than all-at-once. */
-.document-requests__toolbar { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:.75rem 1rem; margin-bottom:1rem; }
+.document-requests__toolbar { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:.75rem 1rem; margin-bottom:1rem; padding:1rem 1.25rem; border:1px solid var(--wp-color-border); }
 .document-requests__filters { display:flex; flex:1 1 auto; flex-wrap:wrap; align-items:flex-end; gap:.75rem; min-width:0; }
 .document-requests__filters .wp-field { flex:1 1 9rem; margin-bottom:0; min-width:8.5rem; max-width:15rem; }
 .document-requests__search-field { flex:1 1 14rem !important; min-width:12rem !important; max-width:20rem; }
 .document-requests__filters .wp-field:nth-child(4) { flex:1.3 1 14rem; max-width:18rem; }
-.document-requests__search-field .wp-form-label { margin-bottom:.4rem; display:block; }
+.document-requests__search-field .wp-form-label { margin-bottom:4px; display:flex; }
 .document-requests__clear { align-self:end; }
+/* Search, dropdowns and Clear filters share one height so they line up in a row. */
+.document-requests__filters :is(.wp-field__control, .document-requests__clear) { height:44px; min-height:44px; padding-block:0; }
 .document-requests__scope { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem 1rem; margin:0 0 1rem; }
 .document-requests__scope p { margin:0; font-size:.875rem; opacity:.8; }
 .document-requests__scope-action { margin-left:auto; white-space:nowrap; }
@@ -717,6 +719,15 @@
   border-bottom: 1px solid var(--wp-color-border);
 }
 
+/* A request's status badge followed by the red Overdue badge (only when the backend marks it overdue). */
+.document-requests__status-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
 [data-theme="light"] .document-requests__card-header {
   border-bottom-color: var(--wp-color-border);
 }
@@ -1000,3 +1011,11 @@
   background: var(--wp-surface, #fff);
   border: 1px solid var(--wp-border, #d9e3df);
 }
+
+/* Segmented toggles (Table/Cards, Received/My requests, For myself/From employees): one box, same height as the filters. */
+.myhr-feature.phase-six .document-requests__view-toggle { flex:0 0 auto; width:max-content; justify-self:start; flex-wrap:nowrap; gap:2px; height:44px; padding:3px; box-sizing:border-box; background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); }
+.myhr-feature.phase-six .document-requests__view-toggle .document-requests__view-toggle-btn { display:inline-flex; align-items:center; justify-content:center; height:36px; min-height:0; padding:0 14px; white-space:nowrap; font-size:.875rem; border:0; border-radius:calc(var(--wp-radius-control) - 3px); background:transparent !important; color:var(--wp-color-text-muted) !important; }
+.myhr-feature.phase-six .document-requests__view-toggle .document-requests__view-toggle-btn:hover { color:var(--wp-color-text) !important; }
+.myhr-feature.phase-six .document-requests__view-toggle .document-requests__view-toggle-btn.is-active { background:var(--wp-color-primary) !important; color:var(--wp-color-primary-contrast) !important; }
+.myhr-feature.phase-six .document-requests__view-toggle .document-requests__view-toggle-btn:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
+.myhr-feature.phase-six .document-requests__view-toggle--icons .document-requests__view-toggle-btn { width:40px; padding:0; }

@@ -41,6 +41,7 @@ import EmployeeManagementPage from "../pages/myhr/features/employeeManagement/Em
 import ProfileChangeRequestsPage from "../pages/myhr/features/profileChanges/ProfileChangeRequestsPage";
 import MyHrProfilePage from "../pages/myhr/features/profile/MyHrProfilePage";
 import TimesheetsPage from "../pages/myhr/features/timesheets/TimesheetsPage";
+import PayrollReadinessPage from "../pages/myhr/features/payrollReadiness/PayrollReadinessPage";
 import DocumentRequestsPage from "../pages/myhr/features/documentRequests/DocumentRequestsPage";
 import RequestDocumentsForm from "../pages/myhr/features/documentRequests/RequestDocumentsForm";
 import EmployeeDocumentRequestForm from "../pages/myhr/features/documentRequests/EmployeeDocumentRequestForm";
@@ -320,10 +321,8 @@ const router = createBrowserRouter([
     element: <MyHrProtectedRoute allowedRoles={["HR"]}><ReportsPage role="HR" /></MyHrProtectedRoute>,
   },
   {
-    // Payroll Readiness now lives as a tab on the Timesheets page; this
-    // keeps old links (e.g. from readiness reminder notifications) working.
     path: "/myhr/hr/payroll-readiness",
-    element: <Navigate to="/myhr/hr/timesheets?view=payroll" replace />,
+    element: <MyHrProtectedRoute allowedRoles={["HR"]}><PayrollReadinessPage role="HR" /></MyHrProtectedRoute>,
   },
   {
     path: "/myhr/admin",
@@ -391,10 +390,8 @@ const router = createBrowserRouter([
     element: <MyHrProtectedRoute allowedRoles={["COMPANY_ADMIN"]}><ReportsPage role="COMPANY_ADMIN" /></MyHrProtectedRoute>,
   },
   {
-    // Payroll Readiness now lives as a tab on the Timesheets page; this
-    // keeps old links (e.g. from readiness reminder notifications) working.
     path: "/myhr/admin/payroll-readiness",
-    element: <Navigate to="/myhr/admin/timesheets?view=payroll" replace />,
+    element: <MyHrProtectedRoute allowedRoles={["COMPANY_ADMIN"]}><PayrollReadinessPage role="COMPANY_ADMIN" /></MyHrProtectedRoute>,
   },
   {
     path: "/myhr/admin/audit",

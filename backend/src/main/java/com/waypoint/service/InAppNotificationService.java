@@ -5,6 +5,7 @@ import com.waypoint.enums.NotificationType;
 import com.waypoint.exception.ResourceNotFoundException;
 import com.waypoint.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -12,6 +13,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class InAppNotificationService {
@@ -93,8 +95,13 @@ public class InAppNotificationService {
         validateAuthenticatedUserId(authenticatedUserId);
 
         int cappedLimit = limit <= 0 ? DEFAULT_LIST_LIMIT : Math.min(limit, MAX_LIST_LIMIT);
-        return notificationRepository.findByRecipientUserIdOrderByCreatedAtDesc(
+        List<Notification> notifications = notificationRepository.findByRecipientUserIdOrderByCreatedAtDesc(
                 authenticatedUserId, PageRequest.of(0, cappedLimit));
+        notifications.stream()
+                .filter(notification -> notification.getNotificationType() == NotificationType.UNKNOWN)
+                .forEach(notification -> log.warn("Notification has a type this build does not recognise [notificationId={}]",
+                        notification.getId()));
+        return notifications;
     }
 
     public long countUnread(String authenticatedUserId) {
@@ -118,27 +125,18 @@ public class InAppNotificationService {
             return notification;
         }
 
+        LocalDateTime readAt = LocalDateTime.now();
+        // Targeted $set: re-saving the whole document would replace an unrecognised stored type with UNKNOWN.
+        notificationRepository.markReadByIdAndRecipientUserId(notificationId, authenticatedUserId, readAt);
         notification.setIsRead(true);
-        notification.setReadAt(LocalDateTime.now());
-        return notificationRepository.save(notification);
+        notification.setReadAt(readAt);
+        return notification;
     }
 
     public void markAllAsRead(String authenticatedUserId) {
         validateAuthenticatedUserId(authenticatedUserId);
 
-        List<Notification> unread = notificationRepository.findByRecipientUserIdAndIsReadFalse(authenticatedUserId);
-
-        if (unread.isEmpty()) {
-            return;
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        unread.forEach(notification -> {
-            notification.setIsRead(true);
-            notification.setReadAt(now);
-        });
-
-        notificationRepository.saveAll(unread);
+        notificationRepository.markAllReadByRecipientUserId(authenticatedUserId, LocalDateTime.now());
     }
 
     private void validateAuthenticatedUserId(String authenticatedUserId) {
@@ -153,7 +151,7 @@ public class InAppNotificationService {
         if (!StringUtils.hasText(recipientUserId)) {
             throw new IllegalArgumentException("Recipient user id is required");
         }
-        if (type == null) {
+        if (type == null || type == NotificationType.UNKNOWN) {
             throw new IllegalArgumentException("Notification type is required");
         }
         if (!StringUtils.hasText(title)) {

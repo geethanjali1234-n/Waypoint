@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../components';
+import StrokeIcon from '../../../components/global/StrokeIcon';
 import myHrDocumentRequestApi from '../../../api/myHrDocumentRequestApi';
 import '../features/documentRequests/offerLetterApproval.css';
 
@@ -17,8 +18,9 @@ export default function OfferLetterApprovalCard() {
 
   useEffect(() => {
     let active = true;
-    Promise.resolve(myHrDocumentRequestApi.listOfferLetterApprovals()).then((response) => {
-      if (active) setPending(response?.data?.data?.pending ?? 0);
+    Promise.resolve().then(() => myHrDocumentRequestApi.listOfferLetterApprovals()).then((response) => {
+      const count = response?.data?.data?.pending;
+      if (active && Number.isFinite(count) && count >= 0) setPending(count);
     }).catch(() => { /* the card simply stays hidden if the count cannot be loaded */ });
     return () => { active = false; };
   }, []);
@@ -29,7 +31,7 @@ export default function OfferLetterApprovalCard() {
   return (
     <section className={`offer-approval-card ${attention ? 'offer-approval-card--attention' : ''}`} aria-label="Document Approvals">
       <div className="offer-approval-card__main">
-        <span className="offer-approval-card__icon" aria-hidden="true">📝</span>
+        <span className="offer-approval-card__icon" aria-hidden="true"><StrokeIcon name="document" /></span>
         <div>
           <h3>
             Document Approvals

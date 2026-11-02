@@ -36,7 +36,7 @@ public class MyHrNotificationController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<NotificationResponse>>> getMyNotifications(
             HttpServletRequest request,
-            @RequestParam(defaultValue = "50") int limit) {
+            @RequestParam(name = "limit", defaultValue = "50") int limit) {
 
         String userId = resolveMyHrUserId(request);
         List<NotificationResponse> response = inAppNotificationService.listNotifications(userId, limit).stream()
@@ -58,7 +58,7 @@ public class MyHrNotificationController {
     @PatchMapping("/{notificationId}/read")
     public ResponseEntity<ApiResponse<NotificationResponse>> markAsRead(
             HttpServletRequest request,
-            @PathVariable String notificationId) {
+            @PathVariable("notificationId") String notificationId) {
 
         String userId = resolveMyHrUserId(request);
         Notification notification = inAppNotificationService.markAsRead(userId, notificationId);

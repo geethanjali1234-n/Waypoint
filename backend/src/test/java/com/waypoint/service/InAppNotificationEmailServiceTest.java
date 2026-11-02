@@ -39,7 +39,8 @@ class InAppNotificationEmailServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new InAppNotificationEmailService(users, profiles, organizations, emailService, new EmailTemplateService());
+        service = new InAppNotificationEmailService(users, profiles, organizations, emailService, new EmailTemplateService(),
+                org.mockito.Mockito.mock(OrganizationEmailIdentityResolver.class));
         ReflectionTestUtils.setField(service, "frontendBaseUrl", "https://app.waypoint.example");
     }
 
@@ -52,7 +53,7 @@ class InAppNotificationEmailServiceTest {
         service.deliver(notification);
 
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(emailService).sendHtmlEmail(eq("lilly@example.com"), eq("Waypoint: New document request"), body.capture());
+        verify(emailService).sendHtmlEmail(eq("lilly@example.com"), eq("Waypoint: New document request"), body.capture(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
         assertThat(body.getValue()).contains("Lilly requested an Offer Letter.")
                 .contains("View document request")
                 .contains("https://app.waypoint.example/myhr/hr/document-requests/request-1");
@@ -65,11 +66,11 @@ class InAppNotificationEmailServiceTest {
                 .email("lilly@example.com").build()));
 
         service.deliver(notification);
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
 
         when(users.findById("user-1")).thenReturn(Optional.of(User.builder().id("user-1").accountStatus(AccountStatus.ACTIVE).organizationId("org-1").email(" ").build()));
         service.deliver(notification);
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -80,11 +81,11 @@ class InAppNotificationEmailServiceTest {
 
         service.deliver(notification);
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(emailService).sendHtmlEmail(eq("lilly@example.com"), anyString(), body.capture());
+        verify(emailService).sendHtmlEmail(eq("lilly@example.com"), anyString(), body.capture(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
         assertThat(body.getValue()).doesNotContain("View profile change", "untrusted.example");
 
         doThrow(new IllegalStateException("smtp unavailable")).when(emailService)
-                .sendHtmlEmail(eq("lilly@example.com"), anyString(), anyString());
+                .sendHtmlEmail(eq("lilly@example.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
         service.deliver(notification);
     }
 
@@ -102,17 +103,17 @@ class InAppNotificationEmailServiceTest {
                 .organizationId("org-1").personalEmail("personal@example.com").workEmail("work@example.com").build()));
 
         service.deliver(notification);
-        verify(emailService).sendHtmlEmail(eq("personal@example.com"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq("personal@example.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
 
         when(profiles.findByUserId("user-1")).thenReturn(Optional.empty());
         service.deliver(notification);
-        verify(emailService).sendHtmlEmail(eq("login@example.com"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq("login@example.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
 
         when(users.findById("user-1")).thenReturn(Optional.of(User.builder().id("user-1").accountStatus(AccountStatus.INACTIVE)
                 .organizationId("org-1").email("login@example.com").build()));
         service.deliver(notification);
-        verify(emailService, org.mockito.Mockito.times(1)).sendHtmlEmail(eq("login@example.com"), anyString(), anyString());
-        verify(emailService, never()).sendHtmlEmail(eq("work@example.com"), anyString(), anyString());
+        verify(emailService, org.mockito.Mockito.times(1)).sendHtmlEmail(eq("login@example.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
+        verify(emailService, never()).sendHtmlEmail(eq("work@example.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
     }
 
     private User admin(String accountEmail) {
@@ -127,19 +128,19 @@ class InAppNotificationEmailServiceTest {
         when(organizations.findById("org-1")).thenReturn(Optional.of(Organization.builder().id("org-1").adminEmail(" notify.admin@example.com ").build()));
 
         service.deliver(notification);
-        verify(emailService).sendHtmlEmail(eq("notify.admin@example.com"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq("notify.admin@example.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
 
         // Updating the Admin Email in Organization Settings is picked up by the next notification.
         when(organizations.findById("org-1")).thenReturn(Optional.of(Organization.builder().id("org-1").adminEmail("updated.admin@example.com").build()));
         service.deliver(notification);
-        verify(emailService).sendHtmlEmail(eq("updated.admin@example.com"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq("updated.admin@example.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
 
         // No Admin Email configured: the login account email is the fallback, never the organization email.
         when(organizations.findById("org-1")).thenReturn(Optional.of(Organization.builder().id("org-1")
                 .organizationEmail("hr@tardus.test").adminEmail(" ").build()));
         service.deliver(notification);
-        verify(emailService).sendHtmlEmail(eq("admin@tardus.test"), anyString(), anyString());
-        verify(emailService, never()).sendHtmlEmail(eq("hr@tardus.test"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq("admin@tardus.test"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
+        verify(emailService, never()).sendHtmlEmail(eq("hr@tardus.test"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
     }
 
     private void givenAdminEmail(String adminEmail) {
@@ -157,9 +158,9 @@ class InAppNotificationEmailServiceTest {
             service.deliver(notification);
         }
 
-        verify(emailService, org.mockito.Mockito.times(7)).sendHtmlEmail(eq("admin@tardus.test"), anyString(), anyString());
+        verify(emailService, org.mockito.Mockito.times(7)).sendHtmlEmail(eq("admin@tardus.test"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
         verify(emailService, never()).sendHtmlEmail(org.mockito.ArgumentMatchers.argThat(to -> !"admin@tardus.test".equals(to)),
-                anyString(), anyString());
+                anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -170,8 +171,8 @@ class InAppNotificationEmailServiceTest {
 
         service.deliver(notification);
 
-        verify(emailService, org.mockito.Mockito.times(1)).sendHtmlEmail(anyString(), anyString(), anyString());
-        verify(emailService).sendHtmlEmail(eq("TardusInc27@gmail.com"), anyString(), anyString());
+        verify(emailService, org.mockito.Mockito.times(1)).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
+        verify(emailService).sendHtmlEmail(eq("TardusInc27@gmail.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -182,7 +183,7 @@ class InAppNotificationEmailServiceTest {
 
         service.deliver(notification);
 
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -194,7 +195,7 @@ class InAppNotificationEmailServiceTest {
         service.deliver(notification);
 
         verify(organizations).findById("org-1");
-        verify(emailService).sendHtmlEmail(eq("admin@tardus.test"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq("admin@tardus.test"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -206,12 +207,12 @@ class InAppNotificationEmailServiceTest {
                 .organizationId("org-1").personalEmail("nope").build()));
 
         service.deliver(notification);
-        verify(emailService).sendHtmlEmail(eq("login@example.com"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq("login@example.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
 
         when(users.findById("user-1")).thenReturn(Optional.of(User.builder().id("user-1").role(UserRole.EMPLOYEE)
                 .accountStatus(AccountStatus.ACTIVE).organizationId("org-1").email("also nope").build()));
         service.deliver(notification);
-        verify(emailService, org.mockito.Mockito.times(1)).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, org.mockito.Mockito.times(1)).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -222,7 +223,46 @@ class InAppNotificationEmailServiceTest {
 
         service.deliver(notification);
 
-        verify(emailService).sendHtmlEmail(eq("hr-login@example.com"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq("hr-login@example.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
         verify(organizations, never()).findById(anyString());
+    }
+
+    /**
+     * Documents current behaviour, not a desired one: when the frontendBaseUrl field is never set, it keeps its
+     * built-in default and email links point at the local dev server. This covers the Java field initializer only;
+     * the application.yaml placeholder default (waypoint.app.frontend-base-url / APP_FRONTEND_URL) is the same value
+     * but needs a Spring context and is not covered.
+     */
+    @Test
+    void withoutAConfiguredFrontendUrlActionLinksFallBackToLocalhost() {
+        InAppNotificationEmailService unconfigured =
+                new InAppNotificationEmailService(users, profiles, organizations, emailService, new EmailTemplateService(),
+                org.mockito.Mockito.mock(OrganizationEmailIdentityResolver.class));
+        Notification notification = notification(NotificationType.DOCUMENT_REQUEST_CREATED, "/myhr/hr/document-requests/request-1");
+        when(users.findById("user-1")).thenReturn(Optional.of(User.builder().id("user-1").accountStatus(AccountStatus.ACTIVE)
+                .organizationId("org-1").email("lilly@example.com").build()));
+
+        unconfigured.deliver(notification);
+
+        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+        verify(emailService).sendHtmlEmail(eq("lilly@example.com"), anyString(), body.capture(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
+        assertThat(body.getValue()).contains("View document request")
+                .contains("http://localhost:5173/myhr/hr/document-requests/request-1");
+    }
+
+    /** Documents current behaviour: a blank base URL is not a valid absolute URL, so the email is sent without a link. */
+    @Test
+    void aBlankFrontendUrlSendsTheEmailWithoutALink() {
+        ReflectionTestUtils.setField(service, "frontendBaseUrl", "   ");
+        Notification notification = notification(NotificationType.DOCUMENT_REQUEST_CREATED, "/myhr/hr/document-requests/request-1");
+        when(users.findById("user-1")).thenReturn(Optional.of(User.builder().id("user-1").accountStatus(AccountStatus.ACTIVE)
+                .organizationId("org-1").email("lilly@example.com").build()));
+
+        service.deliver(notification);
+
+        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+        verify(emailService).sendHtmlEmail(eq("lilly@example.com"), anyString(), body.capture(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any());
+        assertThat(body.getValue()).contains("Lilly requested an Offer Letter.")
+                .doesNotContain("View document request", "localhost", "/myhr/hr/document-requests/request-1");
     }
 }

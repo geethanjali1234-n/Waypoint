@@ -13,7 +13,8 @@ final class TestOrchestrators {
     static NotificationOrchestrator create(InAppNotificationService inApp, EmailService email, EmailTemplateService templates,
                                            UserRepository users, EmployeeProfileRepository profiles) {
         InAppNotificationEmailService emailDelivery = new InAppNotificationEmailService(users, profiles,
-                org.mockito.Mockito.mock(OrganizationRepository.class), email, templates);
+                org.mockito.Mockito.mock(OrganizationRepository.class), email, templates,
+                org.mockito.Mockito.mock(OrganizationEmailIdentityResolver.class));
         ReflectionTestUtils.setField(emailDelivery, "frontendBaseUrl", "http://localhost:5173");
         return new NotificationOrchestrator(inApp, emailDelivery);
     }

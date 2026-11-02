@@ -39,7 +39,6 @@ export default function MyHrNavigation({ role }) {
   const [peeking, setPeeking] = useState(false);
   if (!ROLE_LINKS[role]) return null;
   const basePath = `/myhr/${role === 'COMPANY_ADMIN' ? 'admin' : role === 'HR' ? 'hr' : 'employee'}`;
-  const payrollActive = location.pathname === `${basePath}/timesheets` && new URLSearchParams(location.search).get('view') === 'payroll';
   const toggle = () => {
     setPeeking(false);
     setCollapsed((previous) => {
@@ -65,8 +64,8 @@ export default function MyHrNavigation({ role }) {
     onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPeeking(false); }}>
     <button type="button" className="myhr-navigation__toggle" onClick={toggle} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed} aria-controls="myhr-navigation-links"><StrokeIcon name={collapsed ? 'chevron-right' : 'chevron-left'} /></button>
     <nav id="myhr-navigation-links" aria-label="Dashboard tools">{links.map(([path, title, group], index) => {
-      const to = path === 'payroll-readiness' ? `${basePath}/timesheets?view=payroll` : `${basePath}/${path}`;
-      const active = path === 'payroll-readiness' ? payrollActive : path === 'timesheets' ? location.pathname.startsWith(`${basePath}/timesheets`) && !payrollActive : location.pathname === to || location.pathname.startsWith(`${to}/`);
+      const to = `${basePath}/${path}`;
+      const active = location.pathname === to || location.pathname.startsWith(`${to}/`);
       return <Fragment key={path}>{group && group !== links[index - 1]?.[2] && <span className="myhr-navigation__group">{group}</span>}<Link to={to} className={active ? 'is-active' : ''} aria-current={active ? 'page' : undefined} aria-label={title} title={title}><DashboardNavIcon type={path} /><span className="myhr-navigation__label">{title}</span></Link></Fragment>;
     })}</nav>
   </aside>;

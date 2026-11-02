@@ -8,6 +8,15 @@ import { renderAsync } from 'docx-preview';
 
 vi.mock('../../../api/myHrDocumentRequestApi');
 vi.mock('docx-preview', () => ({ renderAsync: vi.fn().mockResolvedValue(undefined) }));
+// The page renders inside MyHrShell, which loads the profile and notifications. Mock them so the test never
+// reaches a real backend: a real 401 would expire the test session and hide the request's action panel.
+vi.mock('../../../api/myHrEmployeeApi', () => ({ default: { getMine: vi.fn(() => Promise.resolve({ data: { data: {} } })) } }));
+vi.mock('../../../api/myHrNotificationApi', () => ({ default: {
+  listNotifications: vi.fn(() => Promise.resolve({ data: { data: [] } })),
+  getUnreadCount: vi.fn(() => Promise.resolve({ data: { data: 0 } })),
+  markAsRead: vi.fn(() => Promise.resolve({ data: { data: null } })),
+  markAllAsRead: vi.fn(() => Promise.resolve({ data: { data: null } })),
+} }));
 const pending = { id: 'req-1', requestTitle: 'Employment letter', requestDescription: 'Needed', requestedByUserId: 'employee', requestedByName: 'John', requestedForUserId: 'hr', requestedForName: 'Sarah', status: 'PENDING', priority: 'NORMAL', requestDirection: 'TO_MANAGER', requestedAt: '2026-09-01T10:00:00' };
 const prefix = (role) => role === 'COMPANY_ADMIN' ? 'admin' : role.toLowerCase();
 function Location() { const location = useLocation(); return <output data-testid="location">{`${location.pathname}${location.search}`}</output>; }

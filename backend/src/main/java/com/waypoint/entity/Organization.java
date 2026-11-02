@@ -49,6 +49,11 @@ public class Organization {
     private String eVerifyNumber;
     private String adminName;
     private String adminEmail;
+    /**
+     * Optional override for the Reply-To header of this organization's emails. When null (or invalid) the Reply-To is
+     * organizationEmail; adminEmail is never used. Not yet editable in Organization Settings.
+     */
+    private String replyToEmail;
     private String adminPhoneNumber;
     private Long nextEmployeeSequence;
 

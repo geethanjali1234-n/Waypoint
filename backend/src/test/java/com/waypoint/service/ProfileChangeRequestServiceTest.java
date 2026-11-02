@@ -1902,16 +1902,16 @@ class ProfileChangeRequestServiceTest {
 
         verify(inAppNotificationService, times(2)).createInAppOnlyNotification(eq("organization-1"), anyString(),
                 eq(NotificationType.PROFILE_CHANGE_SUBMITTED), anyString(), anyString(), eq("request-1"), anyString());
-        verify(emailService).sendHtmlEmail(eq("hr-personal@example.com"), eq("Profile change request submitted"), anyString());
-        verify(emailService).sendHtmlEmail(eq("admin-login@example.com"), eq("Profile change request submitted"), anyString());
-        verify(emailService, never()).sendHtmlEmail(eq("hr-work@example.com"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq("hr-personal@example.com"), eq("Profile change request submitted"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
+        verify(emailService).sendHtmlEmail(eq("admin-login@example.com"), eq("Profile change request submitted"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
+        verify(emailService, never()).sendHtmlEmail(eq("hr-work@example.com"), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test
     void submissionEmailFailureNeverFailsTheSubmissionAndKeepsTheInAppNotifications() {
         stubSubmission(activeUser("hr-1", UserRole.HR, "hr-login@example.com"),
                 activeUser("admin-1", UserRole.COMPANY_ADMIN, null));
-        doThrow(new IllegalStateException("smtp down")).when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+        doThrow(new IllegalStateException("smtp down")).when(emailService).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
 
         ProfileChangeRequestResponse response = service().create("employee-1", phoneRequest());
 
@@ -1919,7 +1919,7 @@ class ProfileChangeRequestServiceTest {
         verify(inAppNotificationService, times(2)).createInAppOnlyNotification(eq("organization-1"), anyString(),
                 eq(NotificationType.PROFILE_CHANGE_SUBMITTED), anyString(), anyString(), eq("request-1"), anyString());
         // the admin has neither a personal nor an account email: no email attempt for them
-        verify(emailService, times(1)).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, times(1)).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     private ProfileChangeRequest pendingPhoneRequest(String id) {
@@ -1947,7 +1947,7 @@ class ProfileChangeRequestServiceTest {
 
         verify(inAppNotificationService).createInAppOnlyNotification(eq("organization-1"), eq("employee-1"),
                 eq(NotificationType.PROFILE_CHANGE_APPROVED), anyString(), anyString(), eq("request-1"), anyString());
-        verify(emailService).sendHtmlEmail(eq("jordan.personal@example.com"), eq("Profile change request approved"), anyString());
+        verify(emailService).sendHtmlEmail(eq("jordan.personal@example.com"), eq("Profile change request approved"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test
@@ -1960,7 +1960,7 @@ class ProfileChangeRequestServiceTest {
 
         verify(inAppNotificationService).createInAppOnlyNotification(eq("organization-1"), eq("employee-1"),
                 eq(NotificationType.PROFILE_CHANGE_REJECTED), anyString(), anyString(), eq("request-3"), anyString());
-        verify(emailService).sendHtmlEmail(eq("login@example.com"), eq("Profile change request rejected"), anyString());
+        verify(emailService).sendHtmlEmail(eq("login@example.com"), eq("Profile change request rejected"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test
@@ -1973,14 +1973,14 @@ class ProfileChangeRequestServiceTest {
 
         verify(inAppNotificationService).createInAppOnlyNotification(eq("organization-1"), eq("employee-1"),
                 eq(NotificationType.PROFILE_CHANGE_REJECTED), anyString(), anyString(), eq("request-3"), anyString());
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
 
     @Test
     void approvalEmailFailureNeverFailsTheApproval() {
         stubDecision(pendingPhoneRequest("request-1"), activeUser("employee-1", UserRole.EMPLOYEE, "login@example.com"),
                 fullyPopulatedProfile());
-        doThrow(new IllegalStateException("smtp down")).when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+        doThrow(new IllegalStateException("smtp down")).when(emailService).sendHtmlEmail(anyString(), anyString(), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
 
         var response = service().approve("admin-1", "request-1", "ok");
 

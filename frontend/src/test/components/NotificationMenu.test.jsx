@@ -44,4 +44,17 @@ describe('NotificationMenu', () => {
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
+
+  it('keeps previously loaded notifications reachable after a refresh fails', async () => {
+    const user = userEvent.setup();
+    const onNotificationClick = vi.fn();
+    render(<NotificationMenu notifications={[{ id: 'saved', title: 'Timesheet approved', read: false }]}
+      error="The notification service is temporarily unavailable."
+      onNotificationClick={onNotificationClick} onMarkAllRead={vi.fn()} onRetry={vi.fn()} />);
+    await user.click(screen.getByRole('button', { name: 'Notifications' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('temporarily unavailable');
+    expect(screen.getByRole('button', { name: 'Mark all read' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: /Timesheet approved/ }));
+    expect(onNotificationClick).toHaveBeenCalledWith(expect.objectContaining({ id: 'saved' }));
+  });
 });

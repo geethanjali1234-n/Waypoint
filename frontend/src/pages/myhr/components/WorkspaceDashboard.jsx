@@ -9,7 +9,8 @@ import { Button, DataTable, NeedsYouList, PageHeader, RouteLine } from '../../..
 import { getMyHrSession } from '../../../auth/myHrSession';
 import './workspaceDashboard.css';
 
-export default function WorkspaceDashboard({ role, name, basePath }) {
+export default function WorkspaceDashboard({ role, name, basePath, approvalPanel }) {
+  const hasApprovalPanel = Boolean(approvalPanel);
   const sessionUserId = getMyHrSession()?.userId;
   const isReviewableSubmission = (row) => row.status === 'SUBMITTED' && (role === 'COMPANY_ADMIN' || row.employeeUserId !== sessionUserId);
   const [data, setData] = useState({});
@@ -31,9 +32,9 @@ export default function WorkspaceDashboard({ role, name, basePath }) {
     load('employees', () => myHrEmployeeApi.list());
     load('profiles', () => myHrProfileChangeApi.listForAdmin());
     load('timesheets', () => timesheetApi.list());
-    if (role === 'COMPANY_ADMIN') load('documents', () => myHrDocumentRequestApi.listOfferLetterApprovals());
+    if (role === 'COMPANY_ADMIN' && !hasApprovalPanel) load('documents', () => myHrDocumentRequestApi.listOfferLetterApprovals());
     return () => { active = false; };
-  }, [role, refresh]);
+  }, [role, refresh, hasApprovalPanel]);
   useEffect(() => {
     let active = true;
     setData((previous) => ({ ...previous, payroll: undefined }));
@@ -53,7 +54,7 @@ export default function WorkspaceDashboard({ role, name, basePath }) {
     && summary.readyForPayroll + summary.awaitingApproval <= summary.totalEmployees;
   const followup = hasReadiness ? summary.totalEmployees - summary.readyForPayroll - summary.awaitingApproval : null;
   const readiness = hasReadiness && summary.totalEmployees > 0 ? Math.round(summary.readyForPayroll / summary.totalEmployees * 100) : null;
-  const payrollPath = basePath + '/timesheets?view=payroll&payrollMonth=' + month;
+  const payrollPath = basePath + '/payroll-readiness?payrollMonth=' + month;
   const followupPath = payrollPath + '&status=NEEDS_FOLLOW_UP';
   const period = data.payroll?.period;
   const urgentPayroll = Number.isFinite(period?.daysUntilCutoff) && period.daysUntilCutoff >= 0 && period.daysUntilCutoff <= 3;
@@ -62,7 +63,7 @@ export default function WorkspaceDashboard({ role, name, basePath }) {
   const queues = [
     { id: 'timesheets', title: 'Timesheets awaiting review', count: reviewCount, context: 'Submitted hours waiting for a decision.', to: basePath + '/timesheets?view=team&subtab=submissions&status=SUBMITTED', actionLabel: 'Review timesheets', priority: 1 },
     { id: 'profiles', title: 'Profile change requests', count: profileCount, context: 'Employee information changes waiting for review.', to: basePath + '/profile-change-requests?view=assigned&status=PENDING', actionLabel: 'Review changes', priority: 2 },
-    ...(role === 'COMPANY_ADMIN' ? [{ id: 'documents', title: 'Documents awaiting approval', count: data.documents?.value?.pending, context: 'Prepared documents waiting for your approval.', to: '/myhr/admin/offer-letter-approvals?status=PENDING_APPROVAL', actionLabel: 'Review documents', priority: 3 }] : []),
+    ...(role === 'COMPANY_ADMIN' && !hasApprovalPanel ? [{ id: 'documents', title: 'Documents awaiting approval', count: data.documents?.value?.pending, context: 'Prepared documents waiting for your approval.', to: '/myhr/admin/offer-letter-approvals?status=PENDING_APPROVAL', actionLabel: 'Review documents', priority: 3 }] : []),
     { id: 'payroll', title: 'Payroll follow-ups', count: followup, context: 'Missing submissions and corrections for the selected payroll month.', to: followupPath, actionLabel: 'Review follow-ups', priority: urgentPayroll ? 0 : 4 },
   ];
   const knownQueues = queues.filter((queue) => Number.isFinite(queue.count) && queue.count >= 0);
@@ -84,8 +85,9 @@ export default function WorkspaceDashboard({ role, name, basePath }) {
   const statusMessage = (key) => data[key]?.error ? 'Unable to load. Try Refresh.' : data[key] ? 'Data unavailable for this queue.' : 'Loading...';
 
   return <div className="workspace-dashboard">
-    <PageHeader eyebrow="Workspace overview" title={'Welcome' + (name ? ', ' + name : '')} summary="Your people and the next steps that need your attention."
+    <PageHeader eyebrow={role === 'HR' ? 'HR workspace' : 'Admin workspace'} title={'Welcome' + (name ? ', ' + name : '')} summary="Your people and the next steps that need your attention."
       primaryAction={<Button variant="secondary" onClick={() => setRefresh((value) => value + 1)}>Refresh</Button>} />
+    {hasApprovalPanel && <div key={refresh} className="workspace-dashboard__approvals">{approvalPanel}</div>}
     <div className="workspace-dashboard__columns">
       <section className="workspace-dashboard__card workspace-dashboard__attention" aria-labelledby="dashboard-attention-title">
         <p className="workspace-dashboard__eyebrow">Next stops</p><h2 id="dashboard-attention-title">Needs you today</h2>
@@ -106,7 +108,7 @@ export default function WorkspaceDashboard({ role, name, basePath }) {
       </section>
     </div>
     <section className="workspace-dashboard__people" aria-labelledby="dashboard-employees-title">
-      <div className="workspace-dashboard__people-heading"><div><h2 id="dashboard-employees-title">People</h2>{employees?.every((employee) => typeof employee.accountStatus === 'string') && <p>{employees.filter((employee) => employee.accountStatus === 'ACTIVE').length} active employees</p>}</div>
+      <div className="workspace-dashboard__people-heading"><div><h2 id="dashboard-employees-title">People</h2>{employees?.every((employee) => typeof employee.accountStatus === 'string') && <p>{employees.filter((employee) => employee.accountStatus === 'ACTIVE').length} active {employees.filter((employee) => employee.accountStatus === 'ACTIVE').length === 1 ? 'employee' : 'employees'}</p>}</div>
         <label>Search people<input type="search" placeholder="Name, ID or job title" value={search} onChange={(event) => { setSearch(event.target.value); setPeoplePage(1); }} /></label>
       </div>
       {data.employees?.error ? <p role="status">{statusMessage('employees')}</p> : <DataTable label="Dashboard people" loading={!data.employees} columns={[

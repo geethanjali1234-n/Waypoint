@@ -85,7 +85,7 @@ class OfferLetterEmailMimeHeadersTest {
 
         offerLetters = new OfferLetterService(mock(OfferLetterRecordRepository.class), requests, profiles, organizations, users,
                 mock(ReportingAssignmentRepository.class), auth, documents, mock(OfferLetterPdfService.class), mock(AuditService.class),
-                mail, new OfferLetterEmailTemplateService(), new OfferLetterStaticAttachmentService());
+                mail, new OfferLetterEmailTemplateService(), new OfferLetterStaticAttachmentService(), new OrganizationEmailIdentityResolver(organizations));
     }
 
     @Test

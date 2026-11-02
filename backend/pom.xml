@@ -58,6 +58,12 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
         <dependency>
+            <!-- Already on the runtime classpath via the mail starter; declared so JavaMailSenderEmailService can
+                 recognise SMTPSenderFailedException at compile time. Version is managed by Spring Boot. -->
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-mail</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
         </dependency>

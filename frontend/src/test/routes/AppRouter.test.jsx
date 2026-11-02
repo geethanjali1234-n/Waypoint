@@ -7,6 +7,9 @@ import jobSeekerEventRegistrationsApi from '../../api/jobSeekerEventRegistration
 import myHrAuthApi from '../../api/myHrAuthApi';
 import myHrDocumentRequestApi from '../../api/myHrDocumentRequestApi';
 import myHrEmployeeApi from '../../api/myHrEmployeeApi';
+import myHrProfileChangeApi from '../../api/myHrProfileChangeApi';
+import timesheetApi from '../../api/timesheetApi';
+import payrollReadinessApi from '../../api/payrollReadinessApi';
 
 vi.mock('../../api/jobSeekerProfileApi');
 vi.mock('../../api/jobSeekerApplicationsApi');
@@ -14,6 +17,9 @@ vi.mock('../../api/jobSeekerEventRegistrationsApi');
 vi.mock('../../api/myHrAuthApi');
 vi.mock('../../api/myHrDocumentRequestApi');
 vi.mock('../../api/myHrEmployeeApi');
+vi.mock('../../api/myHrProfileChangeApi');
+vi.mock('../../api/timesheetApi');
+vi.mock('../../api/payrollReadinessApi');
 
 function navigateTo(path) {
   window.history.pushState({}, '', path);
@@ -28,9 +34,14 @@ describe('AppRouter', () => {
     jobSeekerApplicationsApi.listMyApplications.mockReturnValue(new Promise(() => {}));
     jobSeekerEventRegistrationsApi.listMyRegistrations.mockReturnValue(new Promise(() => {}));
     myHrAuthApi.currentUser.mockRejectedValue(new Error('unauthenticated'));
+    myHrEmployeeApi.list.mockResolvedValue({ data: { data: [] } });
+    myHrProfileChangeApi.listForAdmin.mockResolvedValue({ data: { data: [] } });
+    timesheetApi.list.mockResolvedValue({ data: { data: [] } });
+    payrollReadinessApi.getReadiness.mockResolvedValue({ data: { data: { summary: { totalEmployees: 0, readyForPayroll: 0, awaitingApproval: 0 } } } });
+    myHrDocumentRequestApi.listOfferLetterApprovals.mockResolvedValue({ data: { data: { pending: 0 } } });
     myHrDocumentRequestApi.list.mockResolvedValue({ data: { data: [] } });
     myHrEmployeeApi.getMine.mockResolvedValue({ data: { data: {
-      loginId: 'TD001', employeeId: 'TD001', name: 'Test User', role: 'EMPLOYEE',
+      loginId: 'TD001', employeeId: 'TD001', name: 'Test User', firstName: 'Test User', role: 'EMPLOYEE',
       accountStatus: 'ACTIVE', organizationName: 'Tardus', organizationCode: 'TD',
     } } });
   });
@@ -121,13 +132,13 @@ describe('AppRouter', () => {
 
     render(<AppRouter />);
 
-    expect(await screen.findByRole('heading', { name: 'Welcome, Test User' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Welcome, Tardus' })).toBeInTheDocument();
 
     localStorage.removeItem('accessToken');
   });
 
   it.each([
-    ['COMPANY_ADMIN', '/myhr/admin/dashboard', 'Welcome, Test User', ['Employee Management', 'Profile Change Requests', 'Timesheets', 'Request Documents', 'Reports', 'Audit History', 'Organization Settings']],
+    ['COMPANY_ADMIN', '/myhr/admin/dashboard', 'Welcome, Tardus', ['Employee Management', 'Profile Change Requests', 'Timesheets', 'Request Documents', 'Reports', 'Audit History', 'Organization Settings']],
     ['HR', '/myhr/hr/dashboard', 'Welcome, Test User', ['Employee Management', 'Profile Change Requests', 'Timesheets', 'Request Documents', 'Reports']],
     ['EMPLOYEE', '/myhr/employee/dashboard', 'Welcome, Test User', ['Profile Change Requests', 'My Timesheets', 'Document Requests']],
   ])('renders the protected %s dashboard and its permitted navigation', async (role, path, heading, cards) => {
