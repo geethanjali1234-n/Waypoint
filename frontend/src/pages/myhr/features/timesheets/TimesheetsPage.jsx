@@ -22,6 +22,7 @@ import MyHrFeaturePage from '../MyHrFeaturePage';
 import MyHrPagination from '../MyHrPagination';
 import './timesheets.css';
 import './timesheetsMobile.css';
+import './dateRangePicker.css';
 import TimesheetChronometer from './components/TimesheetChronometer';
 import DocumentTablePreview from './components/DocumentTablePreview';
 import ApplePayBloom from '../../components/ApplePayBloom';
@@ -3078,17 +3079,16 @@ function computeBreakdowns(consolidatedList) {
   return { dayRows, weekRows, monthRows };
 }
 
-// A single popover calendar for picking a From/End range in one place - click
-// a start day, hover to preview, click an end day, Apply. Used to filter
-// Team Timesheets lists by period instead of two separate date inputs each
-// popping up their own (browser-native) calendar.
-function DateRangePicker({ label, fromDate, toDate, onChange, disabled = false, maxDate = null }) {
+// One viewport-constrained calendar for entry periods and team filters.
+// Pointer hover previews a range; only selected dates are committed by Apply.
+export function DateRangePicker({ label, fromDate, toDate, onChange, disabled = false, maxDate = null }) {
   const [open, setOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState((fromDate || toDate || toDateKey(new Date())).slice(0, 7));
   const [pendingStart, setPendingStart] = useState(fromDate || null);
   const [pendingEnd, setPendingEnd] = useState(toDate || null);
   const [hoverDate, setHoverDate] = useState(null);
-  const shellRef = useRef(null);
+  const triggerRef = useRef(null);
+  const dialogLayerRef = useRef(null);
 
   // Mutual exclusivity with a sibling Period preset: if this control becomes
   // disabled while its popover happens to be open, close it too.
@@ -3102,13 +3102,34 @@ function DateRangePicker({ label, fromDate, toDate, onChange, disabled = false, 
     // elsewhere in the page is reflected instead of showing a stale pick.
     setPendingStart(fromDate || null);
     setPendingEnd(toDate || null);
+    setHoverDate(null);
     setViewMonth((fromDate || toDate || toDateKey(new Date())).slice(0, 7));
-    function handleOutsideClick(event) {
-      if (shellRef.current && !shellRef.current.contains(event.target)) setOpen(false);
-    }
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [open, fromDate, toDate]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const trigger = triggerRef.current;
+    document.body.style.overflow = 'hidden';
+    const dialog = dialogLayerRef.current?.querySelector('[role="dialog"]');
+    const controls = () => [...(dialog?.querySelectorAll('button:not(:disabled)') || [])];
+    (dialog?.querySelector('.is-edge:not(:disabled)') || controls()[0])?.focus({ preventScroll: true });
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(false); }
+      if (event.key !== 'Tab') return;
+      const buttons = controls();
+      const first = buttons[0];
+      const last = buttons[buttons.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    dialog?.addEventListener('keydown', handleKeyDown);
+    return () => {
+      dialog?.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      trigger?.focus({ preventScroll: true });
+    };
+  }, [open]);
 
   const monthStart = `${viewMonth}-01`;
   const monthLabel = parseDateKey(monthStart).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -3127,15 +3148,18 @@ function DateRangePicker({ label, fromDate, toDate, onChange, disabled = false, 
     if (!pendingStart || pendingEnd) {
       setPendingStart(date);
       setPendingEnd(null);
-      setHoverDate(date);
+      setHoverDate(null);
       return;
     }
     setPendingEnd(date);
-    setHoverDate(date);
+    setHoverDate(null);
   }
 
   function apply() {
-    onChange(previewRange?.start || '', previewRange?.end || '');
+    // Hover is a preview only; touch focus must never commit an unselected end.
+    const end = pendingEnd || pendingStart;
+    onChange(pendingStart && end ? (pendingStart <= end ? pendingStart : end) : '',
+      pendingStart && end ? (pendingStart <= end ? end : pendingStart) : '');
     setOpen(false);
   }
 
@@ -3156,24 +3180,33 @@ function DateRangePicker({ label, fromDate, toDate, onChange, disabled = false, 
   return (
     <div className="wp-field timesheets__daterange-field">
       <FormLabel htmlFor={`${label}-toggle`}>{label}</FormLabel>
-      <div className="timesheets__date-picker-shell timesheets__daterange-shell" ref={shellRef}>
+      <div className="timesheets__date-picker-shell timesheets__daterange-shell">
         {/* A plain button, not the shared Button component: Button doesn't
             forward id/aria-expanded, which this needs for its FormLabel
             association and open/closed state. Same wp-button classes, so it
             still looks identical to every other secondary button. */}
         <button
           type="button"
+          ref={triggerRef}
           id={`${label}-toggle`}
           className="wp-button wp-button--secondary timesheets__date-picker-toggle"
           aria-expanded={open}
+          aria-haspopup="dialog"
           disabled={disabled}
           onClick={() => setOpen((current) => !current)}
         >
           <span aria-hidden="true">📅</span>
           <span>{toggleLabel}</span>
         </button>
-        {open && (
-          <div className="timesheets__date-picker-popover" role="dialog" aria-label={`Select ${label.toLowerCase()}`}>
+        {open && createPortal(
+          <div ref={dialogLayerRef} className="timesheets__range-dialog-layer">
+          <Modal isOpen title={`Select ${label.toLowerCase()}`} onClose={() => setOpen(false)} className="timesheets__range-dialog"
+            footer={<><Button type="button" variant="secondary" onClick={clear}>Clear</Button><Button type="button" variant="primary" onClick={apply}>Apply</Button></>}>
+          <div className="timesheets__range-calendar" onPointerLeave={() => setHoverDate(null)}>
+            <p className="timesheets__range-selection" role="status" aria-live="polite">
+              {pendingEnd && previewRange ? `${formatDate(previewRange.start)} to ${formatDate(previewRange.end)}`
+                : pendingStart ? `${formatDate(pendingStart)} — select an end date, or apply this day.` : 'Select a start date, then an end date.'}
+            </p>
             <div className="timesheets__date-picker-header">
               <button type="button" aria-label="Previous month" onClick={() => setViewMonth(addMonths(monthStart, -1).slice(0, 7))}>←</button>
               <strong>{monthLabel}</strong>
@@ -3200,8 +3233,8 @@ function DateRangePicker({ label, fromDate, toDate, onChange, disabled = false, 
                     className={classes}
                     disabled={isFuture}
                     onClick={() => selectDate(cell.date)}
-                    onMouseEnter={() => { if (pendingStart && !pendingEnd) setHoverDate(cell.date); }}
-                    onFocus={() => { if (pendingStart && !pendingEnd) setHoverDate(cell.date); }}
+                    onPointerEnter={(event) => { if (event.pointerType === 'mouse' && pendingStart && !pendingEnd) setHoverDate(cell.date); }}
+                    aria-pressed={Boolean(isSelected)}
                     aria-label={`${formatDate(cell.date)}${isSelected ? ', selected' : ''}${isFuture ? ', unavailable' : ''}`}
                   >
                     <span>{parseDateKey(cell.date).getDate()}</span>
@@ -3209,11 +3242,9 @@ function DateRangePicker({ label, fromDate, toDate, onChange, disabled = false, 
                 );
               })}
             </div>
-            <div className="timesheets__date-picker-footer">
-              <button type="button" onClick={clear}>Clear</button>
-              <button type="button" className="is-primary" onClick={apply}>Apply</button>
-            </div>
           </div>
+          </Modal>
+          </div>, document.body
         )}
       </div>
     </div>
