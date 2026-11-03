@@ -3585,6 +3585,13 @@
 .wp-exp-root :is(.wp-exp-brand, .wp-exp-login-btn, .wp-exp-footer-links a) { display: inline-flex; align-items: center; min-height: 44px; }
 .wp-exp-nav-link { color: var(--wp-color-text-muted); }
 .wp-exp-ticker-item { background: var(--wp-color-surface); color: var(--wp-color-text); }
+
+/* Keep the compact header compact. This must follow the shared touch-target
+   rule above, which otherwise re-displays the desktop account links on phones. */
+@media (max-width: 767px) {
+  .wp-exp-root .wp-exp-nav-actions .wp-exp-login-btn { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wp-exp-root .wp-exp-ticker-track,
   .wp-exp-root .wp-exp-eq-bar { animation: none !important; }

@@ -100,6 +100,25 @@ describe('Waypoint Next-Gen Experience Page', () => {
     expect(screen.getByText(/Sound ON/i)).toBeInTheDocument();
   });
 
+  it('opens the compact navigation menu with the account actions available there', () => {
+    render(
+      <MemoryRouter>
+        <ExperiencePage />
+      </MemoryRouter>
+    );
+
+    const menuButton = screen.getByRole('button', { name: /Open navigation menu/i });
+    const menu = document.getElementById('experience-mobile-navigation');
+    expect(menu).not.toHaveClass('is-open');
+
+    fireEvent.click(menuButton);
+
+    expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+    expect(menu).toHaveClass('is-open');
+    expect(within(menu).getByRole('link', { name: /Create Organization Account/i })).toBeInTheDocument();
+    expect(within(menu).getByRole('link', { name: /^Sign In$/i })).toBeInTheDocument();
+  });
+
   it('interacts with TimesheetSimulator: presets, sliders, and approval simulation', () => {
     render(
       <MemoryRouter>
