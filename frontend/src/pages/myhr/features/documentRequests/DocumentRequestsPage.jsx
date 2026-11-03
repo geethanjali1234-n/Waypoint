@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { renderAsync } from 'docx-preview';
-import { Button, Dropdown, EmptyState, Modal, SearchInput, StatusBadge as StatusTag, DocumentViewerModal } from '../../../../components';
+import { Button, Dropdown, EmptyState, FilterPills, Modal, SearchInput, StatusBadge as StatusTag, DocumentViewerModal } from '../../../../components';
 import { getMyHrSession } from '../../../../auth/myHrSession';
 import myHrDocumentRequestApi from '../../../../api/myHrDocumentRequestApi';
 import { formatDateOnly } from '../../../../utils/dateFormat';
@@ -21,7 +21,9 @@ import { isI983Workflow } from './i983/i983Workflow';
 import { offerLetterStage, documentRequestStatus, requiresAdminApproval } from './offerLetterState';
 import HrDocumentApproval from './HrDocumentApproval';
 import DocumentFulfillmentEmailComposer from './DocumentFulfillmentEmailComposer';
+import useIsMobileViewport from './useIsMobileViewport';
 import './documentRequests.css';
+import './documentRequestsMobile.css';
 
 // Formats the Preview button can show in the browser (or via docx-preview).
 const UPLOAD_ONLY_ACCEPT = '.pdf,.docx,.png,.jpg,.jpeg';
@@ -80,6 +82,9 @@ export default function DocumentRequestsPage({ role }) {
     }
     return 'table';
   });
+  // Phones (<=768px) get the compact list layout; desktop rendering is unchanged.
+  const isMobile = useIsMobileViewport();
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState('');
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query.trim()), 250);
@@ -311,7 +316,36 @@ export default function DocumentRequestsPage({ role }) {
       }}
     />
   </MyHrFeaturePage>;
-  return <MyHrFeaturePage className="phase-six"
+  // Filter controls shared by the desktop toolbar and the mobile layout (same state, same handlers).
+  const filtersActive = status !== 'ALL' || priorityFilter !== 'ALL' || categoryFilter !== 'ALL' || Boolean(query);
+  const clearFilters = () => { setStatus('ALL'); setPriorityFilter('ALL'); setCategoryFilter('ALL'); setQuery(''); };
+  const searchField = <div className="wp-field document-requests__search-field"><label htmlFor="documentSearch" className="wp-form-label">Search</label><SearchInput id="documentSearch" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={role === 'EMPLOYEE' ? 'Document name' : 'Document or person'} /></div>;
+  const statusDropdown = <Dropdown name="documentRequestStatus" label="Status" value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: 'ALL', label: 'All' }, { value: 'PENDING', label: 'Pending' }, { value: 'OVERDUE', label: 'Overdue' }, { value: 'SUBMITTED', label: 'Submitted' }, { value: 'RETURNED_FOR_CORRECTION', label: 'Returned for Correction' }, { value: 'APPROVED', label: 'Approved' }, { value: 'AWAITING_SIGNATURE', label: awaitingSignatureLabel }, { value: 'FULFILLED', label: 'Completed' }, { value: 'REJECTED', label: 'Rejected' }]} />;
+  const priorityDropdown = <Dropdown name="documentRequestPriority" label="Priority" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} options={[{ value: 'ALL', label: 'All' }, { value: 'NORMAL', label: 'Normal' }, { value: 'HIGH', label: 'High' }, { value: 'URGENT', label: 'Urgent' }]} />;
+  const categoryDropdown = <Dropdown name="documentRequestCategory" label="Category" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} options={[{ value: 'ALL', label: 'All' }, ...DOCUMENT_CATEGORY_OPTIONS]} />;
+  const clearButton = <Button type="button" variant="secondary" className="document-requests__clear" onClick={clearFilters} disabled={!filtersActive}>Clear filters</Button>;
+  // HR: the requests they received (default) or the requests they made.
+  const hrRequestsSwitch = role === 'HR' && <div className="document-requests__view-toggle document-requests__my-requests" role="group" aria-label="Requests to show">
+    {[{ label: 'Received requests', active: !myRequestsView, path: `${base}/document-requests` },
+      { label: 'My requests', active: myRequestsView, path: `${base}/document-requests?view=requested` }].map((tab) => (
+      <button key={tab.label} type="button" className={`document-requests__view-toggle-btn ${tab.active ? 'is-active' : ''}`}
+        aria-pressed={tab.active} onClick={() => { if (!tab.active) navigate(tab.path); }}>{tab.label}</button>
+    ))}
+  </div>;
+  const effectiveViewMode = isMobile ? 'cards' : viewMode;
+
+  // Mobile "Raise a Request" actions: the same role-based buttons and routes the desktop toolbar and scope bar offer.
+  const mobileActions = [];
+  if (role === 'EMPLOYEE') mobileActions.push({ label: 'Request a document', path: `${base}/document-requests/new` });
+  if (role === 'COMPANY_ADMIN') mobileActions.push({ label: 'Request from employee', path: `${base}/document-requests/new` }, { label: 'Document Approvals', path: '/myhr/admin/offer-letter-approvals', secondary: true });
+  if (role === 'HR' && activeWorkspace === 'employees') mobileActions.push({ label: 'Request from employee', path: `${base}/document-requests/new` });
+  if (role === 'HR' && activeWorkspace === 'mine') mobileActions.push({ label: 'Request for myself', path: `${base}/document-requests/request-from-manager` });
+  if (myRequestsView) mobileActions.push(myRequestsScope === 'SELF'
+    ? { label: 'Request for myself', path: `${base}/document-requests/request-from-manager` }
+    : { label: 'Request from employee', path: `${base}/document-requests/new` });
+  const advancedFiltersActive = priorityFilter !== 'ALL' || categoryFilter !== 'ALL' || !['ALL', 'PENDING', 'OVERDUE'].includes(status);
+
+  return <MyHrFeaturePage className={isMobile ? 'phase-six document-requests-mobile' : 'phase-six'}
     title={myRequestsView ? 'My Requests' : 'Document Requests'}
     description={myRequestsView
       ? 'Track the documents you requested for yourself and the documents you requested from your employees.'
@@ -321,13 +355,41 @@ export default function DocumentRequestsPage({ role }) {
     backTo={myRequestsView ? `${base}/document-requests` : `${base}/dashboard`}
     hideBack
   >
-    <div className="document-requests__toolbar">
+    {isMobile ? <div className="document-requests-mobile__top">
+      {mobileActions.length > 0 && <section className="document-requests-mobile__raise" aria-labelledby="document-requests-raise-title">
+        <div>
+          <h2 id="document-requests-raise-title">Raise a Request</h2>
+          <p>{role === 'EMPLOYEE' ? 'Ask your reporting manager for a document.' : 'Start a new document request.'}</p>
+        </div>
+        <div className="document-requests-mobile__raise-actions">
+          {mobileActions.map((action) => <Button key={action.label} variant={action.secondary ? 'secondary' : undefined} onClick={() => navigate(action.path)}>{action.label}</Button>)}
+        </div>
+      </section>}
+      {hrRequestsSwitch}
+      <div className="document-requests-mobile__filters">
+        {searchField}
+        <div className="document-requests-mobile__quick">
+          <FilterPills label="Status" className="document-requests-mobile__status" value={status} onChange={setStatus}
+            options={[{ value: 'ALL', label: 'All' }, { value: 'PENDING', label: 'Pending' }, { value: 'OVERDUE', label: 'Overdue' }]} />
+          <button type="button" className="document-requests-mobile__more" aria-expanded={moreFiltersOpen} aria-controls="document-requests-more-filters"
+            onClick={() => setMoreFiltersOpen((open) => !open)}>
+            More filters{advancedFiltersActive && <span className="document-requests-mobile__dot" aria-label="(active)" />}
+          </button>
+        </div>
+        {moreFiltersOpen && <div id="document-requests-more-filters" className="document-requests-mobile__advanced">
+          {statusDropdown}
+          {priorityDropdown}
+          {categoryDropdown}
+          {clearButton}
+        </div>}
+      </div>
+    </div> : <div className="document-requests__toolbar">
       <div className="document-requests__filters">
-        <div className="wp-field document-requests__search-field"><label htmlFor="documentSearch" className="wp-form-label">Search</label><SearchInput id="documentSearch" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={role === 'EMPLOYEE' ? 'Document name' : 'Document or person'} /></div>
-        <Dropdown name="documentRequestStatus" label="Status" value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: 'ALL', label: 'All' }, { value: 'PENDING', label: 'Pending' }, { value: 'OVERDUE', label: 'Overdue' }, { value: 'SUBMITTED', label: 'Submitted' }, { value: 'RETURNED_FOR_CORRECTION', label: 'Returned for Correction' }, { value: 'APPROVED', label: 'Approved' }, { value: 'AWAITING_SIGNATURE', label: awaitingSignatureLabel }, { value: 'FULFILLED', label: 'Completed' }, { value: 'REJECTED', label: 'Rejected' }]} />
-        <Dropdown name="documentRequestPriority" label="Priority" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} options={[{ value: 'ALL', label: 'All' }, { value: 'NORMAL', label: 'Normal' }, { value: 'HIGH', label: 'High' }, { value: 'URGENT', label: 'Urgent' }]} />
-        <Dropdown name="documentRequestCategory" label="Category" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} options={[{ value: 'ALL', label: 'All' }, ...DOCUMENT_CATEGORY_OPTIONS]} />
-        <Button type="button" variant="secondary" className="document-requests__clear" onClick={() => { setStatus('ALL'); setPriorityFilter('ALL'); setCategoryFilter('ALL'); setQuery(''); }} disabled={status === 'ALL' && priorityFilter === 'ALL' && categoryFilter === 'ALL' && !query}>Clear filters</Button>
+        {searchField}
+        {statusDropdown}
+        {priorityDropdown}
+        {categoryDropdown}
+        {clearButton}
         <div className="document-requests__view-toggle document-requests__view-toggle--icons" role="group" aria-label="View format">
           <button
             type="button"
@@ -350,14 +412,7 @@ export default function DocumentRequestsPage({ role }) {
             <StrokeIcon name="cards" size={18} />
           </button>
         </div>
-        {/* HR: the requests they received (default) or the requests they made. */}
-        {role === 'HR' && <div className="document-requests__view-toggle document-requests__my-requests" role="group" aria-label="Requests to show">
-          {[{ label: 'Received requests', active: !myRequestsView, path: `${base}/document-requests` },
-            { label: 'My requests', active: myRequestsView, path: `${base}/document-requests?view=requested` }].map((tab) => (
-            <button key={tab.label} type="button" className={`document-requests__view-toggle-btn ${tab.active ? 'is-active' : ''}`}
-              aria-pressed={tab.active} onClick={() => { if (!tab.active) navigate(tab.path); }}>{tab.label}</button>
-          ))}
-        </div>}
+        {hrRequestsSwitch}
         <div className="document-requests__actions">
           {role === 'COMPANY_ADMIN' && <Button variant="secondary" onClick={() => navigate('/myhr/admin/offer-letter-approvals')}>Document Approvals</Button>}
           {role === 'HR' && (
@@ -374,7 +429,7 @@ export default function DocumentRequestsPage({ role }) {
           {role === 'EMPLOYEE' && <Button onClick={() => navigate(`${base}/document-requests/new`)}>Request a document</Button>}
         </div>
       </div>
-    </div>
+    </div>}
     {myRequestsView && <div className="document-requests__scope">
       <div className="document-requests__view-toggle" role="group" aria-label="Show my requests">
         {MY_REQUESTS_SCOPES.map((scope) => <button key={scope.value} type="button"
@@ -383,16 +438,17 @@ export default function DocumentRequestsPage({ role }) {
       </div>
       <p>{myRequestsScope === 'SELF' ? 'Documents you requested for yourself from your reporting manager.'
         : 'Documents you asked your employees to provide.'}</p>
-      {myRequestsScope === 'SELF'
+      {/* On mobile this action lives in the Raise a Request panel, so it is not shown twice. */}
+      {!isMobile && (myRequestsScope === 'SELF'
         ? <Button className="document-requests__scope-action" onClick={() => navigate(`${base}/document-requests/request-from-manager`)}>Request for myself</Button>
-        : <Button className="document-requests__scope-action" onClick={() => navigate(`${base}/document-requests/new`)}>Request from employee</Button>}
+        : <Button className="document-requests__scope-action" onClick={() => navigate(`${base}/document-requests/new`)}>Request from employee</Button>)}
     </div>}
     {error && <p role="alert" className="document-requests__error">{error} <button type="button" onClick={load}>Retry</button></p>}
     {loading ? <p role="status">Loading document requests…</p> : !loadFailed && (visible.length === 0 ? <EmptyState title={status !== 'ALL' || priorityFilter !== 'ALL' || categoryFilter !== 'ALL' || query ? 'No matching document requests.'
       : myRequestsView ? (myRequestsScope === 'SELF' ? 'You have not requested any documents for yourself yet.'
         : 'You have not requested any documents from employees yet.')
       : 'No document requests available.'} /> : <>
-      {viewMode === 'cards' ? (
+      {effectiveViewMode === 'cards' ? (
         <div className="document-requests__cards-grid">
           {pageItems.map((item) => (
             <div key={item.id} className="document-requests__card">
@@ -447,7 +503,7 @@ export default function DocumentRequestsPage({ role }) {
           return item[column.key];
         }} />
       )}
-      {(viewMode === 'cards' || totalElements === null) && totalPages > 1 && <MyHrPagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />}
+      {(effectiveViewMode === 'cards' || totalElements === null) && totalPages > 1 && <MyHrPagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />}
     </>)}
   </MyHrFeaturePage>;
 }

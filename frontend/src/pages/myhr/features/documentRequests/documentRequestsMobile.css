@@ -1,0 +1,89 @@
+/* Document Requests - phone layout only (<=768px).
+   Every rule is inside the media query and scoped to .document-requests-mobile,
+   a class the page adds only on phones, so desktop styling is untouched.
+   Colours, fonts and radii come from the shared theme tokens (same as the Home page cards). */
+@media (max-width:768px) {
+  .myhr-feature.document-requests-mobile .document-requests-mobile__top {
+    display:grid; gap:12px; margin:0 0 16px; min-width:0;
+  }
+
+  /* Raise a Request: one compact card like the Home page cards. */
+  .myhr-feature.document-requests-mobile .document-requests-mobile__raise {
+    display:grid; gap:12px; padding:16px;
+    background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card);
+  }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__raise h2 {
+    margin:0; font:500 1.25rem/1.25 var(--wp-font-display); color:var(--wp-color-text);
+  }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__raise p {
+    margin:4px 0 0; font:400 .875rem/1.45 var(--wp-font-sans); color:var(--wp-color-text-muted);
+  }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__raise-actions { display:grid; gap:8px; }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__raise-actions .wp-button { width:100%; min-height:44px; }
+
+  /* HR Received / My requests switch: shown once, full width. */
+  .myhr-feature.phase-six.document-requests-mobile .document-requests-mobile__top > .document-requests__my-requests {
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%; justify-self:stretch;
+  }
+  .myhr-feature.phase-six.document-requests-mobile .document-requests-mobile__top > .document-requests__my-requests .document-requests__view-toggle-btn {
+    min-width:0; padding:0 8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  /* Search + quick status filters + expandable More filters. */
+  .myhr-feature.document-requests-mobile .document-requests-mobile__filters {
+    display:grid; gap:12px; padding:16px; min-width:0;
+    background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card);
+  }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__filters .wp-field {
+    flex:none !important; width:100%; max-width:none !important; min-width:0 !important; margin-bottom:0;
+  }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__filters .wp-field__control { min-height:44px; }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__quick {
+    display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0;
+  }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__status { flex-wrap:nowrap; gap:6px; min-width:0; }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__status button { min-height:36px; padding:6px 12px; font-size:.8125rem; }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__more {
+    display:inline-flex; align-items:center; gap:6px; flex:0 0 auto; min-height:36px; padding:6px 10px;
+    border:0; background:transparent; color:var(--wp-color-primary); font:600 .8125rem/1.4 var(--wp-font-sans);
+    cursor:pointer; white-space:nowrap;
+  }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__more::after {
+    content:''; width:6px; height:6px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor;
+    transform:rotate(45deg) translateY(-2px); transition:transform .15s ease;
+  }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__more[aria-expanded='true']::after { transform:rotate(-135deg) translateY(-1px); }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__more:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; border-radius:var(--wp-radius-control); }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__dot {
+    width:6px; height:6px; border-radius:50%; background:var(--wp-color-accent-gold);
+  }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__advanced {
+    display:grid; gap:12px; padding-top:12px; border-top:1px solid var(--wp-color-border);
+  }
+  .myhr-feature.document-requests-mobile .document-requests-mobile__advanced .document-requests__clear { width:100%; min-height:44px; }
+
+  /* "For myself / From employees" scope switch on HR My requests. */
+  .myhr-feature.phase-six.document-requests-mobile .document-requests__scope { display:grid; gap:8px; }
+  .myhr-feature.phase-six.document-requests-mobile .document-requests__scope .document-requests__view-toggle {
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%;
+  }
+
+  /* Request cards, styled like the Home page cards. */
+  .myhr-feature.document-requests-mobile .document-requests__cards-grid { grid-template-columns:minmax(0,1fr); gap:12px; margin-top:0; }
+  .myhr-feature.document-requests-mobile .document-requests__card {
+    gap:12px; padding:16px; border-radius:var(--wp-radius-card);
+    background:var(--wp-color-surface); border:1px solid var(--wp-color-border);
+  }
+  .myhr-feature.document-requests-mobile .document-requests__card:hover { transform:none; }
+  .myhr-feature.document-requests-mobile .document-requests__card-header { padding-bottom:10px; min-width:0; }
+  .myhr-feature.document-requests-mobile .document-requests__card-header > div { min-width:0; }
+  .myhr-feature.document-requests-mobile .document-requests__card-title {
+    display:block; font:500 1.0625rem/1.3 var(--wp-font-display); overflow-wrap:anywhere;
+  }
+  .myhr-feature.document-requests-mobile .document-requests__card-body { gap:10px 12px; padding:0; }
+  .myhr-feature.document-requests-mobile .document-requests__card-row > span:not(.document-requests__card-label) { color:var(--wp-color-text); }
+  .myhr-feature.document-requests-mobile .document-requests__card-footer { padding-top:0; }
+  .myhr-feature.document-requests-mobile .document-requests__card-footer .wp-button {
+    width:100%; min-height:44px; font-size:.875rem; border-radius:var(--wp-radius-control);
+  }
+}
