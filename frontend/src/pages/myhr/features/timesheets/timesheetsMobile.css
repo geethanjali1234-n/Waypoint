@@ -191,3 +191,13 @@
 @media(min-width:701px) and (max-width:1023px) {
   .timesheets__sim-metrics-bar { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
+
+/* Employee profile summary: 4 stat cards are too narrow on phones; use 2 columns, then 1 on small phones. */
+@media(max-width:768px) {
+  #workspace-content .timesheets-mobile .timesheets__profile-stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  #workspace-content .timesheets-mobile .timesheets__profile-stat-card { min-width:0; padding:12px 14px; }
+  #workspace-content .timesheets-mobile .timesheets__profile-stat-card > :is(span,strong) { min-width:0; overflow-wrap:anywhere; }
+}
+@media(max-width:360px) {
+  #workspace-content .timesheets-mobile .timesheets__profile-stats { grid-template-columns:minmax(0,1fr); }
+}

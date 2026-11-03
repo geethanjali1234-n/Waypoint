@@ -795,6 +795,7 @@ export default function ReportsPage({ role }) {
                 </header>
 
                 <Table
+                  mobileMode="cards"
                   label="Timesheet report records" pagination={{ page: page + 1, pageSize: size, total: totalElements, onPageChange: (next) => runTimesheetReport(next - 1, size) }}
                   columns={resultColumns}
                   rows={rows}
@@ -917,7 +918,8 @@ export default function ReportsPage({ role }) {
                       ['Distinct Designations', distinctDesignations],
                     ]
                 ).filter(([, value]) => value !== undefined).map(([label, value]) => (
-                  <article key={label}>                    <span>{label}</span>
+                  <article key={label}>
+                    <span>{label}</span>
                     <strong>{value}</strong>
                   </article>
                 ))}
@@ -928,7 +930,7 @@ export default function ReportsPage({ role }) {
                     <h3>Employee Details</h3>
                     <p>{employees.length === 0 ? 'No employee data available yet for this scope.' : `Live data for ${role === 'COMPANY_ADMIN' ? 'the organization' : 'your direct reports'}.`}</p>
                   </header>
-                  <Table columns={tableColumns} rows={employees} emptyMessage="No employee data available yet." renderCell={(column, row) => column.key === 'accountStatus' ? renderStatusCell(row[column.key]) : (row[column.key] || <EmptyCell />)} />
+                  <Table mobileMode="cards" columns={tableColumns} rows={employees} emptyMessage="No employee data available yet." renderCell={(column, row) => column.key === 'accountStatus' ? renderStatusCell(row[column.key]) : (row[column.key] || <EmptyCell />)} />
                 </section>
                 {Number.isFinite(activeEmployees) && Number.isFinite(inactiveEmployees) && (
                 <section>
@@ -955,7 +957,7 @@ export default function ReportsPage({ role }) {
                     <h3>Reporting Structure</h3>
                   </header>
                   {isOrgWide && (
-                    <Table columns={[{ key: 'managerName', header: 'Reporting Manager' }, { key: 'directReportCount', header: 'Direct Reports' }]} rows={managerSummary} emptyMessage="No active reporting assignments yet." renderCell={(column, row) => row[column.key] || <EmptyCell />} />
+                    <Table mobileMode="cards" columns={[{ key: 'managerName', header: 'Reporting Manager' }, { key: 'directReportCount', header: 'Direct Reports' }]} rows={managerSummary} emptyMessage="No active reporting assignments yet." renderCell={(column, row) => row[column.key] || <EmptyCell />} />
                   )}
                 </section>
               </div>

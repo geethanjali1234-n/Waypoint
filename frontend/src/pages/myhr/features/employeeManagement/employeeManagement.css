@@ -60,3 +60,10 @@
 .employee-management__address-suggestions button:hover { background:var(--wp-color-hover); }
 .employee-management :is(button,input,select,summary):focus-visible,.employee-management__panel :is(button,input,select):focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
 @media(max-width:600px) { .employee-management__controls-row > * { width:100%; } .employee-management__card,.employee-management__summary-grid section,.employee-management__history { padding:16px; } .employee-management__summary-grid dl,.employee-management__account-review dl,.employee-management__account-success dl { grid-template-columns:minmax(0,1fr); } }
+
+/* Phones: anchor the Filters popup to the full actions row so it can never open past the screen edge. */
+@media(max-width:768px) {
+  .employee-management__results-actions { position:relative; }
+  .employee-management__filter-menu { position:static; }
+  .employee-management__filter-content { left:0; right:0; width:auto; max-width:100%; margin-top:8px; box-sizing:border-box; }
+}

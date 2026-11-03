@@ -1427,3 +1427,9 @@
 .timesheets--payroll-readiness .payroll-readiness__hero dl { gap: 14px; }
 .timesheets--payroll-readiness .payroll-readiness__summary button { padding: 10px 12px; min-height: 76px; }
 .timesheets--payroll-readiness .payroll-readiness__summary strong { font-size: 1.5rem; margin: 4px 0; }
+/* Phones: cards only. The "select eligible on this page" checkbox the table header holds sits above the cards. */
+@media (max-width: 768px) {
+  .payroll-readiness__mobile-select-all { display:flex; align-items:center; gap:10px; min-height:44px; margin:0 0 12px; padding:0 4px; color:var(--wp-color-text); font:500 .875rem/1.4 var(--wp-font-sans); cursor:pointer; }
+  .payroll-readiness__mobile-select-all input { width:18px; height:18px; flex:0 0 auto; accent-color:var(--wp-color-primary); }
+  .payroll-readiness__mobile-select-all:has(input:disabled) { cursor:not-allowed; opacity:.6; }
+}

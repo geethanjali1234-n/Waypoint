@@ -9,6 +9,7 @@ import { formatDateOnly } from '../../../../utils/dateFormat';
 import MyHrFeaturePage from '../MyHrFeaturePage';
 import MyHrPagination from '../MyHrPagination';
 import { isMobileDevice } from '../../../../utils/deviceDetection';
+import useIsMobileViewport from '../documentRequests/useIsMobileViewport';
 import { downloadReportExcel, downloadReportPdf } from '../reports/reportExport';
 import './employeeManagement.css';
 
@@ -144,6 +145,9 @@ export default function EmployeeManagementPage({ role }) {
     }
     return 'table';
   });
+  // Phones (<=768px) always show cards; the desktop table/card choice is kept as-is.
+  const isMobile = useIsMobileViewport();
+  const effectiveViewMode = isMobile ? 'cards' : viewMode;
 
   const [selectedId, setSelectedId] = useState(null);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -515,7 +519,7 @@ export default function EmployeeManagementPage({ role }) {
         </details>
         <Button type="button" variant="secondary" className="employee-management__export-btn" onClick={() => exportRoster('pdf')} disabled={rows.length === 0} title="Export selected employees, or matching employees when none are selected, to PDF"><StrokeIcon name="download" size={20} /> Export PDF</Button>
         <Button type="button" variant="secondary" className="employee-management__export-btn" onClick={() => exportRoster('excel')} disabled={rows.length === 0} title="Export selected employees, or matching employees when none are selected, to Excel"><StrokeIcon name="download" size={20} /> Export Excel</Button>
-        <div className="employee-management__view-toggle" role="group" aria-label="View format">
+        {!isMobile && <div className="employee-management__view-toggle" role="group" aria-label="View format">
           <button
             type="button"
             className={`employee-management__view-toggle-btn ${viewMode === 'table' ? 'is-active' : ''}`}
@@ -534,7 +538,7 @@ export default function EmployeeManagementPage({ role }) {
           >
             <StrokeIcon name="cards" size={20} /> Cards
           </button>
-        </div>
+        </div>}
       </div></div>
 
       {selectedRows.length > 0 && <div className="employee-management__selection" role="status">{selectedRows.length} selected <Button variant="secondary" onClick={() => setSelectedRows([])}>Clear selection</Button></div>}
@@ -542,7 +546,7 @@ export default function EmployeeManagementPage({ role }) {
         : listState.error ? <EmptyState title="Could not load employees" description={listState.error} action={<Button type="button" variant="secondary" onClick={loadList}>Try again</Button>} />
         : listState.rows.length === 0 ? <EmptyState title={role === 'COMPANY_ADMIN' ? 'No employees yet' : 'No employees report to you yet'} description={role === 'COMPANY_ADMIN' ? 'Employees and HR accounts in your organization will appear here.' : 'Employees assigned to you as their reporting manager will appear here.'} />
         : <>
-          {viewMode === 'cards' ? (
+          {effectiveViewMode === 'cards' ? (
             <div className="employee-management__cards-grid">
               {pageRows.map((person) => (
                 <article key={person.userId} className={'employee-management__card' + (selectedRows.includes(person.userId) ? ' is-selected' : '')}>
@@ -628,8 +632,8 @@ export default function EmployeeManagementPage({ role }) {
                 <option value={100}>100</option>
               </select>
             </div>
-            {viewMode === 'cards' && <span>Showing {rows.length ? (safePage - 1) * pageSize + 1 : 0}–{Math.min(safePage * pageSize, rows.length)} of {rows.length}</span>}
-            {viewMode === 'cards' && totalPages > 1 && <MyHrPagination currentPage={safePage} totalPages={totalPages} onPageChange={setPage} />}
+            {effectiveViewMode === 'cards' && <span>Showing {rows.length ? (safePage - 1) * pageSize + 1 : 0}–{Math.min(safePage * pageSize, rows.length)} of {rows.length}</span>}
+            {effectiveViewMode === 'cards' && totalPages > 1 && <MyHrPagination currentPage={safePage} totalPages={totalPages} onPageChange={setPage} />}
           </div>
           {copiedNotice && (
             <div className="employee-management__copied-toast" role="status">

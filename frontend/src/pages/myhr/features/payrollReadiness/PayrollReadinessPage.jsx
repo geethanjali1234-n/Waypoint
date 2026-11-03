@@ -5,6 +5,7 @@ import myHrReportApi from '../../../../api/myHrReportApi';
 import payrollReadinessApi from '../../../../api/payrollReadinessApi';
 import { downloadReportExcel } from '../reports/reportExport';
 import { isMobileDevice } from '../../../../utils/deviceDetection';
+import useIsMobileViewport from '../documentRequests/useIsMobileViewport';
 import MyHrFeaturePage from '../MyHrFeaturePage';
 import MyHrPagination from '../MyHrPagination';
 import './payrollReadiness.css';
@@ -199,6 +200,9 @@ export function PayrollReadinessWorkspace() {
     }
     return 'table';
   });
+  // Phones (<=768px) always show cards; the desktop table/card choice is kept as-is.
+  const isMobile = useIsMobileViewport();
+  const effectiveViewMode = isMobile ? 'cards' : viewMode;
   const hasLoadedInitialReport = useRef(false);
 
   const years = useMemo(() => yearsAroundCurrent(), []);
@@ -440,7 +444,7 @@ export function PayrollReadinessWorkspace() {
       <header>
         <div><h3>Employee Readiness</h3><p>Review coverage and resolve payroll exceptions.</p></div>
         <div className="payroll-readiness__table-actions">
-          <div className="payroll-readiness__view-toggle" role="group" aria-label="View format">
+          {!isMobile && <div className="payroll-readiness__view-toggle" role="group" aria-label="View format">
             <button
               type="button"
               className={`payroll-readiness__view-toggle-btn ${viewMode === 'table' ? 'is-active' : ''}`}
@@ -459,12 +463,17 @@ export function PayrollReadinessWorkspace() {
             >
               Cards
             </button>
-          </div>
+          </div>}
           <Button type="button" variant="secondary" disabled={rows.length === 0} title="Download the current page using the applied filters" onClick={downloadPayrollReadinessExcel}>Download</Button>
           <label>Rows per page<select value={size} onChange={(event) => { setSelectedIds(new Set()); load(0, Number(event.target.value)); }}><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></label>
         </div>
       </header>
-      {viewMode === 'cards' ? (
+      {effectiveViewMode === 'cards' ? (<>
+        {/* Phones lose the table header, so offer its "select eligible on this page" checkbox above the cards. */}
+        {isMobile && rows.length > 0 && <label className="payroll-readiness__mobile-select-all">
+          <input type="checkbox" checked={allEligibleSelected} disabled={eligibleRows.length === 0} onChange={toggleCurrentPageEligible} />
+          <span>Select eligible reminders on current page</span>
+        </label>}
         <div className="payroll-readiness__cards-grid">
           {rows.length === 0 ? (
             <p className="payroll-readiness__empty">No employees match the selected payroll readiness filters.</p>
@@ -524,7 +533,7 @@ export function PayrollReadinessWorkspace() {
             ))
           )}
         </div>
-      ) : (
+      </>) : (
         <Table
           label="Employee payroll readiness" selectedRowIds={[...selectedIds]} getRowId={(row) => row.employeeUserId}
           pagination={{ page: page + 1, pageSize: size, total: totalElements, onPageChange: (next) => { setSelectedIds(new Set()); load(next - 1, size); } }}
@@ -552,7 +561,7 @@ export function PayrollReadinessWorkspace() {
           }}
         />
       )}
-      {viewMode === 'cards' && <div className="payroll-readiness__pagination-bar">
+      {effectiveViewMode === 'cards' && <div className="payroll-readiness__pagination-bar">
         <span className="payroll-readiness__pagination-info">
           {totalElements === 0 ? '0 results' : `Showing ${showingStart}–${showingEnd} of ${totalElements}`}
         </span>

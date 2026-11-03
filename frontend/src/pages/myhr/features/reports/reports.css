@@ -1634,3 +1634,18 @@
 [data-theme="dark"] .reports__detail h2 {
   color:var(--wp-color-text);
 }
+
+/* Phones: the employee search suggestions stay within the search box width instead of forcing 320px. */
+@media (max-width: 768px) {
+  .reports__search-dropdown { min-width: 0; max-width: 100%; box-sizing: border-box; }
+  .reports__search-dropdown :is(.reports__search-dropdown-header, .reports__search-item, .reports__search-item-info) { min-width: 0; overflow-wrap: anywhere; }
+}
+
+/* Phones (<=600px, where the shared table switches to cards): undo the phase-six
+   800px table width and cell padding so each record fits the screen. */
+@media (max-width: 600px) {
+  .phase-six :is(.reports__results, .reports__panels) .wp-data-table--mobile-cards .wp-data-table__scroll { overflow: visible; contain: none; }
+  .phase-six :is(.reports__results, .reports__panels) .wp-data-table--mobile-cards table { min-width: 0; }
+  .phase-six :is(.reports__results, .reports__panels) .wp-data-table--mobile-cards td { padding: 8px 0; }
+  .phase-six :is(.reports__results, .reports__panels) .wp-data-table--mobile-cards td .wp-button { width: 100%; min-height: 44px; }
+}
