@@ -17,6 +17,26 @@
   max-width: 100%;
 }
 
+/* The workspace supplies the page gutter; headers are not another bordered card. */
+@media(max-width:768px) {
+  :root .wp-workspace #workspace-content .myhr-feature .myhr-feature__heading {
+    display:flex; flex-direction:column; align-items:stretch; gap:12px;
+    padding:0!important; border:0!important; border-radius:0!important;
+    background:transparent!important;
+  }
+  :root .wp-workspace #workspace-content .myhr-feature .wp-page-header {
+    padding:0!important; border:0; border-radius:0!important; gap:12px;
+  }
+  :root .wp-workspace #workspace-content .myhr-feature .wp-page-header__subtitle {
+    display:block; -webkit-line-clamp:unset; overflow:visible; line-height:1.5!important;
+  }
+  #workspace-content .myhr-feature .myhr-page-back { align-self:flex-start; min-height:44px; }
+  .myhr-feature__body :is(.document-requests__toolbar,.request-documents__card,.request-documents__review,
+    .reports__card,.reports__hero,.organization-settings__card,.audit-history__card) {
+    padding:16px;
+  }
+}
+
 /* PageHeader carries its own margin-bottom (shared across the whole app, not
    just My HR) that stacks on top of this grid's own gap, roughly doubling
    the space below the title on every My HR feature page. The grid gap alone

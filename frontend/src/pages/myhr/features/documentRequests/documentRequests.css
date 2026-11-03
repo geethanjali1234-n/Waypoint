@@ -823,12 +823,15 @@
 
   .document-requests__filters {
     flex-direction: column;
+    flex: none;
     align-items: stretch;
     width: 100%;
-    gap: 8px;
+    gap: 12px;
   }
 
   .document-requests__filters .wp-field {
+    /* Desktop flex-basis values become oversized heights in a column. */
+    flex: none !important;
     width: 100%;
     max-width: none !important;
     min-width: 0 !important;

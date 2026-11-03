@@ -19,3 +19,8 @@
   padding-top: var(--wp-space-xl);
   padding-bottom: var(--wp-space-xl);
 }
+
+@media(max-width:768px) {
+  .wp-section-container { padding-inline:16px; }
+  .wp-workspace__main .wp-section-container { padding-inline:0; }
+}

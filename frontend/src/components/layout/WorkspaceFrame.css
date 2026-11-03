@@ -41,8 +41,10 @@
   .wp-workspace__mobile-drawer :is(.wp-workspace-sidebar,.myhr-navigation) nav a { justify-content:flex-start; }
   .wp-workspace__account { gap:4px; } .wp-workspace__account .wp-profile-menu__trigger { padding:4px; }
   .wp-workspace__account .wp-profile-menu__identity { max-width:64px; } .wp-workspace__account .wp-profile-menu__name { font-size:.75rem; }
-  .wp-workspace__body { display:block; padding:24px max(16px,env(safe-area-inset-right)) 24px max(16px,env(safe-area-inset-left)); }
+  .wp-workspace__body { display:block; padding:16px max(16px,env(safe-area-inset-right)) 16px max(16px,env(safe-area-inset-left)); }
   .wp-workspace__main { padding-bottom:calc(104px + env(safe-area-inset-bottom)); }
+  .wp-workspace__main :is(.wp-field,.wp-page-header__text) { min-width:0; }
+  .wp-workspace__main :is(input,select,textarea) { max-width:100%; }
 }
 @media(max-width:480px) {
   .wp-workspace__header { min-width:0; }

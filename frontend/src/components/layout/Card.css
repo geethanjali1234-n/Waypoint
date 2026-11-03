@@ -25,3 +25,8 @@
   color: var(--wp-color-text-muted);
   margin: 0;
 }
+
+@media(max-width:768px) {
+  .wp-card { padding:16px; }
+  .wp-card__header { flex-wrap:wrap; align-items:flex-start; gap:12px; }
+}
