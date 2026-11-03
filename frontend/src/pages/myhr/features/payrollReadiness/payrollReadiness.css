@@ -1433,3 +1433,22 @@
   .payroll-readiness__mobile-select-all input { width:18px; height:18px; flex:0 0 auto; accent-color:var(--wp-color-primary); }
   .payroll-readiness__mobile-select-all:has(input:disabled) { cursor:not-allowed; opacity:.6; }
 }
+
+/* Phones: show full names and values (wrap, never cut off with "..."), and let card
+   headers, footers and panel headers wrap instead of overlapping. */
+@media (max-width: 768px) {
+  .payroll-readiness__workspace .payroll-readiness__card-header { flex-wrap: wrap; align-items: flex-start; row-gap: 6px; }
+  .payroll-readiness__workspace .payroll-readiness__card-identity { flex: 1 1 12rem; align-items: flex-start; }
+  .payroll-readiness__workspace .payroll-readiness__card-identity strong,
+  .payroll-readiness__workspace .payroll-readiness__card-row > span:not(.payroll-readiness__card-label) {
+    white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere;
+  }
+  .payroll-readiness__workspace .payroll-readiness__card-sub { display: flex; flex-wrap: wrap; gap: 0 4px; overflow-wrap: anywhere; }
+  .payroll-readiness__workspace .payroll-readiness__card-footer { flex-wrap: wrap; }
+  .payroll-readiness__workspace .payroll-readiness__card-footer .wp-button { flex: 1 1 8rem; }
+  .payroll-readiness__workspace .payroll-readiness__error { flex-wrap: wrap; }
+  .payroll-readiness__drawer-panel > header { gap: 12px; padding: 16px; align-items: flex-start; }
+  .payroll-readiness__drawer-panel > header > :first-child { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+  .payroll-readiness__drawer-panel header button { flex: 0 0 44px; width: 44px; height: 44px; }
+  .payroll-readiness__filter-panel > header { gap: 12px; flex-wrap: wrap; }
+}

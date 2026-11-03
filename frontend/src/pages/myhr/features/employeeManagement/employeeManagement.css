@@ -67,3 +67,20 @@
   .employee-management__filter-menu { position:static; }
   .employee-management__filter-content { left:0; right:0; width:auto; max-width:100%; margin-top:8px; box-sizing:border-box; }
 }
+
+/* Phones: long names, IDs and manager names wrap inside the card; label/value rows wrap. */
+@media(max-width:768px) {
+  .employee-management__card-header { align-items:flex-start; row-gap:8px; }
+  .employee-management__card-identity { flex:1 1 12rem; min-width:0; flex-wrap:nowrap; align-items:flex-start; }
+  .employee-management__card-identity > div { flex:1 1 auto; min-width:0; }
+  .employee-management__card-avatar { flex:0 0 auto; }
+  .employee-management__person-link { max-width:100%; overflow-wrap:anywhere; }
+  .employee-management__card-sub, .employee-management__id-cell { overflow-wrap:anywhere; }
+  .employee-management__id-cell { flex-wrap:wrap; max-width:100%; }
+  .employee-management__card-row { flex-wrap:wrap; gap:2px 12px; }
+  .employee-management__card-row > * { min-width:0; overflow-wrap:anywhere; }
+  .employee-management__card-row > :last-child { text-align:right; margin-left:auto; }
+}
+@media(max-width:480px) {
+  .employee-management__card-footer .wp-button { width:100%; }
+}

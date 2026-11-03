@@ -201,3 +201,18 @@
 @media(max-width:360px) {
   #workspace-content .timesheets-mobile .timesheets__profile-stats { grid-template-columns:minmax(0,1fr); }
 }
+
+/* Phones: rows of steps, actions, toolbars and messages wrap instead of overflowing or cutting off buttons. */
+@media(max-width:768px) {
+  #workspace-content .timesheets-mobile .timesheets__flow-header ol { flex-wrap:wrap; row-gap:6px; }
+  #workspace-content .timesheets-mobile .timesheets__flow-header li { white-space:normal; }
+  #workspace-content .timesheets-mobile .timesheets__entry-actions { flex-wrap:wrap; white-space:normal; }
+  #workspace-content .timesheets-mobile .timesheets__entry-actions .wp-button { white-space:normal; }
+  #workspace-content .timesheets-mobile .timesheets__clear-btn { white-space:normal; }
+  #workspace-content .timesheets-mobile :is(.timesheets__preview-toolbar,.timesheets__doc-error,.timesheets__range-picker-footer,.timesheets__date-picker-footer) { flex-wrap:wrap; row-gap:8px; }
+  #workspace-content .timesheets-mobile .timesheets__hours-navigation strong { flex:1 1 auto; min-width:0; text-align:center; overflow-wrap:anywhere; }
+  #workspace-content .timesheets-mobile .timesheets__hours-navigation button { flex:0 0 auto; }
+}
+@media(max-width:480px) {
+  #workspace-content .timesheets-mobile .timesheets__entry-actions .wp-button { flex:1 1 auto; min-height:44px; }
+}

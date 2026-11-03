@@ -465,3 +465,21 @@
   background: rgba(0, 255, 135, 0.2);
   border-color: #00ff87;
 }
+
+/* Phones: the person's name/ID and the status pill share a row only when they fit; long names,
+   emails and changed values wrap inside the card instead of pushing it wider than the screen. */
+@media (max-width: 768px) {
+  .wp-profile-card__header { flex-wrap: wrap; align-items: flex-start; row-gap: 8px; }
+  .wp-profile-card__identity { flex: 1 1 12rem; min-width: 0; }
+  .wp-profile-card__emp-info { min-width: 0; }
+  .wp-profile-card__emp-info > *, .wp-profile-card__val-text, .wp-profile-card__callout-text, .wp-profile-card__meta-val { overflow-wrap: anywhere; }
+  .wp-profile-card__status { flex: 0 0 auto; }
+  .wp-profile-card__diff-grid { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .wp-profile-card__val-panel { min-width: 0; }
+  .wp-profile-card__panel-top, .wp-profile-card__callout-top { flex-wrap: wrap; row-gap: 4px; }
+  .wp-profile-card__actions { flex-wrap: wrap; gap: 8px; }
+}
+@media (max-width: 520px) {
+  .wp-profile-card__diff-grid { grid-template-columns: minmax(0, 1fr); }
+  .wp-profile-card__action-btn { flex: 1 1 auto; min-height: 44px; }
+}

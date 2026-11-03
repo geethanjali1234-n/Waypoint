@@ -111,7 +111,7 @@ export default function WorkspaceDashboard({ role, name, basePath, approvalPanel
       <div className="workspace-dashboard__people-heading"><div><h2 id="dashboard-employees-title">People</h2>{employees?.every((employee) => typeof employee.accountStatus === 'string') && <p>{employees.filter((employee) => employee.accountStatus === 'ACTIVE').length} active {employees.filter((employee) => employee.accountStatus === 'ACTIVE').length === 1 ? 'employee' : 'employees'}</p>}</div>
         <label>Search people<input type="search" placeholder="Name, ID or job title" value={search} onChange={(event) => { setSearch(event.target.value); setPeoplePage(1); }} /></label>
       </div>
-      {data.employees?.error ? <p role="status">{statusMessage('employees')}</p> : <DataTable label="Dashboard people" loading={!data.employees} columns={[
+      {data.employees?.error ? <p role="status">{statusMessage('employees')}</p> : <DataTable label="Dashboard people" mobileMode="cards" loading={!data.employees} columns={[
         { key: 'person', header: 'Person', type: 'person' }, { key: 'designation', header: 'Job title' }, { key: 'reportingManagerName', header: 'Manager' }, { key: 'accountStatus', header: 'Status', type: 'status' },
       ]} rows={visible.slice((page - 1) * 5, page * 5).map((employee, index) => ({ ...employee, id: employee.userId || employee.employeeId || String((page - 1) * 5 + index), person: { name: employee.name || 'Name unavailable', id: employee.employeeId } }))}
         pagination={employees ? { page, pageSize: 5, total: visible.length, onPageChange: setPeoplePage } : undefined}

@@ -219,6 +219,14 @@
   word-break: break-word;
 }
 
+/* Up to 768px: the file name wraps instead of being cut off at 450px; the header grows to fit it.
+   Placed before the 640px rules below, which still take priority on small phones. */
+@media (max-width: 768px) {
+  .wp-doc-viewer-header { height: auto; min-height: 3.5rem; }
+  .wp-doc-viewer-title-group { min-width: 0; }
+  .wp-doc-viewer-title { max-width: none; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+}
+
 @media (max-width: 640px) {
   .wp-doc-viewer-header { height:auto; min-height:3.5rem; align-items:flex-start; padding:8px 10px; gap:8px; }
   .wp-doc-viewer-title-group { flex:1; padding-top:5px; }

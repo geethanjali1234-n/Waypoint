@@ -32,3 +32,9 @@
   .wp-notification-menu__panel { top:calc(76px + env(safe-area-inset-top)); max-height:calc(100dvh - 176px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); z-index:1200; }
   .wp-notification-menu__item-button { padding:16px; min-height:76px; }
 }
+
+/* Up to 768px: the heading and "mark all read" wrap onto two lines rather than overlapping. */
+@media(max-width:768px) {
+  .wp-notification-menu__header { flex-wrap:wrap; row-gap:4px; }
+  .wp-notification-menu__title { min-width:0; overflow-wrap:anywhere; }
+}

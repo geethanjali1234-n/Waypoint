@@ -840,3 +840,11 @@
   text-decoration: underline;
 }
 
+
+/* Phones: header, readout, action and footer rows wrap so labels, numbers and buttons never overlap. */
+@media (max-width: 768px) {
+  :is(.wp-tank-punch__header, .wp-tank-punch__readout, .wp-tank-punch__actions, .wp-tank-punch__drawer-row,
+      .wp-exec-hud__top, .wp-exec-hud__values, .wp-exec-hud__footer) { flex-wrap: wrap; gap: 6px 12px; min-width: 0; }
+  :is(.wp-tank-punch__header, .wp-tank-punch__readout, .wp-tank-punch__actions, .wp-tank-punch__drawer-row,
+      .wp-exec-hud__top, .wp-exec-hud__values, .wp-exec-hud__footer) > * { min-width: 0; overflow-wrap: anywhere; }
+}

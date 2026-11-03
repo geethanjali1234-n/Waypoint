@@ -386,3 +386,10 @@
   background: transparent;
   border: none;
 }
+
+/* Phones: section heading and its actions stack; the Clear button may wrap its label. */
+@media (max-width: 768px) {
+  .profile-changes__section-head { flex-wrap: wrap; align-items: flex-start; gap: 12px; }
+  .profile-changes__section-head > * { min-width: 0; }
+  .profile-changes__clear-btn { white-space: normal; }
+}

@@ -1649,3 +1649,27 @@
   .phase-six :is(.reports__results, .reports__panels) .wp-data-table--mobile-cards td { padding: 8px 0; }
   .phase-six :is(.reports__results, .reports__panels) .wp-data-table--mobile-cards td .wp-button { width: 100%; min-height: 44px; }
 }
+
+/* Phones: report cards, attention rows, chart rows and the detail drawer wrap and shrink
+   instead of overflowing; labels never force their row wider than the screen. */
+@media (max-width: 768px) {
+  .reports__card-top, .reports__card > div, .reports__bar-row, .reports__daily-hours div { flex-wrap: wrap; gap: 6px 12px; }
+  :is(.reports__card-top, .reports__card > div, .reports__bar-row, .reports__daily-hours div) > * { min-width: 0; overflow-wrap: anywhere; }
+  .reports__triage-label { white-space: normal; flex-wrap: wrap; }
+  .reports__attention > div { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .reports__attention header, .reports__results header { flex-wrap: wrap; padding: 16px; }
+  .reports__barlist-row { grid-template-columns: minmax(0, 38%) minmax(0, 1fr) auto; gap: 8px; }
+  .reports__drawer-panel > header { gap: 12px; padding: 16px; align-items: flex-start; }
+  .reports__drawer-panel > header > :first-child { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+  .reports__drawer-body { padding: 16px; }
+  .reports__drawer-body dl { grid-template-columns: minmax(0, 120px) minmax(0, 1fr); }
+  .reports__drawer-body dd { overflow-wrap: anywhere; }
+}
+@media (max-width: 480px) {
+  .reports__drawer-body dl { grid-template-columns: minmax(0, 1fr); gap: 2px 0; }
+  .reports__drawer-body dd { margin-bottom: 8px; }
+}
+@media (max-width: 600px) {
+  /* Keep the existing single-column attention rows on small phones (re-stated after the 768px rule above). */
+  .reports__attention > div { grid-template-columns: minmax(0, 1fr); }
+}

@@ -256,3 +256,41 @@
 [data-theme="light"] .myhr-feature__header-telemetry-label {
   color: #475569;
 }
+
+/* ==========================================================================
+   My HR phones (<=768px): shared layout safety rules for the My HR main content area
+   (every My HR page, including dashboards; not the header, menu drawer or bottom nav).
+   Every selector is wrapped in :where(), so these rules have zero specificity:
+   they only fill gaps where a page sets nothing itself, and any page rule wins.
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* Long names, emails, IDs and file names wrap inside their card instead of overflowing it. */
+  :where(#workspace-content.myhr-shell__main) :where(h1, h2, h3, h4, h5, h6, p, li, dt, dd, label, legend, small, strong, b, em, a, span, figcaption, blockquote) {
+    overflow-wrap: anywhere;
+  }
+
+  /* Flex and grid children default to min-width:auto, which lets long content push a row
+     wider than the screen. Let them shrink unless a page sets an explicit min-width. */
+  :where(#workspace-content.myhr-shell__main) :where(div, section, article, header, footer, aside, nav, form, fieldset, dl, dt, dd, ul, ol, li, label, details, summary, p, h1, h2, h3, h4, h5, h6) {
+    min-width: 0;
+  }
+
+  /* Media never wider than its container. */
+  :where(#workspace-content.myhr-shell__main) :where(img, video, iframe, canvas) { max-width: 100%; }
+
+  /* A title + status badge row wraps the badge onto the next line instead of overlapping
+     the title. Applies only to flex rows that directly contain a status badge. */
+  :where(#workspace-content.myhr-shell__main) :where(div, header, li, h2, h3, h4, span, strong):where(:has(> :is(.wp-status-badge, .wp-status-tag, .wp-badge, .wp-chip))) {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  :where(#workspace-content.myhr-shell__main) :where(.wp-status-badge, .wp-status-tag, .wp-badge, .wp-chip) {
+    flex-shrink: 0;
+    max-width: 100%;
+  }
+
+  /* Button and filter rows wrap rather than pushing their last action off-screen. */
+  :where(#workspace-content.myhr-shell__main) :where(div, footer, header, nav, form):where(:has(> .wp-button + .wp-button)) {
+    flex-wrap: wrap;
+  }
+}
