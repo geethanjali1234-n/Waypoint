@@ -235,3 +235,34 @@
   #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__flow-actions { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.6fr); gap:8px; margin-top:16px; }
   #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__flow-actions .wp-button { width:100%; min-width:0; min-height:44px; padding:10px 8px; font-size:.8125rem; white-space:normal; line-height:1.4; }
 }
+
+/* Team review on phones: one workspace inset, compact navigation and records. */
+@media(max-width:768px) {
+  #workspace-content .myhr-feature.timesheets-mobile .timesheets__team-workspace { padding:16px!important; border:1px solid var(--wp-color-border)!important; border-radius:var(--wp-radius-card)!important; background:var(--wp-color-surface)!important; }
+  #workspace-content .timesheets-mobile .timesheets__team-heading { gap:16px!important; margin-bottom:16px!important; }
+  #workspace-content .timesheets-mobile .timesheets__team-heading h2 { margin:6px 0 8px; font-size:1.25rem!important; line-height:1.3; }
+  #workspace-content .timesheets-mobile .timesheets__team-heading p { margin:0; font-size:.875rem!important; line-height:1.5; }
+  #workspace-content .timesheets-mobile .timesheets__subtabs-bar { gap:8px!important; padding:0!important; border:0!important; background:transparent!important; margin-bottom:16px!important; }
+  #workspace-content .timesheets-mobile .timesheets__subtabs-bar > .timesheets__subtab-btn { flex-direction:row!important; flex-wrap:wrap; min-height:48px; gap:4px!important; padding:8px 4px!important; }
+  #workspace-content .timesheets-mobile .timesheets__subtab-icon { display:none!important; }
+  #workspace-content .timesheets-mobile .timesheets__subtab-badge { margin:0!important; font-size:.6875rem!important; }
+  #workspace-content .timesheets-mobile .timesheets__filter-anchor { grid-column:1/-1; width:100%; }
+  #workspace-content .timesheets-mobile .timesheets__filter-anchor .timesheets__filter-popover { width:100%; }
+  #workspace-content .timesheets-mobile .timesheets__filter-anchor .timesheets__filter-trigger { display:flex!important; flex-direction:row!important; gap:8px!important; min-height:44px; padding:8px 12px!important; }
+  #workspace-content .timesheets-mobile .timesheets__team-table.wp-table-wrapper { padding:0!important; border:0!important; background:transparent!important; }
+  #workspace-content .timesheets-mobile .timesheets__team-table .wp-table tbody { gap:12px!important; }
+  #workspace-content .timesheets-mobile .timesheets__team-table .wp-table tbody tr { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; padding:12px!important; gap:8px 12px!important; }
+  #workspace-content .timesheets-mobile .timesheets__team-table .wp-table td { display:flex!important; flex-direction:column!important; justify-content:flex-start!important; align-items:flex-start!important; gap:4px!important; padding:4px 0!important; border-bottom:0!important; text-align:left!important; font-size:.875rem!important; overflow-wrap:anywhere; }
+  #workspace-content .timesheets-mobile .timesheets__team-table .wp-table td::before { margin:0; font-size:.6875rem; font-weight:500; letter-spacing:0; text-transform:none; color:var(--wp-color-text-muted); }
+  #workspace-content .timesheets-mobile .timesheets__team-table .wp-table td[data-label="Employee"] { grid-column:1/-1; grid-row:1; padding:0 0 10px!important; border-bottom:1px solid var(--wp-color-border)!important; font-weight:600; }
+  #workspace-content .timesheets-mobile .timesheets__team-table .wp-table td[data-label="Employee"]::before { display:none; }
+  #workspace-content .timesheets-mobile .timesheets__team-table .wp-table :is(td[data-label="Reporting manager"],td[data-label="Latest Timesheet Period"],td[data-label="Action"],td.wp-table__empty) { grid-column:1/-1; }
+  #workspace-content .timesheets-mobile .timesheets__team-table .wp-table td[data-label="Status"] { justify-content:space-between!important; flex-direction:row!important; align-items:center!important; grid-column:1/-1; }
+  #workspace-content .timesheets-mobile .timesheets__team-table .wp-table td[data-label="Action"] { padding:8px 0 0!important; }
+  #workspace-content .timesheets-mobile .timesheets__team-table .wp-table td[data-label="Action"]::before { display:none; }
+  #workspace-content .timesheets-mobile .timesheets__team-table .timesheets__entry-actions { width:100%; margin:0!important; }
+  #workspace-content .timesheets-mobile .timesheets__team-table .timesheets__entry-actions .wp-button { width:100%; min-height:44px; margin:0; }
+  #workspace-content .timesheets-mobile .timesheets__employee-cell { min-width:0; gap:8px; }
+  #workspace-content .timesheets-mobile .timesheets__employee-cell > div { min-width:0; }
+  #workspace-content .timesheets-mobile .timesheets__employee-cell .timesheets__avatar { width:32px; height:32px; flex:0 0 32px; }
+}
