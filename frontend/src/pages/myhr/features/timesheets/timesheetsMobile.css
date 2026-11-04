@@ -216,3 +216,22 @@
 @media(max-width:480px) {
   #workspace-content .timesheets-mobile .timesheets__entry-actions .wp-button { flex:1 1 auto; min-height:44px; }
 }
+
+/* A compact, padded date-entry card; calendar selection stays in its dialog. */
+@media(max-width:768px) {
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates { min-height:0; }
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__flow-header { display:grid; gap:16px; margin:0; padding:0 0 16px; }
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__flow-header h2 { margin:8px 0; font-size:1.25rem; line-height:1.3; }
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__flow-header p { margin:0; font-size:.875rem; line-height:1.5; }
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__flow-header ol { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__flow-header li { justify-content:center; min-height:36px; padding:6px 4px; border-radius:var(--wp-radius-control); background:var(--wp-color-hover); font-size:.75rem; }
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__flow-header li.active { background:var(--wp-color-primary-soft); color:var(--wp-color-primary); }
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__flow-content { padding:16px 0 0; }
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__range-fields { width:100%; max-width:none; }
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__date-picker-toggle { display:flex; justify-content:flex-start; gap:8px; padding:12px; font-size:.875rem; text-align:left; }
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__period-callout { display:grid; gap:6px; margin-top:16px; padding:12px; }
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__period-callout :is(strong,span) { font-size:.875rem; line-height:1.4; }
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__period-callout small { margin:0; font-size:.75rem; line-height:1.5; }
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__flow-actions { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.6fr); gap:8px; margin-top:16px; }
+  #workspace-content .timesheets-mobile .timesheets__flow-panel--dates .timesheets__flow-actions .wp-button { width:100%; min-width:0; min-height:44px; padding:10px 8px; font-size:.8125rem; white-space:normal; line-height:1.4; }
+}

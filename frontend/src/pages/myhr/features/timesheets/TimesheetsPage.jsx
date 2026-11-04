@@ -2169,7 +2169,7 @@ function EntryWorkspace({ step, setStep, today, rangeStart, setRangeStart, range
   const isSubmittedView = step === 'submitted_view';
 
   return (
-    <section className="timesheets__flow-panel" aria-label={isSubmittedView ? 'Submitted timesheet details' : 'Enter timesheet workflow'}>
+    <section className={`timesheets__flow-panel${step === 'dates' ? ' timesheets__flow-panel--dates' : ''}`} aria-label={isSubmittedView ? 'Submitted timesheet details' : 'Enter timesheet workflow'}>
       <div className="timesheets__flow-header">
         <div>
           <span className="timesheets__flow-kicker">
