@@ -55,3 +55,37 @@
   .wp-workspace__account .wp-profile-menu__trigger { min-height:40px; }
 }
 @media(max-width:360px) { .wp-workspace__account .wp-profile-menu__identity { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); } }
+
+/* Compact phone header + drawer. Opt-in: only shells that pass mobileTitle + mobileDrawer
+   get .wp-workspace--compact-mobile. Desktop never shows these rules or elements. */
+.wp-workspace__brand > span.wp-workspace__mobile-title,.wp-workspace__compact-drawer { display:none; }
+@media(max-width:768px) {
+  .wp-workspace--compact-mobile .wp-workspace__header { gap:8px; min-height:60px; min-width:0; }
+  /* Order: menu, title, search, bell, avatar. */
+  .wp-workspace--compact-mobile .wp-workspace__mobile-menu { order:-1; flex:0 0 40px; width:40px; height:40px; display:grid; place-content:center; justify-items:start; gap:5px; border:0; background:transparent; color:var(--wp-color-primary); }
+  .wp-workspace--compact-mobile .wp-workspace__mobile-menu span { width:20px; height:2px; }
+  .wp-workspace--compact-mobile .wp-workspace__mobile-menu span:last-child { width:12px; }
+  .wp-workspace--compact-mobile .wp-workspace__mobile-menu:hover { background:var(--wp-color-hover); }
+  .wp-workspace--compact-mobile .wp-workspace__brand { flex:1 1 auto; min-width:0; min-height:40px; }
+  .wp-workspace--compact-mobile .wp-workspace__brand > :is(.wp-waypoint-mark,span:not(.wp-workspace__mobile-title)) { display:none; }
+  .wp-workspace--compact-mobile .wp-workspace__brand > span.wp-workspace__mobile-title { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:600 1.0625rem/1.2 var(--wp-font-sans); color:var(--wp-color-primary); }
+  .wp-workspace--compact-mobile .wp-workspace__quick-jump { flex:0 0 40px; width:40px; height:40px; min-height:40px; }
+  .wp-workspace--compact-mobile .wp-workspace__account { flex:0 0 auto; margin-left:0; gap:8px; }
+  .wp-workspace--compact-mobile .wp-workspace__account .wp-notification-menu__trigger { width:40px; height:40px; min-height:40px; }
+  /* Theme switch moves into the drawer; avatar only, the name stays for screen readers. */
+  .wp-workspace--compact-mobile .wp-workspace__account > .wp-theme-toggle { display:none; }
+  .wp-workspace--compact-mobile .wp-workspace__account .wp-profile-menu__trigger { min-height:40px; padding:2px; }
+  .wp-workspace--compact-mobile .wp-workspace__account .wp-profile-menu__identity { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+  .wp-workspace--compact-mobile .wp-profile-menu__panel { top:calc(68px + env(safe-area-inset-top)); }
+
+  .wp-workspace--compact-mobile .wp-workspace__compact-drawer { display:flex; flex-direction:column; position:fixed; z-index:200; top:0; bottom:0; left:0; width:min(86vw,320px); height:100dvh; background:var(--wp-color-surface); border-right:1px solid var(--wp-color-border); box-shadow:12px 0 28px rgb(0 0 0 / .2); transform:translateX(-105%); visibility:hidden; transition:transform .2s ease, visibility 0s linear .2s; }
+  .wp-workspace--compact-mobile .wp-workspace__compact-drawer.is-open { transform:translateX(0); visibility:visible; transition:transform .2s ease, visibility 0s; }
+}
+@media(max-width:768px) and (prefers-reduced-motion:reduce) {
+  .wp-workspace--compact-mobile .wp-workspace__compact-drawer,.wp-workspace--compact-mobile .wp-workspace__drawer-backdrop { transition:none; }
+}
+@media(max-width:360px) {
+  .wp-workspace--compact-mobile .wp-workspace__header { gap:4px; padding-inline:max(8px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-right)); }
+  .wp-workspace--compact-mobile .wp-workspace__account { gap:4px; }
+  .wp-workspace--compact-mobile .wp-workspace__brand > span.wp-workspace__mobile-title { font-size:1rem; }
+}

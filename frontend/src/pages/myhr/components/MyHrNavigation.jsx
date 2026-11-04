@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import './myHrNavigation.css';
 import StrokeIcon from '../../../components/global/StrokeIcon';
+import { ROLE_LINKS, myHrBasePath } from './myHrNavigationLinks';
 
 const NAV_ICON_PATHS = {
   dashboard: ['M3 3h7v7H3z', 'M14 3h7v7h-7z', 'M3 14h7v7H3z', 'M14 14h7v7h-7z'],
@@ -25,12 +26,6 @@ export function DashboardNavIcon({ type }) {
   </span>;
 }
 
-const ROLE_LINKS = {
-  COMPANY_ADMIN: [['employees', 'Employee Management'], ['profile-change-requests', 'Profile Change Requests'], ['timesheets', 'Timesheets'], ['document-requests', 'Request Documents'], ['reports', 'Reports'], ['audit', 'Audit History'], ['organization', 'Organization Settings'], ['payroll-readiness', 'Payroll Readiness'], ['offer-letter-approvals', 'Document Approvals']],
-  HR: [['employees', 'Employee Management'], ['profile-change-requests', 'Profile Change Requests'], ['timesheets', 'Timesheets'], ['document-requests', 'Request Documents'], ['reports', 'Reports'], ['payroll-readiness', 'Payroll Readiness']],
-  EMPLOYEE: [['profile', 'My Profile'], ['profile-change-requests', 'Profile Change Requests'], ['timesheets', 'My Timesheets'], ['document-requests', 'Document Requests']],
-};
-
 export default function MyHrNavigation({ role }) {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => {
@@ -38,7 +33,7 @@ export default function MyHrNavigation({ role }) {
   });
   const [peeking, setPeeking] = useState(false);
   if (!ROLE_LINKS[role]) return null;
-  const basePath = `/myhr/${role === 'COMPANY_ADMIN' ? 'admin' : role === 'HR' ? 'hr' : 'employee'}`;
+  const basePath = myHrBasePath(role);
   const toggle = () => {
     setPeeking(false);
     setCollapsed((previous) => {

@@ -11,6 +11,7 @@ import { formatDateOnly } from '../../utils/dateFormat';
 import WaypointChatbot from '../../components/chatbot/WaypointChatbot';
 import './MyHrShell.css';
 import MyHrNavigation from './components/MyHrNavigation';
+import MyHrMobileDrawer from './components/MyHrMobileDrawer';
 
 function formatNotificationTimestamp(value) {
   if (!value) return 'Just now';
@@ -185,6 +186,8 @@ export default function MyHrShell({ children, fullWidth = false }) {
   return <WorkspaceFrame home={home} workspaceLabel={workspaceLabel} className="myhr-shell"
     mainClassName={fullWidth ? 'myhr-shell__main myhr-shell__main--full' : 'myhr-shell__main'}
     sidebar={<MyHrNavigation role={session?.role} />}
+    mobileTitle="WayPoint HR"
+    mobileDrawer={({ close }) => <MyHrMobileDrawer role={session?.role} title="WayPoint HR" workspaceLabel={workspaceLabel} onClose={close} />}
     mobileNav={<MobileBottomNav />}
     assistant={<WaypointChatbot displayName={personName} />}
     account={<>
