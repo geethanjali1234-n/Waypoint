@@ -1,3 +1,4 @@
+import { getMyHrSession } from '../../../../auth/myHrSession';
 import { useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Modal, DetailPanel, FilterPills, Dropdown, FormLabel, StatusBadge as StatusTag, TextInput } from '../../../../components';
@@ -247,9 +248,12 @@ export function PayrollReadinessWorkspace() {
   const totalPages = data?.totalPages || 0;
   const showingStart = totalElements === 0 ? 0 : page * size + 1;
   const showingEnd = Math.min(totalElements, page * size + rows.length);
-  const eligibleRows = rows.filter((row) => row.reminderEligible);
+  const currentUserId = getMyHrSession()?.userId;
+  const isSelf = (row) => Boolean(currentUserId) && row.employeeUserId === currentUserId;
+  const canRemind = (row) => row.reminderEligible && !isSelf(row);
+  const eligibleRows = rows.filter((row) => canRemind(row));
   const selectedRows = rows.filter((row) => selectedIds.has(row.employeeUserId));
-  const selectedEligibleRows = selectedRows.filter((row) => row.reminderEligible);
+  const selectedEligibleRows = selectedRows.filter((row) => canRemind(row));
   const allEligibleSelected = eligibleRows.length > 0 && eligibleRows.every((row) => selectedIds.has(row.employeeUserId));
 
   function applyFilters(nextStatus = status) {
@@ -273,7 +277,7 @@ export function PayrollReadinessWorkspace() {
   }
 
   function toggleRow(row) {
-    if (!row.reminderEligible) return;
+    if (!canRemind(row)) return;
     setSelectedIds((previous) => {
       const next = new Set(previous);
       if (next.has(row.employeeUserId)) next.delete(row.employeeUserId);
@@ -296,6 +300,7 @@ export function PayrollReadinessWorkspace() {
   }
 
   function handleSingleReminder(row) {
+    if (!canRemind(row)) return;
     setFeedback('');
     setReminderBusy(row.employeeUserId);
     payrollReadinessApi.sendReminder(row.employeeUserId, payrollMonthParam(payrollYear, payrollMonth))
@@ -482,16 +487,17 @@ export function PayrollReadinessWorkspace() {
               <div key={row.employeeUserId} className={`payroll-readiness__card ${selectedIds.has(row.employeeUserId) ? 'is-selected' : ''}`}>
                 <div className="payroll-readiness__card-header">
                   <div className="payroll-readiness__card-identity">
-                    {row.reminderEligible && (
+                    {(canRemind(row) || isSelf(row)) && (
                       <input
                         type="checkbox"
                         aria-label={`Select ${row.employeeName || 'employee'} for reminder`}
                         checked={selectedIds.has(row.employeeUserId)}
+                        disabled={!canRemind(row)}
                         onChange={() => toggleRow(row)}
                       />
                     )}
                     <div>
-                      <strong>{row.employeeName || 'Unnamed employee'}</strong>
+                      <strong>{row.employeeName || 'Unnamed employee'}{isSelf(row) && ' (You)'}</strong>
                       <span className="payroll-readiness__card-sub">
                         <span>{row.employeeId || 'No ID'}</span> • <span>{row.role || 'Employee'}</span>
                       </span>
@@ -521,12 +527,12 @@ export function PayrollReadinessWorkspace() {
                 </div>
                 <div className="payroll-readiness__card-footer">
                   <Button type="button" variant="secondary" onClick={() => setDrawerRow(row)}>View Details</Button>
-                  {row.reminderEligible ? (
+                  {canRemind(row) ? (
                     <Button type="button" variant="primary" disabled={reminderBusy === row.employeeUserId} onClick={() => handleSingleReminder(row)}>
                       {reminderBusy === row.employeeUserId ? 'Sending...' : 'Send Reminder'}
                     </Button>
                   ) : (
-                    <span className="payroll-readiness__card-ready">Ready for payroll</span>
+                    <span className="payroll-readiness__card-ready">{isSelf(row) ? 'Your manager handles reminders' : row.readinessState === 'READY' ? 'Ready for payroll' : 'No reminder available'}</span>
                   )}
                 </div>
               </div>
@@ -543,8 +549,8 @@ export function PayrollReadinessWorkspace() {
           rows={rows}
           emptyMessage="No employees match the selected payroll readiness filters."
           renderCell={(column, row) => {
-            if (column.key === 'select') return <input type="checkbox" aria-label={`Select ${row.employeeName || 'employee'} for reminder`} checked={selectedIds.has(row.employeeUserId)} disabled={!row.reminderEligible} onChange={() => toggleRow(row)} />;
-            if (column.key === 'employee') return <strong>{row.employeeName || 'Unnamed employee'}</strong>;
+            if (column.key === 'select') return <input type="checkbox" aria-label={`Select ${row.employeeName || 'employee'} for reminder`} checked={selectedIds.has(row.employeeUserId)} disabled={!canRemind(row)} onChange={() => toggleRow(row)} />;
+            if (column.key === 'employee') return <strong>{row.employeeName || 'Unnamed employee'}{isSelf(row) && ' (You)'}</strong>;
             if (column.key === 'employeeId') return row.employeeId || '-';
             if (column.key === 'manager') return row.reportingManagerName || '-';
             if (column.key === 'period') return formatPeriod(row.requiredPeriodStart, row.requiredPeriodEnd);
@@ -555,7 +561,7 @@ export function PayrollReadinessWorkspace() {
             if (column.key === 'readiness') return <StatusTag status={STATUS_STATES[row.readinessState] || 'inactive'} label={humanize(row.readinessState)} />;
             if (column.key === 'actions') return <div className="payroll-readiness__row-actions">
               <Button type="button" variant="secondary" className="payroll-readiness__action-btn" onClick={() => setDrawerRow(row)}>View</Button>
-              {row.reminderEligible ? <Button type="button" variant="ghost" className="payroll-readiness__action-btn" disabled={reminderBusy === row.employeeUserId} onClick={() => handleSingleReminder(row)}>{reminderBusy === row.employeeUserId ? 'Sending...' : 'Send Reminder'}</Button> : <small>No reminder needed</small>}
+              {canRemind(row) ? <Button type="button" variant="ghost" className="payroll-readiness__action-btn" disabled={reminderBusy === row.employeeUserId} onClick={() => handleSingleReminder(row)}>{reminderBusy === row.employeeUserId ? 'Sending...' : 'Send Reminder'}</Button> : <small>{isSelf(row) ? 'Your manager handles reminders' : 'No reminder needed'}</small>}
             </div>;
             return row[column.key] || '-';
           }}

@@ -428,3 +428,32 @@ it('initializes the selected payroll month and follow-up filter from a dashboard
   render(<MemoryRouter initialEntries={['/myhr/admin/payroll-readiness?payrollMonth=2026-04&status=NEEDS_FOLLOW_UP']}><PayrollReadinessPage role="COMPANY_ADMIN" /></MemoryRouter>);
   await waitFor(() => expect(payrollReadinessApi.getReadiness).toHaveBeenCalledWith(expect.objectContaining({ payrollYear: 2026, payrollMonthNumber: 4, status: 'NEEDS_FOLLOW_UP' })));
 });
+
+it.each(['table', 'cards'])('labels the own row and excludes self from reminders in %s view', async (view) => {
+  vi.clearAllMocks();
+  const previousSession = localStorage.getItem('myHrAuthenticatedUser');
+  localStorage.setItem('myHrAuthenticatedUser', JSON.stringify({ userId: 'employee-1', role: 'HR' }));
+  mockReadiness();
+  myHrReportApi.searchEmployees.mockResolvedValue({ data: { data: [] } });
+  payrollReadinessApi.sendBulkReminders.mockResolvedValue({ data: { data: { sent: 1 } } });
+  const user = userEvent.setup();
+  const page = renderPage('HR');
+  try {
+    await screen.findByText(/John Doe.*You/);
+    if (view === 'cards') await user.click(screen.getByRole('button', { name: /^Cards$/ }));
+    const selfCheckbox = screen.getByRole('checkbox', { name: 'Select John Doe for reminder' });
+    expect(selfCheckbox).toBeDisabled();
+    expect(screen.getByText('Your manager handles reminders')).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: 'Select Ravi Kumar for reminder' }));
+    expect(selfCheckbox).not.toBeChecked();
+    await user.click(screen.getByRole('button', { name: /Send to selected/i }));
+    await user.click(screen.getByRole('button', { name: /^Send Reminders$/ }));
+    await waitFor(() => expect(payrollReadinessApi.sendBulkReminders).toHaveBeenCalledWith(
+      { employeeUserIds: ['employee-2'] }, expect.any(String)));
+    expect(payrollReadinessApi.sendReminder).not.toHaveBeenCalled();
+  } finally {
+    page.unmount();
+    if (previousSession === null) localStorage.removeItem('myHrAuthenticatedUser');
+    else localStorage.setItem('myHrAuthenticatedUser', previousSession);
+  }
+});

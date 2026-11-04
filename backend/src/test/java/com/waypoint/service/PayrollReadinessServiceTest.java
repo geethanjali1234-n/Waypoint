@@ -496,6 +496,20 @@ class PayrollReadinessServiceTest {
 
         assertThat(response.content()).extracting(PayrollReadinessRowResponse::employeeUserId)
                 .containsExactly("employee-1", "hr-1");
+        assertThat(row(response, "hr-1").reminderEligible()).isFalse();
+        assertThat(row(response, "employee-1").reminderEligible()).isTrue();
+        var selfResult = service.sendReminder("hr-1", LocalDate.of(2026, 7, 1), "hr-1");
+        assertThat(selfResult.sent()).isZero();
+        assertThat(selfResult.results()).singleElement().satisfies(item -> assertThat(item.reason()).isEqualTo("SELF_REMINDER_NOT_ALLOWED"));
+        verify(notificationService, never()).createNotification(any(), eq("hr-1"), any(), any(), any(), any(), any());
+        when(notificationService.createNotification(eq(ORG_ID), eq("employee-1"), any(), any(), any(), any(), any()))
+                .thenReturn(Notification.builder().id("hr-notification").build());
+        var bulkResult = service.sendBulkReminders("hr-1", LocalDate.of(2026, 7, 1), new PayrollReadinessBulkReminderRequest(List.of()));
+        assertThat(bulkResult.sent()).isEqualTo(1);
+        assertThat(bulkResult.skippedUnauthorized()).isEqualTo(1);
+        verify(notificationService).createNotification(eq(ORG_ID), eq("employee-1"), any(), any(),
+                contains("Sent by HR User (HR)."), any(), any());
+        verify(notificationService, never()).createNotification(any(), eq("hr-1"), any(), any(), any(), any(), any());
     }
 
 
@@ -581,6 +595,7 @@ class PayrollReadinessServiceTest {
         EmployeeProfile missing = profile("missing", "TD002", "Missing Employee");
         EmployeeProfile submitted = profile("submitted", "TD004", "Submitted Employee");
         seedAdminScope(List.of(missing, submitted));
+        when(employeeProfileRepository.findByUserId(ADMIN_ID)).thenReturn(Optional.of(profile(ADMIN_ID, "ADMIN", "Alex Admin")));
         when(timesheetRepository.findByOrganizationIdAndUserIdInAndPeriodStartDateLessThanEqualAndPeriodEndDateGreaterThanEqual(
                 eq(ORG_ID), anyCollection(), any(), any()))
                 .thenReturn(List.of(timesheet("submitted", TimesheetStatus.SUBMITTED, LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30))));
@@ -609,6 +624,8 @@ class PayrollReadinessServiceTest {
                 eq("Timesheet Reminder - June 2026"), any(), eq("missing"), eq("/myhr/employee/timesheets?year=2026&month=6"));
         verify(notificationService).createNotification(eq(ORG_ID), eq("submitted"), eq(NotificationType.PAYROLL_TIMESHEET_ACTION_REQUIRED),
                 eq("Timesheet Approval Pending - June 2026"), any(), eq("submitted"), eq("/myhr/employee/timesheets?year=2026&month=6"));
+        verify(notificationService).createNotification(eq(ORG_ID), eq("missing"), any(), any(),
+                contains("Sent by Alex Admin (Company Admin)."), any(), any());
         verify(reminderRepository, times(2)).save(any(PayrollReadinessReminder.class));
     }
 
@@ -664,6 +681,8 @@ class PayrollReadinessServiceTest {
         assertThat(result.eligible()).isEqualTo(4);
         assertThat(result.sent()).isEqualTo(4);
         assertThat(result.skippedReady()).isEqualTo(1);
+        verify(notificationService, times(4)).createNotification(eq(ORG_ID), anyString(),
+                eq(NotificationType.PAYROLL_TIMESHEET_ACTION_REQUIRED), any(), contains("Automatic Waypoint reminder."), any(), any());
         verify(reminderRepository, times(4)).save(argThat(reminder ->
                 reminder.getSource().name().equals("AUTOMATIC")
                         && reminder.getReminderType() == PayrollReadinessReminderType.AUTO_EMPLOYEE_DAY_5

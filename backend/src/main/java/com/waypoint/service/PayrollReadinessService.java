@@ -169,8 +169,16 @@ public class PayrollReadinessService {
             }
         }
 
+        String sender = reminderSender(actor);
         for (PayrollReadinessRowResponse row : rows.values()) {
             String employeeUserId = row.employeeUserId();
+            if (actor.userId().equals(employeeUserId)) {
+                skipped++;
+                skippedUnauthorized++;
+                results.add(new PayrollReadinessReminderResultItem(employeeUserId, false, true,
+                        "SELF_REMINDER_NOT_ALLOWED", row.readinessState(), null, row.lastReminderAt()));
+                continue;
+            }
             if (!isReminderEligible(row.readinessState())) {
                 skipped++;
                 skippedReady++;
@@ -196,7 +204,7 @@ public class PayrollReadinessService {
                         employeeUserId,
                         NotificationType.PAYROLL_TIMESHEET_ACTION_REQUIRED,
                         content.title(),
-                        content.message(),
+                        content.message() + " Sent by " + sender + ".",
                         employeeUserId,
                         employeeTimesheetActionUrl(period));
                 LocalDateTime sentAt = LocalDateTime.now();
@@ -291,11 +299,11 @@ public class PayrollReadinessService {
                 .stream()
                 .collect(Collectors.toMap(PayrollReadinessReminder::getEmployeeUserId, PayrollReadinessReminder::getSentAt, (a, b) -> a.isAfter(b) ? a : b));
         return employees.stream()
-                .map(context -> toRow(context, period, timesheetsByUser.getOrDefault(context.profile().getUserId(), List.of()), lastReminderByUser.get(context.profile().getUserId())))
+                .map(context -> toRow(actor.userId(), context, period, timesheetsByUser.getOrDefault(context.profile().getUserId(), List.of()), lastReminderByUser.get(context.profile().getUserId())))
                 .toList();
     }
 
-    private PayrollReadinessRowResponse toRow(EmployeeContext context, Period period, List<Timesheet> timesheets, LocalDateTime lastReminderAt) {
+    private PayrollReadinessRowResponse toRow(String actorUserId, EmployeeContext context, Period period, List<Timesheet> timesheets, LocalDateTime lastReminderAt) {
         CoverageSnapshot coverage = coverageSnapshot(period, timesheets);
         PayrollReadinessDecision decision = decideReadiness(coverage, timesheets);
         PayrollReadinessResponsibility responsibility = responsibilityFor(decision.state());
@@ -323,7 +331,7 @@ public class PayrollReadinessService {
                 decision.state(),
                 responsibility,
                 decision.reason(),
-                isReminderEligible(decision.state()),
+                !actorUserId.equals(context.profile().getUserId()) && isReminderEligible(decision.state()),
                 lastReminderAt);
     }
 
@@ -692,6 +700,15 @@ public class PayrollReadinessService {
         return state != null && state != PayrollReadinessState.READY;
     }
 
+    private String reminderSender(AuthenticatedMyHrUser actor) {
+        String role = actor.role() == UserRole.COMPANY_ADMIN ? "Company Admin" : "HR";
+        String name = employeeProfileRepository.findByUserId(actor.userId())
+                .filter(profile -> actor.organizationId().equals(profile.getOrganizationId()))
+                .map(EmployeeProfile::getName).filter(StringUtils::hasText)
+                .orElse(actor.loginId());
+        return StringUtils.hasText(name) ? name + " (" + role + ")" : role;
+    }
+
     private ReminderContent reminderContent(PayrollReadinessState state, Period period) {
         String requiredMonth = period.requiredMonthLabel();
         String payrollMonth = period.payrollMonthLabel();
@@ -811,7 +828,7 @@ public class PayrollReadinessService {
             ReminderContent content = automaticReminderContent(row.readinessState(), period, reminderType);
             var notification = notificationService.createNotification(
                     actor.organizationId(), row.employeeUserId(), NotificationType.PAYROLL_TIMESHEET_ACTION_REQUIRED,
-                    content.title(), content.message(), row.employeeUserId(), employeeTimesheetActionUrl(period));
+                    content.title(), content.message() + " Automatic Waypoint reminder.", row.employeeUserId(), employeeTimesheetActionUrl(period));
             PayrollReadinessReminder reminder = PayrollReadinessReminder.builder()
                     .organizationId(actor.organizationId())
                     .employeeUserId(row.employeeUserId())
@@ -854,7 +871,7 @@ public class PayrollReadinessService {
                     + summary.correctionRequired() + " correction required. Payroll cutoff: "
                     + period.cutoffDate().format(CUTOFF_LABEL) + ".";
             var notification = notificationService.createNotification(actor.organizationId(), actor.userId(),
-                    NotificationType.PAYROLL_TIMESHEET_FOLLOW_UP_REQUIRED, title, message, period.payrollMonthStart().toString(), actionUrl);
+                    NotificationType.PAYROLL_TIMESHEET_FOLLOW_UP_REQUIRED, title, message + " Automatic Waypoint reminder.", period.payrollMonthStart().toString(), actionUrl);
             reminderRepository.save(PayrollReadinessReminder.builder()
                     .organizationId(actor.organizationId())
                     .employeeUserId(actor.userId())
