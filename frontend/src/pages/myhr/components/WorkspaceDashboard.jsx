@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import myHrAuditApi from '../../../api/myHrAuditApi';
+import { formatDateTime } from '../../../utils/dateFormat';
 import myHrProfileChangeApi from '../../../api/myHrProfileChangeApi';
 import timesheetApi from '../../../api/timesheetApi';
 import payrollReadinessApi from '../../../api/payrollReadinessApi';
 import myHrDocumentRequestApi from '../../../api/myHrDocumentRequestApi';
-import { Button, NeedsYouList, PageHeader, RouteLine } from '../../../components';
+import { Button, NeedsYouList, PageHeader } from '../../../components';
 import { getMyHrSession } from '../../../auth/myHrSession';
 import './workspaceDashboard.css';
 
-export default function WorkspaceDashboard({ role, name, basePath, approvalPanel }) {
-  const hasApprovalPanel = Boolean(approvalPanel);
+export default function WorkspaceDashboard({ role, name, basePath }) {
   const sessionUserId = getMyHrSession()?.userId;
   const isReviewableSubmission = (row) => row.status === 'SUBMITTED' && (role === 'COMPANY_ADMIN' || row.employeeUserId !== sessionUserId);
   const [data, setData] = useState({});
@@ -23,14 +24,16 @@ export default function WorkspaceDashboard({ role, name, basePath, approvalPanel
     setData((previous) => ({ payroll: previous.payroll }));
     const load = (key, request) => Promise.resolve().then(request).then((response) => {
       const value = response.data?.data;
-      if (key === 'documents' ? typeof value?.pending !== 'number' : !Array.isArray(value)) throw new Error('Invalid response');
+      if (['documents', 'approvals'].includes(key) ? !Number.isInteger(value?.pending) || value.pending < 0 : key === 'activity' ? !Array.isArray(value?.items) : !Array.isArray(value)) throw new Error('Invalid response');
       if (active) setData((previous) => ({ ...previous, [key]: { value } }));
     }).catch(() => { if (active) setData((previous) => ({ ...previous, [key]: { error: true } })); });
     load('profiles', () => myHrProfileChangeApi.listForAdmin());
     load('timesheets', () => timesheetApi.list());
-    if (role === 'COMPANY_ADMIN' && !hasApprovalPanel) load('documents', () => myHrDocumentRequestApi.listOfferLetterApprovals());
+    load('documents', () => myHrDocumentRequestApi.dashboardSummary());
+    if (role === 'COMPANY_ADMIN') load('activity', () => myHrAuditApi.history({ page: 0, size: 5 }));
+    if (role === 'COMPANY_ADMIN') load('approvals', () => myHrDocumentRequestApi.listOfferLetterApprovals());
     return () => { active = false; };
-  }, [role, refresh, hasApprovalPanel]);
+  }, [role, refresh]);
   useEffect(() => {
     let active = true;
     setData((previous) => ({ ...previous, payroll: undefined }));
@@ -53,13 +56,23 @@ export default function WorkspaceDashboard({ role, name, basePath, approvalPanel
   const urgentPayroll = Number.isFinite(period?.daysUntilCutoff) && period.daysUntilCutoff >= 0 && period.daysUntilCutoff <= 3;
   const reviewCount = data.timesheets?.value?.filter(isReviewableSubmission).length;
   const profileCount = data.profiles?.value?.filter((row) => row.status === 'PENDING').length;
+  // Request timestamps and payroll dates are business dates in America/Chicago.
+  const todayParts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+  const part = (type) => todayParts.find((item) => item.type === type).value;
+  const todayKey = `${part('year')}-${part('month')}-${part('day')}`;
+  const oldestKey = data.documents?.value?.oldestRequestedAt?.slice(0, 10);
+  const oldestAge = oldestKey ? Math.floor((Date.parse(todayKey) - Date.parse(oldestKey)) / 86400000) : null;
+  const documentContext = Number.isFinite(oldestAge) && oldestAge >= 0
+    ? `Oldest request: ${oldestAge === 0 ? 'today' : `${oldestAge} ${oldestAge === 1 ? 'day' : 'days'}`}.`
+    : 'Requests awaiting document preparation.';
   const queues = [
     { id: 'timesheets', title: 'Timesheets awaiting review', count: reviewCount, context: 'Submitted hours waiting for a decision.', to: basePath + '/timesheets?view=team&subtab=submissions&status=SUBMITTED', actionLabel: 'Review timesheets', priority: 1 },
     { id: 'profiles', title: 'Profile change requests', count: profileCount, context: 'Employee information changes waiting for review.', to: basePath + '/profile-change-requests?view=assigned&status=PENDING', actionLabel: 'Review changes', priority: 2 },
-    ...(role === 'COMPANY_ADMIN' && !hasApprovalPanel ? [{ id: 'documents', title: 'Documents awaiting approval', count: data.documents?.value?.pending, context: 'Prepared documents waiting for your approval.', to: '/myhr/admin/offer-letter-approvals?status=PENDING_APPROVAL', actionLabel: 'Review documents', priority: 3 }] : []),
+    { id: 'documents', title: 'Document requests', count: data.documents?.value?.pending, context: documentContext, to: basePath + '/document-requests', actionLabel: 'Review requests', priority: 3 },
+    ...(role === 'COMPANY_ADMIN' ? [{ id: 'approvals', title: 'Documents awaiting approval', count: data.approvals?.value?.pending, context: 'Prepared documents waiting for your approval.', to: '/myhr/admin/offer-letter-approvals?status=PENDING_APPROVAL', actionLabel: 'Review documents', priority: 3 }] : []),
     { id: 'payroll', title: 'Payroll follow-ups', count: followup, context: 'Missing submissions and corrections for the selected payroll month.', to: followupPath, actionLabel: 'Review follow-ups', priority: urgentPayroll ? 0 : 4 },
   ];
-  const knownQueues = queues.filter((queue) => Number.isFinite(queue.count) && queue.count >= 0);
+  const knownQueues = queues.filter((queue) => Number.isFinite(queue.count) && queue.count >= 0).map((queue) => queue.count === 0 ? { ...queue, context: 'All clear' } : queue);
   const pendingQueues = queues.filter((queue) => !Number.isFinite(queue.count) || queue.count < 0);
   const shortDate = (value) => {
     if (!value) return null;
@@ -69,37 +82,53 @@ export default function WorkspaceDashboard({ role, name, basePath, approvalPanel
   const startDate = shortDate(period?.requiredPeriodStart);
   const endDate = shortDate(period?.requiredPeriodEnd);
   const cutoffDate = shortDate(period?.payrollCutoffDate);
-  const opened = startDate && new Date(period.requiredPeriodStart + 'T00:00:00') <= new Date();
-  const payrollSteps = startDate ? [
-    { label: 'Opened', sublabel: startDate, state: opened ? 'done' : 'current' },
-    { label: 'Review', sublabel: hasReadiness && summary.totalEmployees === 0 ? 'No employees in this payroll period.' : 'Review hours and resolve follow-ups.', state: opened ? 'current' : 'upcoming' },
-    ...(cutoffDate ? [{ label: 'Run', sublabel: `Cutoff: ${cutoffDate}. Payroll run status is not available.`, state: 'upcoming' }] : []),
-  ] : [];
   const statusMessage = (key) => data[key]?.error ? 'Unable to load. Try Refresh.' : data[key] ? 'Data unavailable for this queue.' : 'Loading...';
 
   return <div className="workspace-dashboard">
-    <PageHeader eyebrow={role === 'HR' ? 'HR workspace' : 'Admin workspace'} title={'Welcome' + (name ? ', ' + name : '')} summary="Your people and the next steps that need your attention."
+    <PageHeader title={'Welcome' + (name ? ', ' + name : '')}
       primaryAction={<Button variant="secondary" onClick={() => setRefresh((value) => value + 1)}>Refresh</Button>} />
-    {hasApprovalPanel && <div key={refresh} className="workspace-dashboard__approvals">{approvalPanel}</div>}
     <div className="workspace-dashboard__columns">
       <section className="workspace-dashboard__card workspace-dashboard__attention" aria-labelledby="dashboard-attention-title">
         <p className="workspace-dashboard__eyebrow">Next stops</p><h2 id="dashboard-attention-title">Needs you today</h2>
-        <NeedsYouList items={knownQueues} label="Priority action queues" emptyMessage={pendingQueues.length ? 'Pending actions appear as the queues load.' : 'No pending actions in the loaded queues.'} />
+        <NeedsYouList hideZeroCounts={false} items={knownQueues} label="Priority action queues" emptyMessage={pendingQueues.length ? 'Pending actions appear as the queues load.' : 'No pending actions in the loaded queues.'} />
         {pendingQueues.length > 0 && <ul className="workspace-dashboard__queue-status" aria-live="polite">{pendingQueues.map((queue) => <li key={queue.id}><strong>{queue.title}</strong><span>{statusMessage(queue.id)}</span></li>)}</ul>}
-        {role === 'COMPANY_ADMIN' && data.documents?.value?.pending === 0 && <Link className="workspace-dashboard__text-link" to="/myhr/admin/offer-letter-approvals">View approval history</Link>}
       </section>
+      <div className="workspace-dashboard__rail">
       <section className="workspace-dashboard__card workspace-dashboard__payroll" aria-labelledby="payroll-window-title">
-        <p className="workspace-dashboard__eyebrow">Time &amp; pay</p><h2 id="payroll-window-title">Payroll window</h2>
+        <h2 id="payroll-window-title">Payroll window</h2>
         <label className="workspace-dashboard__month">Payroll month<input type="month" value={month} onChange={(event) => { if (/^\d{4}-\d{2}$/.test(event.target.value)) setMonth(event.target.value); }} /></label>
-        {payrollSteps.length > 0 && <RouteLine steps={payrollSteps} label="Payroll window progress" />}
         {startDate && endDate && <p className="workspace-dashboard__period">Timesheet period: {startDate} to {endDate}</p>}
-        {cutoffDate && <p className="workspace-dashboard__period">Cutoff: {cutoffDate}</p>}
+        {cutoffDate && period.payrollCutoffDate < todayKey && <p className="workspace-dashboard__period">Cutoff: {cutoffDate}</p>}
         {readiness !== null ? <div className="workspace-dashboard__readiness"><p><strong>{readiness}%</strong> ready for payroll</p><div role="progressbar" aria-label="Payroll ready" aria-valuemin={0} aria-valuemax={100} aria-valuenow={readiness} className="workspace-dashboard__readiness-track"><span style={{ width: readiness + '%' }} /></div></div>
           : <p role="status">{hasReadiness ? 'No employees in this payroll period.' : statusMessage('payroll')}</p>}
-        {hasReadiness && <p className="workspace-dashboard__payroll-note">{summary.totalEmployees === 0 ? 'Choose another payroll month to review its readiness.' : followup > 0 ? 'Resolve missing submissions and corrections before payroll.' : summary.awaitingApproval > 0 ? 'Submitted hours are waiting for approval.' : 'All employees in this period are ready for payroll.'}</p>}
-        <div className="workspace-dashboard__payroll-actions"><Link to={payrollPath}>Open report</Link><Link to={followupPath}>Review employees requiring follow-up</Link></div>
+        {hasReadiness && summary.totalEmployees === 0 && <p className="workspace-dashboard__payroll-note">Choose another payroll month to review its readiness.</p>}
+        <div className="workspace-dashboard__payroll-actions"><Link to={payrollPath}>Open report</Link><Link to={followupPath}>Review follow-ups</Link></div>
       </section>
+    {cutoffDate && period.payrollCutoffDate >= todayKey && <section className="workspace-dashboard__coming-up" aria-labelledby="dashboard-coming-up-title">
+      <h2 id="dashboard-coming-up-title">Coming up</h2>
+      <Link to={payrollPath}><time dateTime={period.payrollCutoffDate}>{new Date(period.payrollCutoffDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</time>: Payroll cutoff</Link>
+    </section>}
+    {role === 'COMPANY_ADMIN' && <section className="workspace-dashboard__card workspace-dashboard__activity" aria-labelledby="dashboard-activity-title">
+      {data.activity?.value?.items.length > 0 ? <>
+        <details className="workspace-dashboard__activity-more">
+          <summary><h2 id="dashboard-activity-title">Recent activity</h2><span>Show latest {Math.min(data.activity.value.items.length, 5)}</span></summary>
+          <ul>{data.activity.value.items.slice(0, 5).map((item) => <ActivityItem key={item.id} item={item} />)}</ul>
+          <Link className="workspace-dashboard__text-link" to={basePath + '/audit'}>View audit history</Link>
+        </details>
+        <ul className="workspace-dashboard__latest-event">{data.activity.value.items.slice(0, 1).map((item) => <ActivityItem key={item.id} item={item} />)}</ul>
+      </> : <>
+        <h2 id="dashboard-activity-title">Recent activity</h2>
+        <p role="status">{data.activity?.error ? 'Unable to load activity. Try Refresh.' : !data.activity ? 'Loading activity...' : 'No recent activity.'}</p>
+      </>}
+    </section>}
+      </div>
     </div>
-    <Link className="workspace-dashboard__text-link" to={basePath + '/employees'}>View employees</Link>
   </div>;
+}
+
+function ActivityItem({ item }) {
+  return <li>
+    <div><strong>{item.actionLabel}</strong>{item.actorName && <span>{item.actorName}</span>}{item.outcome && item.outcome !== 'SUCCESS' && <span>{item.outcome}</span>}</div>
+    {item.performedAt && <time dateTime={item.performedAt}>{formatDateTime(item.performedAt)}</time>}
+  </li>;
 }

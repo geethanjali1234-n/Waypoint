@@ -2,7 +2,6 @@
 import myHrEmployeeApi from '../../api/myHrEmployeeApi';
 import { getMyHrSession } from '../../auth/myHrSession';
 import MyHrShell from './MyHrShell';
-import OfferLetterApprovalCard from './components/OfferLetterApprovalCard';
 import WorkspaceDashboard from './components/WorkspaceDashboard';
 import EmployeeTodayPanel from './components/EmployeeTodayPanel';
 
@@ -27,7 +26,6 @@ export default function MyHrRoleLandingPage({ role }) {
   return <MyHrShell>
     {role === 'EMPLOYEE'
       ? <EmployeeTodayPanel name={welcomeName} basePath={basePath} />
-      : <WorkspaceDashboard role={role} name={welcomeName} basePath={basePath}
-          approvalPanel={role === 'COMPANY_ADMIN' ? <OfferLetterApprovalCard /> : undefined} />}
+      : <WorkspaceDashboard role={role} name={welcomeName} basePath={basePath} />}
   </MyHrShell>;
 }

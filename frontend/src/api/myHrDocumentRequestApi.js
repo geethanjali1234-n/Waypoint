@@ -10,6 +10,7 @@ const appendSignatures = (body, signature) => {
 
 const myHrDocumentRequestApi = {
   list: (params = {}) => apiClient.get('/myhr/document-requests', { params }),
+  dashboardSummary: () => apiClient.get('/myhr/document-requests/dashboard-summary'),
   get: (requestId) => apiClient.get(`/myhr/document-requests/${requestId}`),
   requestableEmployees: () => apiClient.get('/myhr/document-requests/requestable-employees'),
   create: (payload) => apiClient.post('/myhr/document-requests', payload),

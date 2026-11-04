@@ -63,6 +63,42 @@ class DocumentRequestServiceTest {
         });
     }
 
+    @Test void dashboardSummaryScopesHrToTheirOrganizationAndAssignedIncomingRequests() {
+        actor("hr-1", UserRole.HR);
+        when(mongoTemplate.count(any(Query.class), eq(DocumentRequest.class))).thenReturn(3L);
+        var timestamp = java.time.LocalDateTime.of(2026, 10, 16, 9, 0);
+        when(mongoTemplate.findOne(any(Query.class), eq(DocumentRequest.class)))
+                .thenReturn(DocumentRequest.builder().requestedAt(timestamp).build());
+        var result = service.dashboardSummary("hr-1");
+        assertThat(result.pending()).isEqualTo(3);
+        assertThat(result.oldestRequestedAt()).isEqualTo(timestamp);
+        ArgumentCaptor<Query> query = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).count(query.capture(), eq(DocumentRequest.class));
+        String filter = query.getValue().getQueryObject().toString();
+        assertThat(filter).contains("org-1", "requestedForUserId", "hr-1", "PENDING", "TO_MANAGER");
+        verify(mongoTemplate).findOne(query.capture(), eq(DocumentRequest.class));
+        assertThat(query.getValue().getSortObject().getInteger("requestedAt")).isEqualTo(1);
+        assertThat(query.getValue().getLimit()).isEqualTo(1);
+    }
+
+    @Test void dashboardSummaryScopesAdminToOrganizationAndSkipsOldestLookupForEmptyQueue() {
+        actor("admin-1", UserRole.COMPANY_ADMIN);
+        var result = service.dashboardSummary("admin-1");
+        assertThat(result.pending()).isZero();
+        assertThat(result.oldestRequestedAt()).isNull();
+        ArgumentCaptor<Query> query = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).count(query.capture(), eq(DocumentRequest.class));
+        assertThat(query.getValue().getQueryObject().toString()).contains("org-1", "TO_MANAGER", "PENDING").doesNotContain("requestedForUserId");
+        verify(mongoTemplate, never()).findOne(any(Query.class), eq(DocumentRequest.class));
+        verify(authenticated).require("admin-1", Set.of(UserRole.COMPANY_ADMIN, UserRole.HR), false);
+    }
+
+    @Test void dashboardSummaryRejectsUnauthorizedRoleBeforeQuerying() {
+        when(authenticated.require(eq("employee-1"), anySet(), eq(false))).thenThrow(new ForbiddenException("Forbidden"));
+        assertThatThrownBy(() -> service.dashboardSummary("employee-1")).isInstanceOf(ForbiddenException.class);
+        verifyNoInteractions(mongoTemplate);
+    }
+
     private void actor(String id, UserRole role) {
         actor(id, role, "org-1");
     }

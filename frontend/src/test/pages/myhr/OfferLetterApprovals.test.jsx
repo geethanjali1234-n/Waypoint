@@ -113,10 +113,10 @@ describe('Document Approvals are Company Admin only', () => {
     myHrDocumentRequestApi.listOfferLetterApprovals.mockResolvedValue({ data: { data: { pending: 2, approved: 0, rejected: 0, items: [] } } });
     renderDashboard('COMPANY_ADMIN');
 
-    const card = await screen.findByRole('region', { name: 'Document Approvals' });
-    expect(within(card).getByRole('button', { name: 'Review Approvals' })).toBeInTheDocument();
-    expect(within(card).getByText('2 Pending Approval')).toBeInTheDocument();
-    expect(screen.queryByText('Documents awaiting approval')).not.toBeInTheDocument();
+    const row = (await screen.findByRole('link', { name: 'Review documents' })).closest('li');
+    expect(within(row).getByRole('link', { name: 'Review documents' })).toHaveAttribute('href', '/myhr/admin/offer-letter-approvals?status=PENDING_APPROVAL');
+    expect(row).toHaveTextContent(/^2/);
+    expect(screen.queryByRole('region', { name: 'Document Approvals' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Needs you today' })).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Organization Settings' }).length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: 'Employee Management' })).toBeInTheDocument();

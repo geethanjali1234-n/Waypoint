@@ -104,15 +104,7 @@ public class DocumentRequestService {
         int boundedSize = Math.min(Math.max(size, 1), 50);
         Criteria organization = Criteria.where("organizationId").is(actor.organizationId());
         List<Criteria> constraints = new ArrayList<>();
-        if (actor.role() == UserRole.EMPLOYEE) {
-            constraints.add(new Criteria().orOperator(Criteria.where("requestedByUserId").is(actor.userId()),
-                    Criteria.where("requestedForUserId").is(actor.userId())));
-        } else if (actor.role() == UserRole.HR) {
-            Set<String> visibleIds = new HashSet<>(directReportIds(actor.organizationId(), actor.userId()));
-            visibleIds.add(actor.userId());
-            constraints.add(new Criteria().orOperator(Criteria.where("requestedByUserId").in(visibleIds),
-                    Criteria.where("requestedForUserId").in(visibleIds)));
-        }
+        constraints.addAll(visibilityConstraints(actor));
         if ("mine".equals(workspace) && actor.role() == UserRole.HR) {
             constraints.add(Criteria.where("requestedByUserId").is(actor.userId()));
             constraints.add(Criteria.where("requestDirection").is("TO_MANAGER"));
@@ -156,6 +148,38 @@ public class DocumentRequestService {
         List<DocumentRequest> requests = mongoTemplate.find(pageQuery, DocumentRequest.class);
         return new DocumentRequestPageResponse(responses(requests, actor.organizationId()), boundedPage,
                 boundedSize, total, (int) Math.ceil((double) total / boundedSize));
+    }
+
+    private List<Criteria> visibilityConstraints(MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor) {
+        List<Criteria> constraints = new ArrayList<>();
+        if (actor.role() == UserRole.EMPLOYEE) {
+            constraints.add(new Criteria().orOperator(Criteria.where("requestedByUserId").is(actor.userId()),
+                    Criteria.where("requestedForUserId").is(actor.userId())));
+        } else if (actor.role() == UserRole.HR) {
+            Set<String> visibleIds = new HashSet<>(directReportIds(actor.organizationId(), actor.userId()));
+            visibleIds.add(actor.userId());
+            constraints.add(new Criteria().orOperator(Criteria.where("requestedByUserId").in(visibleIds),
+                    Criteria.where("requestedForUserId").in(visibleIds)));
+        }
+        return constraints;
+    }
+
+    /** Counts only requests awaiting preparation, never employee uploads or Admin approvals. */
+    public DocumentRequestDashboardSummary dashboardSummary(String actorUserId) {
+        var actor = authenticatedUserService.require(actorUserId, MANAGER_ROLES, false);
+        List<Criteria> constraints = visibilityConstraints(actor);
+        constraints.add(Criteria.where("organizationId").is(actor.organizationId()));
+        constraints.add(Criteria.where("status").is(DocumentRequestStatus.PENDING));
+        constraints.add(Criteria.where("requestDirection").is("TO_MANAGER"));
+        if (actor.role() == UserRole.HR) constraints.add(Criteria.where("requestedForUserId").is(actor.userId()));
+        Criteria criteria = new Criteria().andOperator(constraints.toArray(Criteria[]::new));
+        long pending = mongoTemplate.count(new Query(criteria), DocumentRequest.class);
+        // Missing dates must not turn into an invented age. Fetch only the oldest known timestamp.
+        Query oldestQuery = new Query(new Criteria().andOperator(criteria,
+                Criteria.where("requestedAt").ne(null))).with(Sort.by(Sort.Direction.ASC, "requestedAt")).limit(1);
+        oldestQuery.fields().include("requestedAt");
+        DocumentRequest oldest = pending == 0 ? null : mongoTemplate.findOne(oldestQuery, DocumentRequest.class);
+        return new DocumentRequestDashboardSummary(pending, oldest == null ? null : oldest.getRequestedAt());
     }
 
     public List<DocumentRequestResponse> list(String actorUserId) {

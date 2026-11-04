@@ -31,6 +31,9 @@ public class MyHrDocumentRequestController {
         return new ApiResponse<>(true, "Document requests retrieved",
                 service.list(userId(request), page, size, status, priority, category, query, workspace));
     }
+    @GetMapping("/dashboard-summary") public ApiResponse<DocumentRequestDashboardSummary> dashboardSummary(HttpServletRequest request) {
+        return new ApiResponse<>(true, "Document request summary retrieved", service.dashboardSummary(userId(request)));
+    }
     @GetMapping("/requestable-employees") public ApiResponse<List<RequestableEmployeeResponse>> requestable(HttpServletRequest request) {
         return new ApiResponse<>(true, "Requestable employees retrieved", service.requestableEmployees(userId(request)));
     }

@@ -1,5 +1,7 @@
 package com.waypoint.controller;
 
+import com.waypoint.dto.myhr.DocumentRequestDashboardSummary;
+
 import com.waypoint.dto.myhr.DocumentRequestRejectRequest;
 import com.waypoint.dto.myhr.DocumentRequestResponse;
 import com.waypoint.dto.myhr.OfferLetterEmailDraftResponse;
@@ -30,6 +32,13 @@ class MyHrDocumentRequestControllerTest {
     @BeforeEach void setUp() {
         controller = new MyHrDocumentRequestController(resolver, service, offerLetterService);
         lenient().when(resolver.resolveUserId(servletRequest)).thenReturn("actor-1");
+    }
+
+    @Test void dashboardSummaryUsesAuthenticatedIdentity() {
+        var summary = new DocumentRequestDashboardSummary(0, null);
+        when(service.dashboardSummary("actor-1")).thenReturn(summary);
+        assertThat(controller.dashboardSummary(servletRequest).getData()).isSameAs(summary);
+        verify(service).dashboardSummary("actor-1");
     }
 
     @Test void rejectionUsesAuthenticatedActorAndValidatedRequestId() {
