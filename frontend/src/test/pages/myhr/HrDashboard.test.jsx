@@ -55,7 +55,9 @@ it('shows real work queues and excludes the HR user own submission from team rev
   expect(within(queues).getByText('Timesheets awaiting review').closest('li')).toHaveTextContent(/^1/);
   expect(within(queues).getByText('Profile change requests').closest('li')).toHaveTextContent(/^1/);
   expect(within(queues).getByText('Payroll follow-ups').closest('li')).toHaveTextContent(/^1/);
-  expect(within(queues).getByRole('link', { name: 'Review timesheets' })).toHaveAttribute('href', '/myhr/hr/timesheets?view=team&subtab=submissions&status=SUBMITTED');
+  expect(within(queues).getByRole('link', { name: 'Review timesheets' })).toHaveAttribute('href', '/myhr/hr/timesheets?view=team&subtab=actions&status=SUBMITTED');
+  expect(within(queues).getByRole('link', { name: 'Timesheets awaiting review' })).toHaveAttribute('href', '/myhr/hr/timesheets?view=team&subtab=actions&status=SUBMITTED');
+  expect(within(queues).getByRole('link', { name: 'Profile change requests' })).toHaveAttribute('href', '/myhr/hr/profile-change-requests?view=assigned&status=PENDING');
   expect(screen.queryByRole('heading', { name: 'HR Actions' })).not.toBeInTheDocument();
   expect(screen.getByRole('progressbar', { name: 'Payroll ready' })).toHaveAttribute('aria-valuenow', '50');
 });

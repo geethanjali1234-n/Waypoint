@@ -790,6 +790,11 @@ export default function TimesheetsPage({ role }) {
     navigate(`/myhr/${role === 'HR' ? 'hr' : 'admin'}/payroll-readiness${rest ? `?${rest}` : ''}`, { replace: true });
   }, [payrollRedirect, searchParams, navigate, role]);
 
+  const requestedStatus = searchParams.get('status');
+  useEffect(() => {
+    setStatusFilter(['SUBMITTED', 'APPROVED', 'REJECTED'].includes(requestedStatus) ? requestedStatus : 'ALL');
+  }, [requestedStatus]);
+
   // Sync mode and view from search parameters on mount/update. Employees only
   // ever have their own timesheets.
   useEffect(() => {

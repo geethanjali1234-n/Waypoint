@@ -9,3 +9,7 @@
 .wp-needs-you__action:hover { background:var(--wp-color-hover); }
 .wp-needs-you__action:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
 @media(max-width:480px) { .wp-needs-you li { flex-wrap:wrap; gap:8px; } .wp-needs-you__action { margin-left:auto; } }
+
+.wp-needs-you__title { color:inherit; font:inherit; text-decoration:none; }
+.wp-needs-you__title:hover { text-decoration:underline; text-underline-offset:3px; }
+.wp-needs-you__title:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:3px; border-radius:2px; }

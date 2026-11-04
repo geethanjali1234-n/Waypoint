@@ -780,6 +780,7 @@ it('filters the assigned queue from a dashboard attention link', async () => {
   ] } });
   render(<MemoryRouter initialEntries={['/myhr/admin/profile-change-requests?view=assigned&status=PENDING']}><ProfileChangeRequestsPage role="COMPANY_ADMIN" /></MemoryRouter>);
   expect(await screen.findByText(/Pending Person/)).toBeInTheDocument();
+  expect(screen.getByLabelText('Status')).toHaveValue('PENDING');
   expect(screen.queryByText(/Approved Person/)).not.toBeInTheDocument();
 });
 
@@ -872,4 +873,20 @@ it('shows a readable reviewer reference when the API does not supply the reviewe
   const dialog = await screen.findByRole('region', { name: 'Review Profile Change Request' });
   expect(await within(dialog).findByText('USER-B49C1B93')).toHaveAttribute('title', reviewerId);
   expect(within(dialog).queryByText(reviewerId)).not.toBeInTheDocument();
+});
+
+it.each(['HR', 'COMPANY_ADMIN'])('opens the assigned pending queue for %s and keeps filters usable', async (role) => {
+  vi.clearAllMocks();
+  myHrProfileChangeApi.listForAdmin.mockResolvedValue({ data: { data: [
+    { ...listResponse().data.data[0], id: 'pending-link', employeeName: 'Pending Link Person', status: 'PENDING' },
+    { ...listResponse().data.data[0], id: 'approved-link', employeeName: 'Approved Link Person', status: 'APPROVED' },
+  ] } });
+  myHrProfileChangeApi.listMine.mockResolvedValue({ data: { data: [] } });
+  myHrEmployeeApi.getMine.mockResolvedValue(ownProfileResponse());
+  render(<MemoryRouter initialEntries={['/myhr/hr/profile-change-requests?view=assigned&status=PENDING']}><ProfileChangeRequestsPage role={role} /></MemoryRouter>);
+  await screen.findByText(/Pending Link Person/);
+  expect(screen.getByLabelText('Status')).toHaveValue('PENDING');
+  expect(screen.queryByText(/Approved Link Person/)).not.toBeInTheDocument();
+  await userEvent.setup().selectOptions(screen.getByLabelText('Status'), 'ALL');
+  expect(await screen.findByText(/Approved Link Person/)).toBeInTheDocument();
 });

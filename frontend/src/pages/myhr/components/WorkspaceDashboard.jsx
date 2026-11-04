@@ -66,7 +66,7 @@ export default function WorkspaceDashboard({ role, name, basePath }) {
     ? `Oldest request: ${oldestAge === 0 ? 'today' : `${oldestAge} ${oldestAge === 1 ? 'day' : 'days'}`}.`
     : 'Requests waiting on your action.';
   const queues = [
-    { id: 'timesheets', title: 'Timesheets awaiting review', count: reviewCount, context: 'Submitted hours waiting for a decision.', to: basePath + '/timesheets?view=team&subtab=submissions&status=SUBMITTED', actionLabel: 'Review timesheets', priority: 1 },
+    { id: 'timesheets', title: 'Timesheets awaiting review', count: reviewCount, context: 'Submitted hours waiting for a decision.', to: basePath + '/timesheets?view=team&subtab=actions&status=SUBMITTED', actionLabel: 'Review timesheets', priority: 1 },
     { id: 'profiles', title: 'Profile change requests', count: profileCount, context: 'Employee information changes waiting for review.', to: basePath + '/profile-change-requests?view=assigned&status=PENDING', actionLabel: 'Review changes', priority: 2 },
     { id: 'documents', title: 'Document requests', count: data.documents?.value?.pending, context: documentContext, to: basePath + '/document-requests?view=action-required', actionLabel: 'Review requests', priority: 3 },
     ...(role === 'COMPANY_ADMIN' ? [{ id: 'approvals', title: 'Documents awaiting approval', count: data.approvals?.value?.pending, context: 'Prepared documents waiting for your approval.', to: '/myhr/admin/offer-letter-approvals?status=PENDING_APPROVAL', actionLabel: 'Review documents', priority: 3 }] : []),

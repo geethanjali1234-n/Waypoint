@@ -314,8 +314,16 @@ export default function ProfileChangeRequestsPage({ role, defaultHrView = null }
   // so HR alone gets a card menu to choose between them; COMPANY_ADMIN and
   // EMPLOYEE each have exactly one relevant section and skip straight to it.
   const [hrView, setHrView] = useState(defaultHrView || requestedView); // null | 'request' | 'assigned'
-  const [query, setQuery] = useState(''); const [status, setStatus] = useState('ALL'); const [requestType, setRequestType] = useState('ALL');
+  const requestedStatus = searchParams.get('status');
+  const [query, setQuery] = useState(''); const [status, setStatus] = useState(() => ['PENDING', 'APPROVED', 'REJECTED'].includes(requestedStatus) ? requestedStatus : 'ALL'); const [requestType, setRequestType] = useState('ALL');
   const [reviewPage, setReviewPage] = useState(1); const [historyPage, setHistoryPage] = useState(1);
+  useEffect(() => {
+    setStatus(['PENDING', 'APPROVED', 'REJECTED'].includes(requestedStatus) ? requestedStatus : 'ALL');
+    setReviewPage(1);
+  }, [requestedStatus]);
+  useEffect(() => {
+    if (isHr && requestedView === 'assigned') setHrView('assigned');
+  }, [isHr, requestedView]);
   const [showRequest, setShowRequest] = useState(false); const [submitted, setSubmitted] = useState(null); const [selected, setSelected] = useState(null); const [selectedIsOwn, setSelectedIsOwn] = useState(false); const [decision, setDecision] = useState(null); const [processingComment, setProcessingComment] = useState('');
   // True only when isReviewer (COMPANY_ADMIN, or HR) is actually reviewing
   // someone else's request - HR is also a requester, so isReviewer alone
