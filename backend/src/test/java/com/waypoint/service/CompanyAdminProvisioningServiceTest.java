@@ -76,4 +76,75 @@ class CompanyAdminProvisioningServiceTest {
         verify(passwordGenerator, never()).generate();
         verify(passwordEncoder, never()).encode(any());
     }
+
+    @Test
+    void initializesAnEmptyAdminEmailWithTheProvisionedAdminsEmail() {
+        Organization organization = Organization.builder().id("org-1").organizationCode("TD").build();
+        stubNewAdmin(organization);
+
+        service.provision(new CompanyAdminProvisioningRequest("org-1", " Admin@Tardus.test "));
+
+        assertThat(organization.getAdminEmail()).isEqualTo("admin@tardus.test");
+        verify(organizationRepository).save(organization);
+    }
+
+    @Test
+    void neverOverwritesAnExistingAdminEmail() {
+        Organization organization = Organization.builder().id("org-1").organizationCode("TD").adminEmail("kept@tardus.test").build();
+        stubNewAdmin(organization);
+
+        service.provision(new CompanyAdminProvisioningRequest("org-1", "admin@tardus.test"));
+
+        assertThat(organization.getAdminEmail()).isEqualTo("kept@tardus.test");
+        verify(organizationRepository, never()).save(any());
+    }
+
+    @Test
+    void aBlankAdminEmailCountsAsEmpty() {
+        Organization organization = Organization.builder().id("org-1").organizationCode("TD").adminEmail("   ").build();
+        stubNewAdmin(organization);
+
+        service.provision(new CompanyAdminProvisioningRequest("org-1", "admin@tardus.test"));
+
+        assertThat(organization.getAdminEmail()).isEqualTo("admin@tardus.test");
+    }
+
+    @Test
+    void anOrganizationSaveFailureDoesNotFailProvisioningOfTheAdmin() {
+        Organization organization = Organization.builder().id("org-1").organizationCode("TD").build();
+        stubNewAdmin(organization);
+        when(organizationRepository.save(any(Organization.class))).thenThrow(new IllegalStateException("mongo down"));
+
+        var result = service.provision(new CompanyAdminProvisioningRequest("org-1", "admin@tardus.test"));
+
+        assertThat(result.temporaryPassword()).isEqualTo("Temporary9!");
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void anExistingAdminIsReturnedWithoutTouchingTheOrganization() {
+        Organization organization = Organization.builder().id("org-1").organizationCode("TD").build();
+        User existing = User.builder().id("admin-1").loginId("TDADMIN").email("admin@tardus.test").role(UserRole.COMPANY_ADMIN)
+                .organizationId("org-1").passwordHash("existing-hash").mustChangePassword(false).build();
+        when(organizationRepository.findById("org-1")).thenReturn(Optional.of(organization));
+        when(employeeIdService.generateNextLoginId("org-1", UserRole.COMPANY_ADMIN)).thenReturn("TDADMIN");
+        when(userRepository.findByLoginId("TDADMIN")).thenReturn(Optional.of(existing));
+
+        service.provision(new CompanyAdminProvisioningRequest("org-1", "other@tardus.test"));
+
+        assertThat(organization.getAdminEmail()).isNull();
+        verify(organizationRepository, never()).save(any());
+    }
+
+    private void stubNewAdmin(Organization organization) {
+        when(organizationRepository.findById("org-1")).thenReturn(Optional.of(organization));
+        when(employeeIdService.generateNextLoginId("org-1", UserRole.COMPANY_ADMIN)).thenReturn("TDADMIN");
+        when(passwordGenerator.generate()).thenReturn("Temporary9!");
+        when(passwordEncoder.encode("Temporary9!")).thenReturn("bcrypt-hash");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId("admin-1");
+            return user;
+        });
+    }
 }
