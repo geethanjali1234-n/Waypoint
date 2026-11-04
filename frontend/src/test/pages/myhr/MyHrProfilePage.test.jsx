@@ -116,8 +116,9 @@ describe('MyHrProfilePage', () => {
     expect(screen.queryByText('Change password')).not.toBeInTheDocument();
   });
 
-  it('lets a Company Admin change the login email and refreshes the stored session', async () => {
-    authApi.changeEmail.mockResolvedValue({ data: { data: {
+  it('lets a Company Admin change the login email only after confirming a code, then refreshes the stored session', async () => {
+    authApi.requestEmailChange.mockResolvedValue({ data: { data: { newEmail: 'new.admin@example.com', expiresInSeconds: 600, resendAfterSeconds: 60 } } });
+    authApi.confirmEmailChange.mockResolvedValue({ data: { data: {
       userId: 'admin-1', email: 'new.admin@example.com', loginId: 'TDADMIN', role: 'COMPANY_ADMIN',
       accessToken: 'fresh-token', tokenType: 'Bearer', accountStatus: 'ACTIVE', isEmailVerified: true,
     } } });
@@ -130,12 +131,20 @@ describe('MyHrProfilePage', () => {
     await user.click(await screen.findByRole('button', { name: 'Change account email' }));
     await user.type(screen.getByLabelText(/New account email/), 'new.admin@example.com');
     await user.type(screen.getByLabelText(/Current password/), 'OldPassword1');
-    await user.click(screen.getByRole('button', { name: 'Save email' }));
+    await user.click(screen.getByRole('button', { name: 'Send verification code' }));
 
-    await waitFor(() => expect(authApi.changeEmail).toHaveBeenCalledWith({
+    await waitFor(() => expect(authApi.requestEmailChange).toHaveBeenCalledWith({
       newEmail: 'new.admin@example.com', currentPassword: 'OldPassword1',
     }));
-    expect(await screen.findByText('Account email updated.')).toBeInTheDocument();
+    // Nothing has changed yet: the old login is still shown and the session is untouched.
+    expect(localStorage.getItem('accessToken')).not.toBe('fresh-token');
+    expect(authApi.confirmEmailChange).not.toHaveBeenCalled();
+
+    await user.type(await screen.findByLabelText(/Verification code/), '123456');
+    await user.click(screen.getByRole('button', { name: 'Confirm email' }));
+
+    await waitFor(() => expect(authApi.confirmEmailChange).toHaveBeenCalledWith({ otp: '123456' }));
+    expect(await screen.findByText(/Account email updated/)).toBeInTheDocument();
     expect(localStorage.getItem('accessToken')).toBe('fresh-token');
     expect(screen.getAllByText('new.admin@example.com').length).toBeGreaterThanOrEqual(2);
   });

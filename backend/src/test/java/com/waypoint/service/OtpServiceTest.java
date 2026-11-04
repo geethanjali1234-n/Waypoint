@@ -421,6 +421,28 @@ class OtpServiceTest {
                 .build();
     }
 
+    @Test
+    void accountEmailChangeCodeGoesOnlyToTheNewAddressThroughThePlatformSenderAndIsNeverLogged() {
+        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+
+        otpService.sendAccountEmailChangeCode("new.admin@example.com", "424242");
+
+        verify(emailService).sendHtmlEmail(eq("new.admin@example.com"), eq("Confirm your new Waypoint login email"), body.capture());
+        assertThat(body.getValue()).contains("424242").contains("10 minutes");
+        verify(devOrganizationRegistrationOtpLogger, never()).output(any(), anyString(), any());
+        verify(otpVerificationRepository, never()).save(any(OtpVerification.class));
+    }
+
+    @Test
+    void accountEmailChangeCodeDeliveryFailureShowsOnlyTheGenericMessage() {
+        doThrow(new IllegalStateException("smtp auth failed for secret-user"))
+                .when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+
+        assertThatThrownBy(() -> otpService.sendAccountEmailChangeCode("new.admin@example.com", "424242"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Unable to send verification email. Please try again.");
+    }
+
     private String extractOtp(String htmlBody) {
         Matcher matcher = OTP_PATTERN.matcher(htmlBody);
         assertThat(matcher.find()).isTrue();

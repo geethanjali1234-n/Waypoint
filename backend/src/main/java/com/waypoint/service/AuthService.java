@@ -1,7 +1,6 @@
 package com.waypoint.service;
 
 import com.waypoint.dto.auth.ChangePasswordRequest;
-import com.waypoint.dto.auth.ChangeAccountEmailRequest;
 import com.waypoint.dto.auth.JobSeekerRegistrationRequest;
 import com.waypoint.dto.auth.JobSeekerRegistrationResponse;
 import com.waypoint.dto.auth.EmployerRegistrationRequest;
@@ -313,86 +312,6 @@ public class AuthService {
 
     public void changeFirstLoginPassword(String authenticatedUserId, ChangePasswordRequest request) {
         changePassword(authenticatedUserId, request, true);
-    }
-
-    /**
-     * Changes an active Company Admin's login email and keeps the organization signatory address in sync.
-     * The current password is required because the new address is intentionally not OTP-verified in this flow.
-     */
-    public LoginResponse changeCompanyAdminEmail(String authenticatedUserId, ChangeAccountEmailRequest request) {
-        User user = userRepository.findById(authenticatedUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        if (user.getRole() != UserRole.COMPANY_ADMIN || user.getAccountStatus() != AccountStatus.ACTIVE
-                || user.getOrganizationId() == null || user.getOrganizationId().isBlank()) {
-            throw new BusinessException("Only an active Company Admin can change this account email");
-        }
-        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
-            throw new BusinessException("Current password is incorrect");
-        }
-
-        String nextEmail = request.getNewEmail().trim().toLowerCase();
-        if (nextEmail.equalsIgnoreCase(user.getEmail())) {
-            throw new BusinessException("New email must be different from the current email");
-        }
-        if (userRepository.existsByEmail(nextEmail)) {
-            throw new BusinessException("Email already registered");
-        }
-
-        Organization organization = organizationRepository.findById(user.getOrganizationId())
-                .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
-        String previousEmail = user.getEmail();
-        String previousAdminEmail = organization.getAdminEmail();
-        LocalDateTime now = LocalDateTime.now();
-        organization.setAdminEmail(nextEmail);
-        organization.setUpdatedAt(now);
-        boolean userSaved = false;
-
-        try {
-            organizationRepository.save(organization);
-            user.setEmail(nextEmail);
-            user.setUpdatedAt(now);
-            userRepository.save(user);
-            userSaved = true;
-        } catch (RuntimeException failure) {
-            // Mongo writes are not transactional here. Restore the organization setting if the user save fails.
-            if (!userSaved) {
-                user.setEmail(previousEmail);
-                organization.setAdminEmail(previousAdminEmail);
-                organization.setUpdatedAt(LocalDateTime.now());
-                try {
-                    organizationRepository.save(organization);
-                } catch (RuntimeException ignored) {
-                    // The original persistence failure is more useful to the caller.
-                }
-            }
-            throw failure;
-        }
-
-        auditService.record(AuditEvent.builder()
-                .organizationId(user.getOrganizationId())
-                .actorUserId(user.getId())
-                .actorLoginId(user.getLoginId())
-                .actorRole(user.getRole())
-                .actionType(AuditActionType.ACCOUNT_EMAIL_CHANGED)
-                .entityType("USER")
-                .entityId(user.getId())
-                .entityDisplayName(user.getLoginId())
-                .description("Changed account email")
-                .source("MY_HR")
-                .build());
-
-        return LoginResponse.builder()
-                .userId(user.getId())
-                .email(user.getEmail())
-                .loginId(user.getLoginId())
-                .organizationId(user.getOrganizationId())
-                .role(user.getRole())
-                .accountStatus(user.getAccountStatus())
-                .isEmailVerified(user.getIsEmailVerified())
-                .mustChangePassword(user.getMustChangePassword())
-                .accessToken(jwtService.generateToken(user.getId(), user.getEmail(), user.getRole().name()))
-                .tokenType("Bearer")
-                .build();
     }
 
     private void changePassword(

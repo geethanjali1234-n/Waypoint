@@ -2,7 +2,9 @@ package com.waypoint.controller;
 
 import com.waypoint.common.ApiResponse;
 import com.waypoint.dto.auth.ChangePasswordRequest;
+import com.waypoint.dto.auth.AccountEmailChangeRequestedResponse;
 import com.waypoint.dto.auth.ChangeAccountEmailRequest;
+import com.waypoint.dto.auth.ConfirmAccountEmailChangeRequest;
 import com.waypoint.dto.auth.JobSeekerRegistrationRequest;
 import com.waypoint.dto.auth.JobSeekerRegistrationResponse;
 import com.waypoint.dto.auth.EmployerRegistrationRequest;
@@ -19,6 +21,7 @@ import com.waypoint.dto.auth.VerifyOtpRequest;
 import com.waypoint.dto.auth.VerifyOtpResponse;
 import com.waypoint.dto.auth.VerifyResetOtpRequest;
 import com.waypoint.security.CurrentUserResolver;
+import com.waypoint.service.AccountEmailChangeService;
 import com.waypoint.service.AuthService;
 import com.waypoint.service.OrganizationRegistrationService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,6 +46,7 @@ public class AuthController {
     private final AuthService authService;
     private final OrganizationRegistrationService organizationRegistrationService;
     private final CurrentUserResolver currentUserResolver;
+    private final AccountEmailChangeService accountEmailChangeService;
 
     @PostMapping("/register/employer")
     public ResponseEntity<ApiResponse<EmployerRegistrationResponse>> registerEmployer(
@@ -144,13 +148,33 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Password changed successfully", null));
     }
 
+    /**
+     * Retired. The login email used to change here immediately, without proving control of the new address. It now takes
+     * a request and a confirmation, below. This route must keep refusing so it can never bypass the verification.
+     */
     @PatchMapping("/change-email")
-    public ResponseEntity<ApiResponse<LoginResponse>> changeEmail(
+    public ResponseEntity<ApiResponse<Void>> changeEmailRetired() {
+        return ResponseEntity.status(HttpStatus.GONE).body(new ApiResponse<>(false,
+                "This way of changing the account email has been retired. Reload the page and use Change account email again.", null));
+    }
+
+    @PostMapping("/change-email/request")
+    public ResponseEntity<ApiResponse<AccountEmailChangeRequestedResponse>> requestEmailChange(
             HttpServletRequest request,
             @Valid @RequestBody ChangeAccountEmailRequest changeEmailRequest) {
 
         String userId = currentUserResolver.resolveUserId(request);
-        LoginResponse response = authService.changeCompanyAdminEmail(userId, changeEmailRequest);
+        AccountEmailChangeRequestedResponse response = accountEmailChangeService.requestChange(userId, changeEmailRequest);
+        return ResponseEntity.ok(new ApiResponse<>(true, "A verification code was sent to the new email address", response));
+    }
+
+    @PostMapping("/change-email/confirm")
+    public ResponseEntity<ApiResponse<LoginResponse>> confirmEmailChange(
+            HttpServletRequest request,
+            @Valid @RequestBody ConfirmAccountEmailChangeRequest confirmRequest) {
+
+        String userId = currentUserResolver.resolveUserId(request);
+        LoginResponse response = accountEmailChangeService.confirmChange(userId, confirmRequest);
         return ResponseEntity.ok(new ApiResponse<>(true, "Account email changed successfully", response));
     }
 

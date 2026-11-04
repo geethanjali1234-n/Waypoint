@@ -75,6 +75,28 @@ public class OtpService {
         return new GeneratedOtp(saved, otp);
     }
 
+    /**
+     * Sends the code that proves control of a proposed new login email. The code itself is created and stored by the
+     * caller (it is bound to a user, not to an email); this only delivers it through the platform sender. The code is
+     * never logged.
+     */
+    public void sendAccountEmailChangeCode(String newEmail, String code) {
+        try {
+            emailService.sendHtmlEmail(newEmail, "Confirm your new Waypoint login email", emailTemplateService.build(
+                    EmailTemplateData.builder()
+                            .preheader("Your Waypoint email change code")
+                            .title("Confirm your new login email")
+                            .message("Use the code below to confirm this address as your new Waypoint login email.")
+                            .highlightedCode(code)
+                            .secondaryInformation("This code expires in " + OTP_VALIDITY_MINUTES
+                                    + " minutes.\n\nIf you did not request this change, you can safely ignore this email.")
+                            .build()));
+        } catch (RuntimeException exception) {
+            logger.error("Failed to send account email change code", exception);
+            throw new BusinessException(MAIL_FAILURE_MESSAGE);
+        }
+    }
+
     public Optional<GeneratedOtp> generatePasswordResetOtpIfAllowed(String email) {
         LocalDateTime now = LocalDateTime.now();
         Optional<OtpVerification> previous = otpVerificationRepository

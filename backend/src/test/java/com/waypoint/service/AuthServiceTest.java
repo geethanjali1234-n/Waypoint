@@ -1,7 +1,6 @@
 package com.waypoint.service;
 
 import com.waypoint.dto.auth.ChangePasswordRequest;
-import com.waypoint.dto.auth.ChangeAccountEmailRequest;
 import com.waypoint.dto.auth.JobSeekerRegistrationRequest;
 import com.waypoint.dto.auth.JobSeekerRegistrationResponse;
 import com.waypoint.dto.auth.EmployerRegistrationRequest;
@@ -107,82 +106,6 @@ class AuthServiceTest {
         return request;
     }
 
-    private ChangeAccountEmailRequest emailRequest(String newEmail, String currentPassword) {
-        ChangeAccountEmailRequest request = new ChangeAccountEmailRequest();
-        request.setNewEmail(newEmail);
-        request.setCurrentPassword(currentPassword);
-        return request;
-    }
-
-    // ---- changeCompanyAdminEmail ----
-
-    @Test
-    void changeCompanyAdminEmail_updatesTheAccountOrganizationAndSession() {
-        User user = buildUser(UserRole.COMPANY_ADMIN);
-        user.setOrganizationId("org-1");
-        user.setLoginId("TARDUSADMIN");
-        Organization organization = Organization.builder().id("org-1").adminEmail("user@example.com").build();
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(OLD_PASSWORD, OLD_HASH)).thenReturn(true);
-        when(userRepository.existsByEmail("new.admin@example.com")).thenReturn(false);
-        when(organizationRepository.findById("org-1")).thenReturn(Optional.of(organization));
-        when(jwtService.generateToken(USER_ID, "new.admin@example.com", UserRole.COMPANY_ADMIN.name())).thenReturn("new-token");
-
-        LoginResponse result = authService.changeCompanyAdminEmail(USER_ID,
-                emailRequest(" New.Admin@Example.com ", OLD_PASSWORD));
-
-        assertThat(user.getEmail()).isEqualTo("new.admin@example.com");
-        assertThat(organization.getAdminEmail()).isEqualTo("new.admin@example.com");
-        assertThat(result.getAccessToken()).isEqualTo("new-token");
-        assertThat(result.getEmail()).isEqualTo("new.admin@example.com");
-        verify(userRepository).save(user);
-        verify(organizationRepository).save(organization);
-        verify(auditService).record(any(AuditEvent.class));
-    }
-
-    @Test
-    void changeCompanyAdminEmail_rejectsIncorrectPasswordWithoutSaving() {
-        User user = buildUser(UserRole.COMPANY_ADMIN);
-        user.setOrganizationId("org-1");
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("wrong", OLD_HASH)).thenReturn(false);
-
-        assertThatThrownBy(() -> authService.changeCompanyAdminEmail(USER_ID,
-                emailRequest("new.admin@example.com", "wrong")))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("Current password is incorrect");
-
-        verify(userRepository, never()).save(any());
-        verify(organizationRepository, never()).save(any());
-    }
-
-    @Test
-    void changeCompanyAdminEmail_rejectsNonCompanyAdminAndDuplicateOrUnchangedEmails() {
-        User employee = buildUser(UserRole.EMPLOYEE);
-        employee.setOrganizationId("org-1");
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(employee));
-
-        assertThatThrownBy(() -> authService.changeCompanyAdminEmail(USER_ID,
-                emailRequest("new.admin@example.com", OLD_PASSWORD)))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("Only an active Company Admin can change this account email");
-
-        User admin = buildUser(UserRole.COMPANY_ADMIN);
-        admin.setOrganizationId("org-1");
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(admin));
-        when(passwordEncoder.matches(OLD_PASSWORD, OLD_HASH)).thenReturn(true);
-        assertThatThrownBy(() -> authService.changeCompanyAdminEmail(USER_ID,
-                emailRequest("USER@example.com", OLD_PASSWORD)))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("New email must be different from the current email");
-
-        when(userRepository.existsByEmail("new.admin@example.com")).thenReturn(true);
-        assertThatThrownBy(() -> authService.changeCompanyAdminEmail(USER_ID,
-                emailRequest("new.admin@example.com", OLD_PASSWORD)))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("Email already registered");
-        verify(organizationRepository, never()).save(any());
-    }
 
     private EmployerRegistrationRequest employerRequest() {
         EmployerRegistrationRequest request = new EmployerRegistrationRequest();

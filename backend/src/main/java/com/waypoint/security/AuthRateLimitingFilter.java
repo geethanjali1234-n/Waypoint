@@ -71,6 +71,9 @@ public class AuthRateLimitingFilter implements Filter {
                 || uri.equals("/api/auth/reset-password")
                 // Public and may carry a logo upload, so bound it per client too.
                 || uri.equals("/api/auth/organization-registration")
+                // Authenticated, but each call sends mail or tests a code, so bound them per client too.
+                || uri.equals("/api/auth/change-email/request")
+                || uri.equals("/api/auth/change-email/confirm")
                 || uri.equals("/api/myhr/auth/login");
     }
 

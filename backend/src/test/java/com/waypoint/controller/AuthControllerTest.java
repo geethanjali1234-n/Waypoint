@@ -19,6 +19,7 @@ import com.waypoint.exception.BusinessException;
 import com.waypoint.exception.UnauthorizedException;
 import com.waypoint.security.CurrentUserResolver;
 import com.waypoint.security.JwtService;
+import com.waypoint.service.AccountEmailChangeService;
 import com.waypoint.service.AuthService;
 import com.waypoint.service.OrganizationRegistrationService;
 import tools.jackson.databind.ObjectMapper;
@@ -55,6 +56,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private OrganizationRegistrationService organizationRegistrationService;
+
+    @MockitoBean
+    private AccountEmailChangeService accountEmailChangeService;
 
     @MockitoBean
     private CurrentUserResolver currentUserResolver;
