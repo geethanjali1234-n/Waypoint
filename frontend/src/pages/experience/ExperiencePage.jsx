@@ -756,6 +756,8 @@ export default function ExperiencePage() {
           <div className="wp-exp-footer-links">
             <Link to="/login">Sign In</Link>
             <Link to="/myhr/employee/timesheets">Timesheets</Link>
+            <Link to="/privacy">Privacy Policy</Link>
+            <Link to="/terms">Terms of Service</Link>
           </div>
         </div>
       </footer>

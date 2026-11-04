@@ -8,6 +8,8 @@ import LoginPage from "../pages/auth/LoginPage";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
 import ExperiencePage from "../pages/experience/ExperiencePage";
+import PrivacyPolicyPage from "../pages/legal/PrivacyPolicyPage";
+import TermsOfServicePage from "../pages/legal/TermsOfServicePage";
 import MobileDownloadPage from "../pages/MobileDownloadPage";
 import EmployerLayout from "../pages/EmployerLayout";
 import EmployerDashboardPage from "../pages/EmployerDashboardPage";
@@ -508,6 +510,17 @@ const router = createBrowserRouter([
       { path: ":eventId/register", element: <EventRegisterPage /> },
     ],
   },
+  // Public legal pages: reachable without signing in (Google's OAuth consent screen links to them).
+  {
+    path: "/privacy",
+    element: <PrivacyPolicyPage />,
+  },
+  {
+    path: "/terms",
+    element: <TermsOfServicePage />,
+  },
+  { path: "/privacy-policy", element: <Navigate to="/privacy" replace /> },
+  { path: "/terms-of-service", element: <Navigate to="/terms" replace /> },
   {
     path: "*",
     element: <NotFoundPage />,

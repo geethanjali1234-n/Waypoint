@@ -269,4 +269,48 @@ describe('AppRouter', () => {
 
     expect(await screen.findByLabelText('Development area')).toBeInTheDocument();
   });
+
+  describe('public legal pages', () => {
+    it('serves the Privacy Policy at /privacy without any sign-in', async () => {
+      localStorage.clear();
+      navigateTo('/privacy');
+
+      render(<AppRouter />);
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Privacy Policy' })).toBeInTheDocument();
+      expect(screen.getByText('Connecting a Google account to send email', { selector: 'h2' })).toBeInTheDocument();
+      expect(window.location.pathname).toBe('/privacy');
+    });
+
+    it('serves the Terms of Service at /terms without any sign-in', async () => {
+      localStorage.clear();
+      navigateTo('/terms');
+
+      render(<AppRouter />);
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Terms of Service' })).toBeInTheDocument();
+      expect(window.location.pathname).toBe('/terms');
+    });
+
+    it.each([['/privacy-policy', 'Privacy Policy', '/privacy'], ['/terms-of-service', 'Terms of Service', '/terms']])(
+      'redirects the long address %s to the short one', async (from, heading, to) => {
+        localStorage.clear();
+        navigateTo(from);
+
+        render(<AppRouter />);
+
+        expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
+        expect(window.location.pathname).toBe(to);
+      });
+
+    it('links both pages from the public home page footer', async () => {
+      navigateTo('/');
+
+      render(<AppRouter />);
+
+      await screen.findByText('ENTERPRISE WORKFORCE ORCHESTRATION & COMPLIANCE');
+      expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy');
+      expect(screen.getByRole('link', { name: 'Terms of Service' })).toHaveAttribute('href', '/terms');
+    });
+  });
 });
