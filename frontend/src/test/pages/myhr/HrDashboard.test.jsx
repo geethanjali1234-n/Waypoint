@@ -70,12 +70,13 @@ it('requests the chosen payroll month and keeps the report links in that period'
   expect(screen.getByRole('link', { name: 'Open report' })).toHaveAttribute('href', '/myhr/hr/payroll-readiness?payrollMonth=2026-09');
 });
 
-it('filters the loaded people list without claiming an unavailable payroll run is complete', async () => {
-  const user = userEvent.setup();
-  show();
-  const table = await screen.findByRole('table', { name: 'Dashboard people' });
-  await within(table).findByText('Alex Rivera');
-  await user.type(screen.getByLabelText('Search people'), 'no match');
-  expect(within(table).getByText('No people match your search.')).toBeInTheDocument();
+it.each([['HR', '/myhr/hr'], ['COMPANY_ADMIN', '/myhr/admin']])('keeps the %s dashboard focused on work with an employee directory shortcut', async (role, basePath) => {
+  saveMyHrAuthentication('test-token', { userId: 'hr-1', role, loginId: 'HR001' });
+  render(<MemoryRouter><MyHrRoleLandingPage role={role} /></MemoryRouter>);
+  await screen.findByRole('progressbar', { name: 'Payroll ready' });
+  expect(screen.getByRole('link', { name: 'View employees' })).toHaveAttribute('href', basePath + '/employees');
+  expect(screen.queryByRole('table', { name: 'Dashboard people' })).not.toBeInTheDocument();
+  expect(screen.queryByLabelText('Search people')).not.toBeInTheDocument();
+  expect(myHrEmployeeApi.list).not.toHaveBeenCalled();
   expect(screen.getByText(/Payroll run status is not available/)).toBeInTheDocument();
 });

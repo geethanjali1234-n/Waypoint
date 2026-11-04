@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import myHrEmployeeApi from '../../../api/myHrEmployeeApi';
 import myHrProfileChangeApi from '../../../api/myHrProfileChangeApi';
 import timesheetApi from '../../../api/timesheetApi';
 import payrollReadinessApi from '../../../api/payrollReadinessApi';
 import myHrDocumentRequestApi from '../../../api/myHrDocumentRequestApi';
-import { Button, DataTable, NeedsYouList, PageHeader, RouteLine } from '../../../components';
+import { Button, NeedsYouList, PageHeader, RouteLine } from '../../../components';
 import { getMyHrSession } from '../../../auth/myHrSession';
 import './workspaceDashboard.css';
 
@@ -14,8 +13,6 @@ export default function WorkspaceDashboard({ role, name, basePath, approvalPanel
   const sessionUserId = getMyHrSession()?.userId;
   const isReviewableSubmission = (row) => row.status === 'SUBMITTED' && (role === 'COMPANY_ADMIN' || row.employeeUserId !== sessionUserId);
   const [data, setData] = useState({});
-  const [search, setSearch] = useState('');
-  const [peoplePage, setPeoplePage] = useState(1);
   const [month, setMonth] = useState(() => {
     const date = new Date();
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -29,7 +26,6 @@ export default function WorkspaceDashboard({ role, name, basePath, approvalPanel
       if (key === 'documents' ? typeof value?.pending !== 'number' : !Array.isArray(value)) throw new Error('Invalid response');
       if (active) setData((previous) => ({ ...previous, [key]: { value } }));
     }).catch(() => { if (active) setData((previous) => ({ ...previous, [key]: { error: true } })); });
-    load('employees', () => myHrEmployeeApi.list());
     load('profiles', () => myHrProfileChangeApi.listForAdmin());
     load('timesheets', () => timesheetApi.list());
     if (role === 'COMPANY_ADMIN' && !hasApprovalPanel) load('documents', () => myHrDocumentRequestApi.listOfferLetterApprovals());
@@ -46,9 +42,6 @@ export default function WorkspaceDashboard({ role, name, basePath, approvalPanel
       }).catch(() => { if (active) setData((previous) => ({ ...previous, payroll: { error: true } })); });
     return () => { active = false; };
   }, [role, month, refresh]);
-  const employees = data.employees?.value;
-  const visible = (employees || []).filter((employee) => [employee.name, employee.employeeId, employee.designation].filter(Boolean).join(' ').toLowerCase().includes(search.toLowerCase()));
-  const page = Math.min(peoplePage, Math.max(1, Math.ceil(visible.length / 5)));
   const summary = data.payroll?.value;
   const hasReadiness = ['totalEmployees', 'readyForPayroll', 'awaitingApproval'].every((key) => Number.isFinite(summary?.[key]) && summary[key] >= 0)
     && summary.readyForPayroll + summary.awaitingApproval <= summary.totalEmployees;
@@ -107,16 +100,6 @@ export default function WorkspaceDashboard({ role, name, basePath, approvalPanel
         <div className="workspace-dashboard__payroll-actions"><Link to={payrollPath}>Open report</Link><Link to={followupPath}>Review employees requiring follow-up</Link></div>
       </section>
     </div>
-    <section className="workspace-dashboard__people" aria-labelledby="dashboard-employees-title">
-      <div className="workspace-dashboard__people-heading"><div><h2 id="dashboard-employees-title">People</h2>{employees?.every((employee) => typeof employee.accountStatus === 'string') && <p>{employees.filter((employee) => employee.accountStatus === 'ACTIVE').length} active {employees.filter((employee) => employee.accountStatus === 'ACTIVE').length === 1 ? 'employee' : 'employees'}</p>}</div>
-        <label>Search people<input type="search" placeholder="Name, ID or job title" value={search} onChange={(event) => { setSearch(event.target.value); setPeoplePage(1); }} /></label>
-      </div>
-      {data.employees?.error ? <p role="status">{statusMessage('employees')}</p> : <DataTable label="Dashboard people" mobileMode="cards" loading={!data.employees} columns={[
-        { key: 'person', header: 'Person', type: 'person' }, { key: 'designation', header: 'Job title' }, { key: 'reportingManagerName', header: 'Manager' }, { key: 'accountStatus', header: 'Status', type: 'status' },
-      ]} rows={visible.slice((page - 1) * 5, page * 5).map((employee, index) => ({ ...employee, id: employee.userId || employee.employeeId || String((page - 1) * 5 + index), person: { name: employee.name || 'Name unavailable', id: employee.employeeId } }))}
-        pagination={employees ? { page, pageSize: 5, total: visible.length, onPageChange: setPeoplePage } : undefined}
-        emptyMessage={search ? 'No people match your search.' : 'No people to display.'} />}
-      <Link className="workspace-dashboard__text-link" to={basePath + '/employees'}>View all people</Link>
-    </section>
+    <Link className="workspace-dashboard__text-link" to={basePath + '/employees'}>View employees</Link>
   </div>;
 }

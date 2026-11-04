@@ -20,7 +20,6 @@
 .workspace-dashboard__payroll-actions { display:flex; flex-wrap:wrap; gap:8px; }
 .workspace-dashboard__payroll-actions a,.workspace-dashboard__text-link { display:inline-flex; align-items:center; min-height:44px; padding:8px 0; color:var(--wp-color-primary); font-size:.875rem; text-underline-offset:4px; }
 .workspace-dashboard__payroll-actions a:first-child { padding-inline:16px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); text-decoration:none; }
-.workspace-dashboard__people { min-width:0; padding:24px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card); background:var(--wp-color-surface); }
 .workspace-dashboard__payroll { border-top:3px solid var(--wp-color-primary); }
 .workspace-dashboard__attention .wp-needs-you__count { background:var(--wp-color-primary-soft); color:var(--wp-color-primary); border-radius:var(--wp-radius-control); }
 .workspace-dashboard__attention .wp-needs-you li { padding-block:20px; }
@@ -28,14 +27,9 @@
 .workspace-dashboard__approvals .offer-approval-card__icon { display:grid; place-items:center; flex:0 0 44px; min-height:44px; background:var(--wp-color-primary-soft); color:var(--wp-color-primary); border-radius:var(--wp-radius-control); }
 .workspace-dashboard__approvals .offer-approval-card p { color:var(--wp-color-text-muted); font-size:.875rem; line-height:1.6; }
 .workspace-dashboard__approvals .offer-approval-card__badge { padding:4px 10px; background:var(--wp-color-primary-soft); color:var(--wp-color-primary); }
-.workspace-dashboard__people-heading { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:16px; }
-.workspace-dashboard__people-heading h2 { margin-bottom:4px; }
-.workspace-dashboard__people-heading p { margin:0; font-size:.875rem; color:var(--wp-color-text-muted); }
-.workspace-dashboard__people-heading label { display:grid; gap:8px; color:var(--wp-color-text-muted); font-size:.875rem; }
-.workspace-dashboard__people-heading input { min-height:44px; width:100%; }
 .workspace-dashboard :is(a,button,input):focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
 @media(max-width:1100px) { .workspace-dashboard__columns { grid-template-columns:minmax(0,1fr); gap:24px; } }
-@media(max-width:600px) { .workspace-dashboard__card,.workspace-dashboard__people { padding:16px; } .workspace-dashboard__people-heading label { width:100%; } .workspace-dashboard > .wp-page-header { padding-top:8px; } }
+@media(max-width:600px) { .workspace-dashboard__card { padding:16px; } .workspace-dashboard > .wp-page-header { padding-top:8px; } }
 @media(max-width:600px) {
   .workspace-dashboard__approvals .offer-approval-card { padding:16px; }
   .workspace-dashboard__attention .wp-needs-you li { display:grid; grid-template-columns:44px minmax(0,1fr); gap:12px 16px; }
