@@ -53,8 +53,11 @@ export default function DocumentRequestsPage({ role }) {
   // HR "My requests": the requests this HR made - either the ones for themselves or the ones they sent to employees.
   const myRequestsView = activeWorkspace === 'requested';
   const [myRequestsScope, setMyRequestsScope] = useState('SELF');
+  // HR/Admin "Needs action" (the dashboard's "Review requests"): only the requests waiting on this user to act.
+  const actionRequiredView = role !== 'EMPLOYEE' && requestedWorkspace === 'action-required';
   // Without a view, HR lands on the requests they received (assigned to them to fulfil).
   const listWorkspace = myRequestsView ? MY_REQUESTS_SCOPES.find((scope) => scope.value === myRequestsScope).workspace
+    : actionRequiredView ? 'action-required'
     : activeWorkspace || (role === 'HR' ? 'received' : null);
   const [items, setItems] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -324,10 +327,15 @@ export default function DocumentRequestsPage({ role }) {
   const priorityDropdown = <Dropdown name="documentRequestPriority" label="Priority" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} options={[{ value: 'ALL', label: 'All' }, { value: 'NORMAL', label: 'Normal' }, { value: 'HIGH', label: 'High' }, { value: 'URGENT', label: 'Urgent' }]} />;
   const categoryDropdown = <Dropdown name="documentRequestCategory" label="Category" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} options={[{ value: 'ALL', label: 'All' }, ...DOCUMENT_CATEGORY_OPTIONS]} />;
   const clearButton = <Button type="button" variant="secondary" className="document-requests__clear" onClick={clearFilters} disabled={!filtersActive}>Clear filters</Button>;
-  // HR: the requests they received (default) or the requests they made.
-  const hrRequestsSwitch = role === 'HR' && <div className="document-requests__view-toggle document-requests__my-requests" role="group" aria-label="Requests to show">
-    {[{ label: 'Received requests', active: !myRequestsView, path: `${base}/document-requests` },
-      { label: 'My requests', active: myRequestsView, path: `${base}/document-requests?view=requested` }].map((tab) => (
+  // HR: the requests waiting on them, the requests they received (default) or the requests they made.
+  // Company Admin: the requests waiting on them or every request.
+  const needsActionTab = { label: 'Needs action', active: actionRequiredView, path: `${base}/document-requests?view=action-required` };
+  const requestsTabs = role === 'HR' ? [needsActionTab,
+    { label: 'Received requests', active: !myRequestsView && !actionRequiredView, path: `${base}/document-requests` },
+    { label: 'My requests', active: myRequestsView, path: `${base}/document-requests?view=requested` }]
+    : role === 'COMPANY_ADMIN' ? [needsActionTab, { label: 'All requests', active: !actionRequiredView, path: `${base}/document-requests` }] : [];
+  const requestsSwitch = requestsTabs.length > 0 && <div className="document-requests__view-toggle document-requests__my-requests" role="group" aria-label="Requests to show">
+    {requestsTabs.map((tab) => (
       <button key={tab.label} type="button" className={`document-requests__view-toggle-btn ${tab.active ? 'is-active' : ''}`}
         aria-pressed={tab.active} onClick={() => { if (!tab.active) navigate(tab.path); }}>{tab.label}</button>
     ))}
@@ -349,6 +357,7 @@ export default function DocumentRequestsPage({ role }) {
     title={myRequestsView ? 'My Requests' : 'Document Requests'}
     description={myRequestsView
       ? 'Track the documents you requested for yourself and the documents you requested from your employees.'
+      : actionRequiredView ? (role === 'HR' ? 'Document requests waiting on your action: prepare, review, correct, or send them here.' : 'Document requests waiting on your action: prepare or review them here.')
       : role === 'HR' && !activeWorkspace ? 'Document requests you received. Fulfill or reject them here.'
       : 'Request, track, fulfill, and reject employee document requests.'}
     fullWidth
@@ -365,7 +374,7 @@ export default function DocumentRequestsPage({ role }) {
           {mobileActions.map((action) => <Button key={action.label} variant={action.secondary ? 'secondary' : undefined} onClick={() => navigate(action.path)}>{action.label}</Button>)}
         </div>
       </section>}
-      {hrRequestsSwitch}
+      {requestsSwitch}
       <div className="document-requests-mobile__filters">
         {searchField}
         <div className="document-requests-mobile__quick">
@@ -412,7 +421,7 @@ export default function DocumentRequestsPage({ role }) {
             <StrokeIcon name="cards" size={18} />
           </button>
         </div>
-        {hrRequestsSwitch}
+        {requestsSwitch}
         <div className="document-requests__actions">
           {role === 'COMPANY_ADMIN' && <Button variant="secondary" onClick={() => navigate('/myhr/admin/offer-letter-approvals')}>Document Approvals</Button>}
           {role === 'HR' && (

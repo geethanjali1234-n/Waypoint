@@ -64,11 +64,11 @@ export default function WorkspaceDashboard({ role, name, basePath }) {
   const oldestAge = oldestKey ? Math.floor((Date.parse(todayKey) - Date.parse(oldestKey)) / 86400000) : null;
   const documentContext = Number.isFinite(oldestAge) && oldestAge >= 0
     ? `Oldest request: ${oldestAge === 0 ? 'today' : `${oldestAge} ${oldestAge === 1 ? 'day' : 'days'}`}.`
-    : 'Requests awaiting document preparation.';
+    : 'Requests waiting on your action.';
   const queues = [
     { id: 'timesheets', title: 'Timesheets awaiting review', count: reviewCount, context: 'Submitted hours waiting for a decision.', to: basePath + '/timesheets?view=team&subtab=submissions&status=SUBMITTED', actionLabel: 'Review timesheets', priority: 1 },
     { id: 'profiles', title: 'Profile change requests', count: profileCount, context: 'Employee information changes waiting for review.', to: basePath + '/profile-change-requests?view=assigned&status=PENDING', actionLabel: 'Review changes', priority: 2 },
-    { id: 'documents', title: 'Document requests', count: data.documents?.value?.pending, context: documentContext, to: basePath + '/document-requests', actionLabel: 'Review requests', priority: 3 },
+    { id: 'documents', title: 'Document requests', count: data.documents?.value?.pending, context: documentContext, to: basePath + '/document-requests?view=action-required', actionLabel: 'Review requests', priority: 3 },
     ...(role === 'COMPANY_ADMIN' ? [{ id: 'approvals', title: 'Documents awaiting approval', count: data.approvals?.value?.pending, context: 'Prepared documents waiting for your approval.', to: '/myhr/admin/offer-letter-approvals?status=PENDING_APPROVAL', actionLabel: 'Review documents', priority: 3 }] : []),
     { id: 'payroll', title: 'Payroll follow-ups', count: followup, context: 'Missing submissions and corrections for the selected payroll month.', to: followupPath, actionLabel: 'Review follow-ups', priority: urgentPayroll ? 0 : 4 },
   ];

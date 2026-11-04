@@ -97,7 +97,7 @@ it('shows the document count and oldest age, keeping cleared queues visible', as
   show();
   const documents = (await screen.findByText('Oldest request: 4 days.')).closest('li');
   expect(documents).toHaveTextContent('3');
-  expect(within(documents).getByRole('link', { name: 'Review requests' })).toHaveAttribute('href', '/myhr/hr/document-requests');
+  expect(within(documents).getByRole('link', { name: 'Review requests' })).toHaveAttribute('href', '/myhr/hr/document-requests?view=action-required');
   for (const title of ['Timesheets awaiting review', 'Profile change requests']) {
     expect(screen.getByText(title).closest('li')).toHaveTextContent('All clear');
   }

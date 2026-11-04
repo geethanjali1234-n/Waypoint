@@ -119,6 +119,9 @@ public class DocumentRequestService {
             // "My requests > From employees": only the documents this HR asked their employees to provide.
             constraints.add(Criteria.where("requestedByUserId").is(actor.userId()));
             constraints.add(Criteria.where("requestDirection").is("TO_EMPLOYEE"));
+        } else if ("action-required".equals(workspace) && actor.role() != UserRole.EMPLOYEE) {
+            // The dashboard's "Review requests": exactly the requests dashboardSummary counts.
+            constraints.add(actionRequiredCriteria(actor));
         }
         if (status != null && !status.isBlank() && !"ALL".equals(status)) {
             if ("AWAITING_SIGNATURE".equals(status)) {
@@ -164,14 +167,29 @@ public class DocumentRequestService {
         return constraints;
     }
 
-    /** Counts only requests awaiting preparation, never employee uploads or Admin approvals. */
+    /**
+     * Requests waiting on this HR or Company Admin to act. Both: requests awaiting preparation and Signed I-983s
+     * awaiting review. HR also: documents the Admin returned for correction or approved but HR has not sent yet.
+     * Never employee uploads, I-983s returned to the employee, or the Admin's approval inbox (its own dashboard queue).
+     */
+    private Criteria actionRequiredCriteria(MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor) {
+        Criteria preparation = new Criteria().andOperator(Criteria.where("status").is(DocumentRequestStatus.PENDING),
+                Criteria.where("requestDirection").is("TO_MANAGER"));
+        Criteria i983Review = new Criteria().andOperator(Criteria.where("documentType").is(RequestedDocumentType.I983),
+                Criteria.where("status").is(DocumentRequestStatus.SUBMITTED));
+        if (actor.role() == UserRole.COMPANY_ADMIN) return new Criteria().orOperator(preparation, i983Review);
+        Criteria approvalFollowUp = new Criteria().andOperator(Criteria.where("documentType").ne(RequestedDocumentType.I983),
+                Criteria.where("status").in(DocumentRequestStatus.RETURNED_FOR_CORRECTION, DocumentRequestStatus.APPROVED));
+        return new Criteria().andOperator(Criteria.where("requestedForUserId").is(actor.userId()),
+                new Criteria().orOperator(preparation, i983Review, approvalFollowUp));
+    }
+
+    /** Counts the requests waiting on this HR or Company Admin to act (see actionRequiredCriteria). */
     public DocumentRequestDashboardSummary dashboardSummary(String actorUserId) {
         var actor = authenticatedUserService.require(actorUserId, MANAGER_ROLES, false);
         List<Criteria> constraints = visibilityConstraints(actor);
         constraints.add(Criteria.where("organizationId").is(actor.organizationId()));
-        constraints.add(Criteria.where("status").is(DocumentRequestStatus.PENDING));
-        constraints.add(Criteria.where("requestDirection").is("TO_MANAGER"));
-        if (actor.role() == UserRole.HR) constraints.add(Criteria.where("requestedForUserId").is(actor.userId()));
+        constraints.add(actionRequiredCriteria(actor));
         Criteria criteria = new Criteria().andOperator(constraints.toArray(Criteria[]::new));
         long pending = mongoTemplate.count(new Query(criteria), DocumentRequest.class);
         // Missing dates must not turn into an invented age. Fetch only the oldest known timestamp.
