@@ -20,6 +20,7 @@ import { getMyHrHomePath, getMyHrSession } from '../../../../auth/myHrSession';
 import { formatDateOnly, formatDateTime as formatDateTimeShared } from '../../../../utils/dateFormat';
 import MyHrFeaturePage from '../MyHrFeaturePage';
 import MyHrPagination from '../MyHrPagination';
+import { requiresTimesheetChangeReason } from './timesheetChangeReason';
 import './timesheets.css';
 import './timesheetsMobile.css';
 import './dateRangePicker.css';
@@ -755,6 +756,7 @@ export default function TimesheetsPage({ role }) {
   const [rangeEntries, setRangeEntries] = useState([]);
   const [reeditModalRecord, setReeditModalRecord] = useState(null);
   const [reeditSubmitted, setReeditSubmitted] = useState(false);
+  const [approvedCorrectionId, setApprovedCorrectionId] = useState(null);
   const [changeReason, setChangeReason] = useState('');
   const [rejectionFeedback, setRejectionFeedback] = useState('');
   const [, setConfirmReedit] = useState(false);
@@ -1027,6 +1029,7 @@ export default function TimesheetsPage({ role }) {
     setRangeEntries([]);
     setEntryStep('source');
     setReeditSubmitted(false);
+    setApprovedCorrectionId(null);
     setConfirmReedit(false);
     setChangeReason('');
     setRejectionFeedback('');
@@ -1041,6 +1044,7 @@ export default function TimesheetsPage({ role }) {
 
   function beginResubmitRejected(record) {
     if (!record) return;
+    setApprovedCorrectionId(null);
     setImportedEntries(null);
     setRangeStart(record.periodStartDate);
     setRangeEnd(record.periodEndDate);
@@ -1308,17 +1312,17 @@ export default function TimesheetsPage({ role }) {
       date,
       importedMap[date]?.hoursWorked != null
         ? String(importedMap[date].hoursWorked)
-        : (rangeHours[date] ?? existingEntriesMap[date]?.hoursWorked ?? '')
+        : ((isReedit ? existingEntriesMap[date]?.hoursWorked : rangeHours[date] ?? existingEntriesMap[date]?.hoursWorked) ?? '')
     ])));
     setRangeDescriptions(Object.fromEntries(dates.map((date) => [
       date,
       importedMap[date]?.description != null && importedMap[date]?.description !== ''
         ? importedMap[date].description
-        : (rangeDescriptions[date] ?? existingEntriesMap[date]?.description ?? '')
+        : ((isReedit ? existingEntriesMap[date]?.description : rangeDescriptions[date] ?? existingEntriesMap[date]?.description) ?? '')
     ])));
     setRangeEntryTypes(Object.fromEntries(dates.map((date) => [
       date,
-      normalizeEntryType(importedMap[date]?.entryType || rangeEntryTypes[date] || existingEntriesMap[date]?.entryType)
+      normalizeEntryType(isReedit ? existingEntriesMap[date]?.entryType : importedMap[date]?.entryType || rangeEntryTypes[date] || existingEntriesMap[date]?.entryType)
     ])));
     if (!uploaded?.length && targetRecord?.supportingDocuments?.length) {
       setSupportingDocuments(targetRecord.supportingDocuments);
@@ -1329,6 +1333,7 @@ export default function TimesheetsPage({ role }) {
       setChangeReason(targetRecord?.changeReason || '');
     } else {
       setReeditSubmitted(false);
+    setApprovedCorrectionId(null);
       setConfirmReedit(false);
       setChangeReason('');
     }
@@ -1347,6 +1352,14 @@ export default function TimesheetsPage({ role }) {
     if (dates.length > 31) { setOperationError('Choose a date range of 31 days or fewer.'); return; }
 
     const targetRecord = findConflictingRecord(ownRecords, s, e);
+    const approved = ownRecords.find((record) => record.status === 'APPROVED'
+      && (record.entries || []).some((entry) => dates.includes(entry.workDate)));
+    if (approved) {
+      setOperationError('');
+      setReeditModalRecord(approved);
+      return;
+    }
+
 
     // Map existing entries across non-draft filed records (SUBMITTED, REJECTED, APPROVED)
     const filedEntriesMap = {};
@@ -1393,9 +1406,20 @@ export default function TimesheetsPage({ role }) {
 
   function handleConfirmReedit() {
     if (!reeditModalRecord) return;
-    const dates = daysBetween(rangeStart, rangeEnd);
+    const approved = reeditModalRecord.status === 'APPROVED';
+    const start = approved ? reeditModalRecord.periodStartDate : rangeStart;
+    const end = approved ? reeditModalRecord.periodEndDate : rangeEnd;
+    const dates = daysBetween(start, end);
+    if (approved) {
+      setRangeStart(start);
+      setRangeEnd(end);
+      setImportedEntries(null);
+      setSupportingDocuments(reeditModalRecord.supportingDocuments || []);
+    }
+    setApprovedCorrectionId(approved ? reeditModalRecord.id : null);
     goToMode('enter');
-    proceedToHours(reeditModalRecord, dates, true);
+    proceedToHours(reeditModalRecord, dates, true, approved ? [] : importedEntries);
+    if (approved) setChangeReason('');
     setReeditModalRecord(null);
   }
 
@@ -1438,16 +1462,19 @@ setRangeEntryTypes({});
 
   async function persistRange(status) {
     if (!rangeEntries.length) { setOperationError('Add at least one hour, a non-work entry type, or a note for a day with zero hours before saving or submitting.'); return; }
-    const existing = findConflictingRecord(ownRecords, rangeStart, rangeEnd);
-
-    // Does this submission re-cover days that already have recorded hours on a filed
-    // (non-draft) timesheet? Only then is it a "correction" that needs a reason.
     const submittedDates = new Set(rangeEntries.map((entry) => entry.workDate));
-    const overridesFiledHours = Boolean(existing)
-      && existing.status !== 'DRAFT'
-      && (existing.entries || []).some(
-        (entry) => submittedDates.has(entry.workDate) && Number(entry.hoursWorked || 0) > 0,
-      );
+    const approved = ownRecords.find((record) => record.status === 'APPROVED'
+      && (record.entries || []).some((entry) => submittedDates.has(entry.workDate)));
+    if (approved && (!reeditSubmitted || approvedCorrectionId !== approved.id)) {
+      setOperationError('Approved hours are read-only. Use Request correction to change them.');
+      setReeditModalRecord(approved);
+      return;
+    }
+    if (approved && status !== 'SUBMITTED') {
+      setOperationError('Submit this correction for HR review. Approved hours cannot be saved as a draft.');
+      return;
+    }
+    const existing = approved || findConflictingRecord(ownRecords, rangeStart, rangeEnd);
 
     // Update a record in place only for an in-progress draft or an explicit correction
     // the user opted into (the re-edit / resubmit flow, which sets reeditSubmitted). A
@@ -1458,8 +1485,8 @@ setRangeEntryTypes({});
       && !existing.id.startsWith('prototype-') && !existing.id.startsWith('period-')
       && (existing.status === 'DRAFT' || (reeditSubmitted && existing.status !== 'REJECTED'));
 
-    const needsChangeReason = reeditSubmitted || overridesFiledHours;
-    if (needsChangeReason && !changeReason.trim() && !existing?.changeReason) {
+    const needsChangeReason = requiresTimesheetChangeReason(existing, rangeEntries, reeditSubmitted);
+    if (needsChangeReason && !changeReason.trim() && (approved || !existing?.changeReason)) {
       setOperationError('A reason for change is required when modifying hours you already submitted.');
       return;
     }
@@ -1474,7 +1501,7 @@ setRangeEntryTypes({});
       return;
     }
 
-    const resolvedChangeReason = (changeReason || existing?.changeReason || '').trim();
+    const resolvedChangeReason = (changeReason || (!approved && existing?.changeReason) || '').trim();
     const payload = {
       periodStartDate: rangeStart,
       periodEndDate: rangeEnd,
@@ -1504,6 +1531,7 @@ entries: rangeEntries.map((entry) => ({ workDate: entry.workDate, hoursWorked: N
         goToMode('landing');
       }
       setReeditSubmitted(false);
+    setApprovedCorrectionId(null);
       setConfirmReedit(false);
     } catch (error) {
       setOperationError(errorMessage(error));
@@ -1639,6 +1667,8 @@ entries: rangeEntries.map((entry) => ({ workDate: entry.workDate, hoursWorked: N
       onDownloadPdf={(record) => downloadTimesheetPdf(record, setOperationError)}
       onDownloadPeriodPdf={(start, end) => downloadPeriodPdf(start, end, setOperationError)}
       reeditSubmitted={reeditSubmitted}
+      approvedCorrection={reeditSubmitted && Boolean(approvedCorrectionId)}
+      requiresChangeReason={requiresTimesheetChangeReason(findConflictingRecord(ownRecords, rangeStart, rangeEnd), rangeEntries, reeditSubmitted)}
       changeReason={changeReason}
       setChangeReason={setChangeReason}
       onReeditSubmitted={beginReeditSubmitted}
@@ -1670,7 +1700,7 @@ entries: rangeEntries.map((entry) => ({ workDate: entry.workDate, hoursWorked: N
   </MyHrFeaturePage>;
 }
 
-function EmployeeWorkspace({ loading, mode, setMode, today, records, draftRecord, history, entryStep, setEntryStep, rangeStart, setRangeStart, rangeEnd, setRangeEnd, rangeHours, setRangeHours, rangeDescriptions, setRangeDescriptions, rangeEntryTypes, setRangeEntryTypes, rangeEntries, supportingDocuments, uploadingDocument, ocrProgress, documentError, onImportDocument, dateOrder, setDateOrder, onUploadSupportingDocument, onRemoveSupportingDocument, saving, role, onBegin, onBack, onViewHours, onContinue, onReview, onSave, onSubmit, onView, onDownloadPdf, onDownloadPeriodPdf, reeditSubmitted, changeReason, setChangeReason, payrollPeriod, submittedRecord, onViewHistory, rejectionFeedback, onResubmit, managerDisplayName }) {
+function EmployeeWorkspace({ loading, mode, setMode, today, records, draftRecord, history, entryStep, setEntryStep, rangeStart, setRangeStart, rangeEnd, setRangeEnd, rangeHours, setRangeHours, rangeDescriptions, setRangeDescriptions, rangeEntryTypes, setRangeEntryTypes, rangeEntries, supportingDocuments, uploadingDocument, ocrProgress, documentError, onImportDocument, dateOrder, setDateOrder, onUploadSupportingDocument, onRemoveSupportingDocument, saving, role, onBegin, onBack, onViewHours, onContinue, onReview, onSave, onSubmit, onView, onDownloadPdf, onDownloadPeriodPdf, onReeditSubmitted, reeditSubmitted, approvedCorrection, requiresChangeReason, changeReason, setChangeReason, payrollPeriod, submittedRecord, onViewHistory, rejectionFeedback, onResubmit, managerDisplayName }) {
   const reviewTotal = rangeEntries.reduce((sum, entry) => sum + Number(entry.hoursWorked || 0), 0);
   if (mode === 'landing') {
     const recentHours = (history || []).length > 0 ? (history[0].totalHours || 0) : 0;
@@ -1699,7 +1729,7 @@ function EmployeeWorkspace({ loading, mode, setMode, today, records, draftRecord
     );
   }
   if (mode === 'history') return <HistoryWorkspace history={history} draftRecord={draftRecord} payrollPeriod={payrollPeriod} onView={onView} onDownloadPdf={onDownloadPdf} onDownloadPeriodPdf={onDownloadPeriodPdf} onResubmit={onResubmit} />;
-  if (mode === 'enter' || mode === 'entry') return <EntryWorkspace step={entryStep} setStep={setEntryStep} today={today} rangeStart={rangeStart} setRangeStart={setRangeStart} rangeEnd={rangeEnd} setRangeEnd={setRangeEnd} rangeDays={daysBetween(rangeStart, rangeEnd)} rangeHours={rangeHours} setRangeHours={setRangeHours} rangeDescriptions={rangeDescriptions} setRangeDescriptions={setRangeDescriptions} rangeEntryTypes={rangeEntryTypes} setRangeEntryTypes={setRangeEntryTypes} rangeEntries={rangeEntries} reviewTotal={reviewTotal} supportingDocuments={supportingDocuments} supportingDocument={supportingDocuments?.[0]} uploadingDocument={uploadingDocument} ocrProgress={ocrProgress} documentError={documentError} onImportDocument={onImportDocument} dateOrder={dateOrder} setDateOrder={setDateOrder} onUploadSupportingDocument={onUploadSupportingDocument} onRemoveSupportingDocument={onRemoveSupportingDocument} saving={saving} role={role} onBack={onBack} onContinue={onContinue} onReview={onReview} onSave={onSave} onSubmit={onSubmit} reeditSubmitted={reeditSubmitted} changeReason={changeReason} setChangeReason={setChangeReason} submittedRecord={submittedRecord} onViewHistory={onViewHistory} onDownloadPdf={onDownloadPdf} rejectionFeedback={rejectionFeedback} managerDisplayName={managerDisplayName} />;
+  if (mode === 'enter' || mode === 'entry') return <EntryWorkspace approvedRecords={records.filter((record) => record.status === 'APPROVED')} onRequestCorrection={onReeditSubmitted} step={entryStep} setStep={setEntryStep} today={today} rangeStart={rangeStart} setRangeStart={setRangeStart} rangeEnd={rangeEnd} setRangeEnd={setRangeEnd} rangeDays={daysBetween(rangeStart, rangeEnd)} rangeHours={rangeHours} setRangeHours={setRangeHours} rangeDescriptions={rangeDescriptions} setRangeDescriptions={setRangeDescriptions} rangeEntryTypes={rangeEntryTypes} setRangeEntryTypes={setRangeEntryTypes} rangeEntries={rangeEntries} reviewTotal={reviewTotal} supportingDocuments={supportingDocuments} supportingDocument={supportingDocuments?.[0]} uploadingDocument={uploadingDocument} ocrProgress={ocrProgress} documentError={documentError} onImportDocument={onImportDocument} dateOrder={dateOrder} setDateOrder={setDateOrder} onUploadSupportingDocument={onUploadSupportingDocument} onRemoveSupportingDocument={onRemoveSupportingDocument} saving={saving} role={role} onBack={onBack} onContinue={onContinue} onReview={onReview} onSave={onSave} onSubmit={onSubmit} reeditSubmitted={reeditSubmitted} approvedCorrection={approvedCorrection} requiresChangeReason={requiresChangeReason} changeReason={changeReason} setChangeReason={setChangeReason} submittedRecord={submittedRecord} onViewHistory={onViewHistory} onDownloadPdf={onDownloadPdf} rejectionFeedback={rejectionFeedback} managerDisplayName={managerDisplayName} />;
   return <HoursWorkspace loading={loading} records={records} today={today} />;
 }
 
@@ -2013,7 +2043,7 @@ function PeriodStatusCalendar({ cadence, consolidated, cells, monthLabel, captio
   );
 }
 
-function EntryWorkspace({ step, setStep, today, rangeStart, setRangeStart, rangeEnd, setRangeEnd, rangeDays, rangeHours, setRangeHours, rangeDescriptions, setRangeDescriptions, rangeEntryTypes, setRangeEntryTypes, rangeEntries, reviewTotal, supportingDocuments, supportingDocument, uploadingDocument, ocrProgress, documentError, onImportDocument, dateOrder, setDateOrder, onUploadSupportingDocument, onRemoveSupportingDocument, saving, onBack, onContinue, onReview, onSave, onSubmit, reeditSubmitted, changeReason, setChangeReason, submittedRecord, onViewHistory, onDownloadPdf, rejectionFeedback, managerDisplayName }) {
+export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step, setStep, today, rangeStart, setRangeStart, rangeEnd, setRangeEnd, rangeDays, rangeHours, setRangeHours, rangeDescriptions, setRangeDescriptions, rangeEntryTypes, setRangeEntryTypes, rangeEntries, reviewTotal, supportingDocuments, supportingDocument, uploadingDocument, ocrProgress, documentError, onImportDocument, dateOrder, setDateOrder, onUploadSupportingDocument, onRemoveSupportingDocument, saving, onBack, onContinue, onReview, onSave, onSubmit, reeditSubmitted, approvedCorrection, requiresChangeReason, changeReason, setChangeReason, submittedRecord, onViewHistory, onDownloadPdf, rejectionFeedback, managerDisplayName }) {
   const currentTotalHours = useMemo(() => {
     return (rangeDays || []).reduce((acc, date) => {
       const val = parseFloat(rangeHours[date]);
@@ -2045,6 +2075,19 @@ function EntryWorkspace({ step, setStep, today, rangeStart, setRangeStart, range
       return next;
     });
   };
+  const lockedRecord = !approvedCorrection && approvedRecords.find((record) =>
+    (record.entries || []).some((entry) => rangeDays.includes(entry.workDate)));
+  if (lockedRecord && ['hours', 'review'].includes(step)) return (
+    <section className="timesheets__flow-panel" aria-label="Approved timesheet ? read-only">
+      <h2>Already approved</h2>
+      <p>These hours have been approved by HR and are read-only. Choose other dates for a new submission, or request a correction for this approved timesheet.</p>
+      <EntryList entries={lockedRecord.entries || []} />
+      <div className="timesheets__flow-actions">
+        <Button variant="secondary" onClick={() => setStep('dates')}>Choose other dates</Button>
+        <Button onClick={() => onRequestCorrection(lockedRecord)}>Request correction</Button>
+      </div>
+    </section>
+  );
   if (step === 'source') return (
     <section className="timesheets__flow-panel timesheets__source" aria-label="Choose timesheet entry method">
       <div className="timesheets__flow-header">
@@ -2447,13 +2490,17 @@ function EntryWorkspace({ step, setStep, today, rangeStart, setRangeStart, range
               <span>Reporting manager</span>
               <strong>{managerDisplayName}</strong>
             </article>
-            {reeditSubmitted && changeReason && (
-              <article>
-                <span>Reason for change</span>
-                <strong>{changeReason}</strong>
-              </article>
-            )}
           </div>
+          {(requiresChangeReason || reeditSubmitted) && (
+            <div className="timesheets__reason-field">
+              <label htmlFor="reviewChangeReason">Reason for change <span className="required-star" aria-hidden="true">*</span></label>
+              <p id="reviewChangeReasonHelp">These dates include previously submitted hours. Explain what changed before submitting.</p>
+              <textarea id="reviewChangeReason" name="changeReason" rows={3} required
+                aria-describedby="reviewChangeReasonHelp"
+                placeholder="Explain why you are correcting these hours."
+                value={changeReason} onChange={(event) => setChangeReason(event.target.value)} />
+            </div>
+          )}
           <div className="timesheets__review-table">
             <table aria-label="Timesheet review">
               <thead>
@@ -2498,8 +2545,8 @@ function EntryWorkspace({ step, setStep, today, rangeStart, setRangeStart, range
             {documentError && <p role="alert" className="timesheets__field-error">{documentError}</p>}
             <div className="timesheets__flow-actions">
               <Button type="button" variant="secondary" onClick={() => setStep('hours')}>Back to hours</Button>
-              <Button type="button" variant="secondary" disabled={saving || uploadingDocument} onClick={onSave}>{saving ? 'Saving...' : 'Save draft'}</Button>
-              <Button type="button" variant="primary" disabled={saving || uploadingDocument} onClick={onSubmit}>{saving ? 'Submitting...' : 'Submit timesheet'}</Button>
+              {!approvedCorrection && <Button type="button" variant="secondary" disabled={saving || uploadingDocument} onClick={onSave}>{saving ? 'Saving...' : 'Save draft'}</Button>}
+              <Button type="button" variant="primary" disabled={saving || uploadingDocument} onClick={onSubmit}>{saving ? 'Submitting...' : approvedCorrection ? 'Submit correction for review' : 'Submit timesheet'}</Button>
             </div>
           </div>
         </div>
@@ -4800,7 +4847,9 @@ function TimesheetDetails({ record, canReview, reviewingId, onReview, onReject, 
   </div>}</Modal>;
 }
 
-function ReeditConfirmationModal({ record, selectedStart, selectedEnd, onConfirm, onClose }) {
+export function ReeditConfirmationModal({ record, selectedStart, selectedEnd, onConfirm, onClose }) {
+  const [correctionRequested, setCorrectionRequested] = useState(false);
+  useEffect(() => setCorrectionRequested(false), [record]);
   if (!record) return null;
   const isDifferentRange = selectedStart && selectedEnd && (record.periodStartDate !== selectedStart || record.periodEndDate !== selectedEnd);
   const statusLabel = record.status === 'REJECTED'
@@ -4823,11 +4872,13 @@ function ReeditConfirmationModal({ record, selectedStart, selectedEnd, onConfirm
 
   return <Modal
     isOpen={Boolean(record)}
-    title={modalTitle}
+    title={record.status === 'APPROVED' ? correctionRequested ? 'Confirm correction request' : 'Already approved ? read-only' : modalTitle}
     onClose={onClose}
     footer={<div className="timesheets__entry-actions">
       <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-      <Button type="button" variant="primary" onClick={onConfirm}>Confirm re-edit</Button>
+      <Button type="button" variant="primary" onClick={record.status === 'APPROVED' && !correctionRequested ? () => setCorrectionRequested(true) : onConfirm}>
+        {record.status === 'APPROVED' ? correctionRequested ? 'Confirm correction' : 'Request correction' : 'Confirm re-edit'}
+      </Button>
     </div>}
   >
     <div className="timesheets__reedit-modal">
@@ -4878,7 +4929,9 @@ function ReeditConfirmationModal({ record, selectedStart, selectedEnd, onConfirm
       <div className="timesheets__reedit-recommendation">
         <strong>Re-entry guidance:</strong>
         <p>
-          Re-editing this timesheet will reopen it as a draft so you can update or replace the recorded hours.
+          {record.status === 'APPROVED'
+            ? 'Approved hours are read-only during normal entry. Request a correction to edit this approved timesheet. Nothing changes until you submit the correction, which requires another HR review.'
+            : 'Re-editing this timesheet will reopen it as a draft so you can update or replace the recorded hours.'}
         </p>
         <p>
           • <strong>Reason for change</strong> is required before submitting your corrections.

@@ -812,6 +812,90 @@ class TimesheetServiceTest {
                 contains("/myhr/hr/timesheets?view=team&timesheetId=ts-sub-1"));
     }
 
+    @Test
+    void approvedDatesCannotBeOverwrittenByANewSubmissionEvenWithAReason() {
+        var approved = setupApprovedHours();
+        var base = request(TimesheetStatus.SUBMITTED, new BigDecimal("6"));
+        var input = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(), base.entries(), null,
+                base.status(), "Correction", true);
+        assertThatThrownBy(() -> service.create("employee-1", input)).isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Approved hours are read-only");
+        assertThat(approved.getStatus()).isEqualTo(TimesheetStatus.APPROVED);
+        verify(timesheetRepository, never()).save(any());
+    }
+
+    @Test
+    void updatingADifferentDraftCannotShadowApprovedDates() {
+        setupApprovedHours();
+        assertThatThrownBy(() -> service.update("employee-1", "another-draft", request(TimesheetStatus.DRAFT, BigDecimal.ONE)))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("Approved hours are read-only");
+        verify(timesheetRepository, never()).save(any());
+    }
+
+    @Test
+    void approvedCorrectionsCannotTurnApprovedHoursIntoADraft() {
+        var approved = setupApprovedHours();
+        when(timesheetRepository.findById(approved.getId())).thenReturn(Optional.of(approved));
+        var base = request(TimesheetStatus.DRAFT, BigDecimal.ONE);
+        var input = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(), base.entries(), null,
+                base.status(), "Correction", true);
+        assertThatThrownBy(() -> service.update("employee-1", approved.getId(), input)).isInstanceOf(BusinessException.class)
+                .hasMessageContaining("submitted for HR review");
+        assertThat(approved.getStatus()).isEqualTo(TimesheetStatus.APPROVED);
+        verify(timesheetRepository, never()).save(any());
+    }
+
+    @Test
+    void approvedCorrectionRequiresBothConfirmationAndANewReason() {
+        var approved = setupApprovedHours();
+        when(timesheetRepository.findById(approved.getId())).thenReturn(Optional.of(approved));
+        var base = request(TimesheetStatus.SUBMITTED, BigDecimal.ONE);
+        var unconfirmed = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(), base.entries(), null,
+                base.status(), "Correction", false);
+        var noReason = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(), base.entries(), null,
+                base.status(), "  ", true);
+        assertThatThrownBy(() -> service.update("employee-1", approved.getId(), unconfirmed)).isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Confirm re-editing");
+        assertThatThrownBy(() -> service.update("employee-1", approved.getId(), noReason)).isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Reason for change");
+        verify(timesheetRepository, never()).save(any());
+    }
+
+    @Test
+    void confirmedApprovedCorrectionReturnsToReviewAndPreservesUntouchedDays() {
+        var approved = setupApprovedHours();
+        approved.setReviewedAt(LocalDateTime.now());
+        approved.setReviewedByUserId("hr-1");
+        approved.setEntries(List.of(
+                TimesheetEntry.builder().workDate(LocalDate.of(2026, 8, 31)).hoursWorked(new BigDecimal("8")).build(),
+                TimesheetEntry.builder().workDate(LocalDate.of(2026, 9, 1)).hoursWorked(new BigDecimal("8")).build()));
+        when(timesheetRepository.findById(approved.getId())).thenReturn(Optional.of(approved));
+        when(timesheetRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+        var input = new TimesheetUpsertRequest(LocalDate.of(2026, 8, 31), LocalDate.of(2026, 8, 31),
+                List.of(new TimesheetEntryRequest(LocalDate.of(2026, 8, 31), new BigDecimal("6"), "Corrected shift")),
+                null, TimesheetStatus.SUBMITTED, "Corrected shift after manager review", true);
+        var result = service.update("employee-1", approved.getId(), input);
+        assertThat(result.status()).isEqualTo(TimesheetStatus.SUBMITTED);
+        assertThat(result.totalHours()).isEqualByComparingTo("14");
+        assertThat(result.entries()).hasSize(2);
+        assertThat(approved.getReviewedAt()).isNull();
+        assertThat(approved.getReviewedByUserId()).isNull();
+        verify(auditLogRepository).save(any(AuditLog.class));
+    }
+
+    private Timesheet setupApprovedHours() {
+        var actor = actor("employee-1", UserRole.EMPLOYEE);
+        when(authenticatedUserService.require(eq(actor.userId()), anySet(), eq(false))).thenReturn(actor);
+        when(reportingAssignmentRepository.findByEmployeeUserIdAndRelationshipTypeAndIsActiveTrue(
+                actor.userId(), RelationshipType.PRIMARY_REPORTING_MANAGER)).thenReturn(Optional.of(assignment(actor.userId(), "hr-1")));
+        var approved = timesheet("approved-1", actor.organizationId(), actor.userId(), TimesheetStatus.APPROVED);
+        approved.setEntries(List.of(TimesheetEntry.builder().workDate(LocalDate.of(2026, 8, 31))
+                .hoursWorked(new BigDecimal("8")).build()));
+        when(timesheetRepository.findByOrganizationIdAndUserIdOrderBySubmittedAtDesc(actor.organizationId(), actor.userId()))
+                .thenReturn(List.of(approved));
+        return approved;
+    }
+
     private TimesheetUpsertRequest request(TimesheetStatus status, BigDecimal hours) {
         return new TimesheetUpsertRequest(
                 LocalDate.of(2026, 8, 31),

@@ -233,6 +233,18 @@ public class TimesheetService {
                 .orElseThrow(() -> new BusinessException(
                         "An active reporting manager must be assigned before saving a timesheet"));
 
+        var submittedDates = request.entries().stream().map(TimesheetEntryRequest::workDate)
+                .collect(java.util.stream.Collectors.toSet());
+        boolean overlapsAnotherApproved = timesheetRepository
+                .findByOrganizationIdAndUserIdOrderBySubmittedAtDesc(actor.organizationId(), actor.userId()).stream()
+                .filter(record -> record.getStatus() == TimesheetStatus.APPROVED)
+                .filter(record -> !java.util.Objects.equals(record.getId(), timesheetId))
+                .anyMatch(record -> record.getEntries() != null && record.getEntries().stream()
+                        .anyMatch(entry -> submittedDates.contains(entry.getWorkDate())));
+        if (overlapsAnotherApproved) {
+            throw new BusinessException("Approved hours are read-only. Request a correction on the approved timesheet instead of creating overlapping entries.");
+        }
+
         Timesheet timesheet = timesheetId == null
                 ? findExistingPeriod(actor, request).orElseGet(Timesheet::new)
                 : findTimesheet(timesheetId);
@@ -247,6 +259,10 @@ public class TimesheetService {
                     || timesheet.getStatus() == TimesheetStatus.APPROVED);
         TimesheetStatus previousStatus = timesheet.getStatus();
         BigDecimal previousTotalHours = timesheet.getTotalHours();
+
+        if (previousStatus == TimesheetStatus.APPROVED && request.status() != TimesheetStatus.SUBMITTED) {
+            throw new BusinessException("Corrections to approved hours must be submitted for HR review; they cannot be saved as a draft.");
+        }
 
         if (correctingSubmitted) {
             if (!Boolean.TRUE.equals(request.confirmReedit())) {
