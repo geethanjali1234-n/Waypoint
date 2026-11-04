@@ -1,6 +1,7 @@
 package com.waypoint.service;
 
 import com.waypoint.entity.Organization;
+import com.waypoint.service.google.GoogleSenderEligibility;
 import com.waypoint.repository.OrganizationRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,14 +35,23 @@ public class OrganizationEmailIdentityResolver {
 
     private final OrganizationRepository organizationRepository;
     private final MailSenderAuthorization senderAuthorization;
+    /** Null in resolvers built without the Google feature; then no identity is ever routed to the Gmail API. */
+    private final GoogleSenderEligibility googleSenders;
     /** Organizations already reported as "no authorized senders configured", so the INFO line is logged once each. */
     private final Set<String> reportedUnconfigured = ConcurrentHashMap.newKeySet();
 
     @Autowired
     public OrganizationEmailIdentityResolver(OrganizationRepository organizationRepository,
-                                             MailSenderAuthorization senderAuthorization) {
+                                             MailSenderAuthorization senderAuthorization,
+                                             GoogleSenderEligibility googleSenders) {
         this.organizationRepository = organizationRepository;
         this.senderAuthorization = senderAuthorization;
+        this.googleSenders = googleSenders;
+    }
+
+    public OrganizationEmailIdentityResolver(OrganizationRepository organizationRepository,
+                                             MailSenderAuthorization senderAuthorization) {
+        this(organizationRepository, senderAuthorization, null);
     }
 
     /** Resolver that never authorizes an organization From address (display name and Reply-To only). */
@@ -68,7 +78,15 @@ public class OrganizationEmailIdentityResolver {
         if (organization == null) return EmailSenderIdentity.none();
         String displayName = StringUtils.hasText(organization.getOrganizationName())
                 ? OrganizationEmailBranding.from(organization).senderDisplayName() : null;
-        return new EmailSenderIdentity(displayName, replyTo(organization), authorizedFromAddress(organization));
+        EmailSenderIdentity identity = new EmailSenderIdentity(displayName, replyTo(organization), authorizedFromAddress(organization));
+        // Offered to the organization's own connected Google account when it has a valid one. The SMTP fields above are
+        // untouched, so if that path cannot send, the message goes out exactly as it always did.
+        if (googleSenders != null) {
+            return googleSenders.eligibleSender(organization)
+                    .map(sender -> identity.withGoogleSender(organization.getId(), sender))
+                    .orElse(identity);
+        }
+        return identity;
     }
 
     /**

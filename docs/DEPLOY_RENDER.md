@@ -54,3 +54,23 @@ The web launch does not require a new APK. If an APK is later needed, build it w
 - The free backend can sleep after inactivity; the first request after sleep can be slow.
 - `PAYROLL_READINESS_AUTOMATIC_REMINDERS_ENABLED` remains `false` for this shared-database team test.
 - `VITE_UPDATE_BASE_URL` and `VITE_MOBILE_API_BASE_URL` are not required for the browser-hosted team-test site.
+
+## Organizations sending email from their own Google account (optional, off by default)
+
+Each organization's Company Admin can connect its own Google account so that the organization's emails are sent through it. The feature is **off** unless `GOOGLE_EMAIL_ENABLED=true`, and SMTP stays the fallback. These variables are **not** in `render.yaml` on purpose (adding secret entries there would make Render prompt for them on the next blueprint sync); add them by hand under **waypoint-backend -> Environment** only when you are ready to pilot. Full setup and test steps: `docs/GOOGLE_OAUTH_PILOT_CHECKLIST.md`.
+
+| Variable | What it is |
+|---|---|
+| `GOOGLE_EMAIL_ENABLED` | `true` to switch the feature on. Leave unset or `false` otherwise. |
+| `GOOGLE_OAUTH_CLIENT_ID` | OAuth client ID (secret store) |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | OAuth client secret (secret store only; never commit or paste it anywhere) |
+| `GOOGLE_OAUTH_REDIRECT_URI` | `<backend URL>/api/oauth/google/callback`, for example `https://waypoint-backend.onrender.com/api/oauth/google/callback`. It must be **exactly** the redirect URI listed on the Google OAuth client. The application refuses to start if the path is not exactly `/api/oauth/google/callback`, or if the address is `http://` on a public host. |
+| `GOOGLE_TOKEN_ENCRYPTION_KEY` | Base64 of 32 random bytes, generated for this environment, backed up in the secret store. Losing it makes stored connections unreadable (organizations would reconnect). |
+| `GOOGLE_TOKEN_ENCRYPTION_KEY_ID` | Optional label for the key (default `v1`). |
+
+Also required when the feature is on:
+
+- `APP_FRONTEND_URL` must be the public **https** address of the frontend (the address admins sign in at, exactly: `https://x` and `https://www.x` are different to the browser, and the sign-in token is stored per address). The application refuses to start otherwise, so admins are never sent back to a local address after connecting.
+- `MAIL_ENABLED` must be `true` for organization emails to be tried through Google.
+- The callback is a plain browser redirect to the **backend**, so the backend must be reachable from the admin's browser at the address used in `GOOGLE_OAUTH_REDIRECT_URI`. On the free plan the first request after sleep takes about 30-60 seconds.
+- The MongoDB user must be allowed to create indexes (the connection indexes are created at startup when the feature is on).

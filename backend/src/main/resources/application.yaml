@@ -47,6 +47,17 @@ waypoint:
     # once from from-address. Malformed entries are ignored with a startup warning. Empty (default) = always send
     # from from-address.
     authorized-sender-domains: ${MAIL_AUTHORIZED_SENDER_DOMAINS:}
+  google:
+    # Per-organization Gmail sending: each organization authorizes its own Google account through the WayPoint
+    # OAuth client. Off by default; when enabled, every key below except the key id must be set (startup fails
+    # otherwise). The client secret and the token encryption key (Base64 of 32 random bytes) belong in secret
+    # storage only. SMTP stays the fallback for every message.
+    enabled: ${GOOGLE_EMAIL_ENABLED:false}
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID:}
+    client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET:}
+    redirect-uri: ${GOOGLE_OAUTH_REDIRECT_URI:}
+    token-encryption-key: ${GOOGLE_TOKEN_ENCRYPTION_KEY:}
+    token-encryption-key-id: ${GOOGLE_TOKEN_ENCRYPTION_KEY_ID:v1}
   app:
     # Absolute web address used for links in approval emails (e.g. "Review Offer Letter").
     frontend-base-url: ${APP_FRONTEND_URL:http://localhost:5173}

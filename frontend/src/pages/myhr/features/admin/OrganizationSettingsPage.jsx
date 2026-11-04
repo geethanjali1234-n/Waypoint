@@ -6,6 +6,7 @@ import { EMAIL_PATTERN } from '../../../auth/validation/patterns';
 import { formatUsPhone } from '../../../../utils/phoneFormat';
 import MyHrFeaturePage from '../MyHrFeaturePage';
 import AuthorizedSignatureCard from './AuthorizedSignatureCard';
+import GoogleEmailConnectionCard from './GoogleEmailConnectionCard';
 import './organizationSettings.css';
 
 const PAYROLL_PERIOD_OPTIONS = [
@@ -258,6 +259,7 @@ export default function OrganizationSettingsPage() {
         {editing && <div className="organization-settings__save-bar" role="region" aria-label="Save organization settings"><span>Review your changes before saving.</span><Button type="button" variant="secondary" onClick={cancel} disabled={saving}>Cancel</Button><Button type="submit" variant="primary" loading={saving}>Save</Button></div>}
       </form>}
     {/* Saved on its own (not part of the settings form above). */}
+    {!loading && !loadError && <GoogleEmailConnectionCard organizationEmail={persisted?.organizationEmail} />}
     {!loading && !loadError && <AuthorizedSignatureCard />}
   </MyHrFeaturePage>;
 }

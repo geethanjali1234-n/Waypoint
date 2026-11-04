@@ -116,6 +116,9 @@ public final class AuditActionCatalog {
         put(map, AuditActionType.PASSWORD_CHANGED, AuditEventCategory.SECURITY, "Password changed");
         put(map, AuditActionType.ACCOUNT_EMAIL_CHANGED, AuditEventCategory.SECURITY, "Account email changed");
         put(map, AuditActionType.ORGANIZATION_SETTINGS_UPDATED, AuditEventCategory.ACCOUNT_MANAGEMENT, "Organization settings updated");
+        put(map, AuditActionType.GOOGLE_EMAIL_CONNECTED, AuditEventCategory.SECURITY, "Google email account connected");
+        put(map, AuditActionType.GOOGLE_EMAIL_DISCONNECTED, AuditEventCategory.SECURITY, "Google email account disconnected");
+        put(map, AuditActionType.GOOGLE_EMAIL_TEST_SENT, AuditEventCategory.SECURITY, "Google email test sent");
 
         return map;
     }
