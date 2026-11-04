@@ -1022,3 +1022,29 @@
 .myhr-feature.phase-six .document-requests__view-toggle .document-requests__view-toggle-btn.is-active { background:var(--wp-color-primary) !important; color:var(--wp-color-primary-contrast) !important; }
 .myhr-feature.phase-six .document-requests__view-toggle .document-requests__view-toggle-btn:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
 .myhr-feature.phase-six .document-requests__view-toggle--icons .document-requests__view-toggle-btn { width:40px; padding:0; }
+
+/* Keep the shared worklist readable when nine columns compete for space.
+   The scroll region owns horizontal overflow; the page owns vertical scrolling. */
+.document-requests__worklist .wp-data-table__scroll { max-height:none; overflow-x:auto; }
+.document-requests__worklist table { min-width:74rem; table-layout:auto; }
+.document-requests__worklist th { white-space:nowrap; }
+.document-requests__worklist td[data-label="Document"] { min-width:12rem; }
+.document-requests__worklist :is(td[data-label="Requested by"],td[data-label="Assigned to"],td[data-label="Requested from"]) { min-width:10rem; }
+.document-requests__worklist :is(td[data-label="Priority"],td[data-label="Required by"],td[data-label="Requested on"],td[data-label="Status"],td[data-label="Action"]) { white-space:nowrap; }
+.document-requests__worklist td[data-label="Action"] { min-width:6rem; }
+.document-requests__worklist td[data-label="Action"] .wp-button { min-width:64px; white-space:nowrap; word-break:normal; overflow-wrap:normal; }
+
+/* Desktop request details use the available workspace height. Only the
+   document pane scrolls; the workflow context stays beside it. */
+@media (min-width:901px) {
+  .wp-workspace:has(.document-request-detail-page .document-workflow-layout) { height:100dvh; min-height:0; display:grid; grid-template-rows:auto minmax(0,1fr); overflow:hidden; }
+  .wp-workspace:has(.document-request-detail-page .document-workflow-layout) .wp-workspace__body { width:100%; height:100%; min-height:0; margin:0 auto; align-items:stretch; }
+  .wp-workspace:has(.document-request-detail-page .document-workflow-layout) .wp-workspace__main { min-height:0; height:100%; padding-bottom:0; }
+  .wp-workspace:has(.document-request-detail-page .document-workflow-layout) .myhr-navigation { position:static; max-height:100%; overflow-y:auto; }
+  .document-request-detail-page:has(.document-workflow-layout) { height:100%; min-height:0; grid-template-rows:auto minmax(0,1fr); }
+  .document-request-detail-page:has(.document-workflow-layout) > .myhr-feature__body { min-height:0; display:flex; flex-direction:column; }
+  .document-request-detail-page .document-workflow-layout { flex:1; min-height:0; height:100%; }
+  .document-request-detail-page .document-workflow-layout > .document-route { position:static; max-height:100%; overflow-y:auto; }
+  .document-request-detail-page .document-workflow-layout > .document-requests__detail { height:100%; min-height:0; overflow-y:auto; scrollbar-gutter:stable; overscroll-behavior-y:contain; }
+}
+.document-requests__detail:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
