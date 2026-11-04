@@ -457,3 +457,29 @@ it.each(['table', 'cards'])('labels the own row and excludes self from reminders
     else localStorage.setItem('myHrAuthenticatedUser', previousSession);
   }
 });
+
+it('keeps additional mobile statuses available without crowding the primary filters', async () => {
+  vi.clearAllMocks();
+  const previousMatchMedia = window.matchMedia;
+  window.matchMedia = vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+  mockReadiness();
+  myHrReportApi.searchEmployees.mockResolvedValue({ data: { data: [] } });
+  const user = userEvent.setup();
+  const page = renderPage('HR');
+  try {
+    await screen.findByText('John Doe');
+    const primary = screen.getByRole('group', { name: 'Payroll readiness filters' });
+    expect(within(primary).getAllByRole('button')).toHaveLength(4);
+    const more = screen.getByText('More statuses').closest('details');
+    expect(more).not.toHaveAttribute('open');
+    await user.click(screen.getByText('More statuses'));
+    const additional = screen.getByRole('group', { name: 'Additional payroll readiness filters' });
+    await user.click(within(additional).getByRole('button', { name: /^Missing/ }));
+    await waitFor(() => expect(payrollReadinessApi.getReadiness).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'MISSING_TIMESHEET' })));
+    expect(more.querySelector('summary')).toHaveTextContent('Missing');
+    expect(screen.getAllByRole('button', { name: 'View Details' })).toHaveLength(3);
+  } finally {
+    page.unmount();
+    window.matchMedia = previousMatchMedia;
+  }
+});

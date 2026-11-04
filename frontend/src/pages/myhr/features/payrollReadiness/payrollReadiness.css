@@ -1452,3 +1452,61 @@
   .payroll-readiness__drawer-panel header button { flex: 0 0 44px; width: 44px; height: 44px; }
   .payroll-readiness__filter-panel > header { gap: 12px; flex-wrap: wrap; }
 }
+
+/* Phone readiness: prioritize people, keep every label readable and every action reachable. */
+@media(max-width:768px) {
+  .myhr-feature .payroll-readiness__workspace { margin-top:0; gap:12px; }
+  .myhr-feature .payroll-readiness__workspace .payroll-readiness__hero { padding:14px; gap:12px; grid-template-columns:minmax(0,1fr) auto; }
+  .myhr-feature .payroll-readiness__hero > div:first-child > h2 { display:none; }
+  .myhr-feature .payroll-readiness__hero > div:first-child > span { font-size:.8125rem; line-height:1.45; }
+  .myhr-feature .payroll-readiness__hero > dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%; gap:10px 12px; margin:0; }
+  .myhr-feature .payroll-readiness__hero > dl > div { min-width:0; padding:0; }
+  .myhr-feature .payroll-readiness__hero > dl > div:nth-child(2) { grid-column:1/-1; }
+  .myhr-feature .payroll-readiness__hero > dl > div:nth-child(3) { grid-column:2; grid-row:1; }
+  .myhr-feature .payroll-readiness__hero dt { font-size:.6875rem; margin:0 0 4px; }
+  .myhr-feature .payroll-readiness__hero dd { margin:0; font-size:.8125rem; line-height:1.45; white-space:normal; }
+  .myhr-feature .payroll-readiness__filter-popover > .wp-button { padding:8px 10px; min-height:44px; font-size:.8125rem; }
+  .payroll-readiness__workspace > .wp-filter-pills,.payroll-readiness__more-statuses .wp-filter-pills { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .payroll-readiness__workspace .wp-filter-pills button { min-width:0; justify-content:space-between; gap:6px; padding:8px 10px; min-height:44px; border-radius:var(--wp-radius-control); font-size:.75rem; text-align:left; }
+  .payroll-readiness__workspace .wp-filter-pills button > span:first-child { min-width:0; white-space:normal; }
+  .payroll-readiness__more-statuses { border-bottom:1px solid var(--wp-color-border); padding-bottom:4px; }
+  .payroll-readiness__more-statuses summary { min-height:44px; align-content:center; cursor:pointer; color:var(--wp-color-primary); font-size:.8125rem; }
+  .payroll-readiness__more-statuses summary span { margin-left:8px; font-size:.75rem; color:var(--wp-color-text-muted); }
+  .payroll-readiness__more-statuses summary:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
+  .payroll-readiness__more-statuses[open] .wp-filter-pills { margin:4px 0 8px; }
+  .payroll-readiness__workspace .payroll-readiness__bulk-bar { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:12px; }
+  .payroll-readiness__bulk-bar :is(strong,span) { font-size:.75rem; line-height:1.4; min-width:0; }
+  .payroll-readiness__bulk-bar .wp-button { min-width:0; min-height:44px; width:100%; padding:8px; font-size:.75rem; white-space:normal; }
+  .payroll-readiness__workspace .payroll-readiness__table > header { padding:12px; gap:12px; }
+  .payroll-readiness__table > header h3 { font-size:1rem; margin:0; }
+  .payroll-readiness__table > header p { font-size:.6875rem; line-height:1.4; letter-spacing:0; margin:4px 0 0; }
+  .payroll-readiness__workspace .payroll-readiness__table-actions { display:flex; flex-wrap:wrap; width:100%; gap:8px; align-items:center; justify-content:space-between; }
+  .payroll-readiness__workspace .payroll-readiness__table-actions > .wp-button { width:auto; flex:1 1 7rem; min-height:44px; padding:8px 12px; }
+  .payroll-readiness__table-actions label { font-size:.75rem; gap:6px; }
+  .payroll-readiness__workspace .payroll-readiness__cards-grid { padding:0 12px 12px; gap:12px; }
+  .payroll-readiness__workspace .payroll-readiness__card { padding:12px; min-width:0; }
+  .payroll-readiness__workspace .payroll-readiness__card-header { gap:8px; }
+  .payroll-readiness__workspace .payroll-readiness__card-identity { flex:1 1 100%; }
+  .payroll-readiness__workspace .payroll-readiness__card-identity > div { min-width:0; }
+  .payroll-readiness__workspace .payroll-readiness__card-body { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:12px 0; }
+  .payroll-readiness__workspace .payroll-readiness__card-row { min-width:0; gap:4px; }
+  .payroll-readiness__workspace .payroll-readiness__card-row:first-child { grid-column:1/-1; }
+  .payroll-readiness__workspace .payroll-readiness__card-label { font-size:.6875rem; line-height:1.4; white-space:normal; overflow:visible; text-overflow:clip; text-transform:none; letter-spacing:0; }
+  .payroll-readiness__workspace .payroll-readiness__card-row > span:not(.payroll-readiness__card-label) { font-size:.8125rem; line-height:1.45; white-space:normal; overflow:visible; overflow-wrap:anywhere; }
+  .payroll-readiness__workspace .payroll-readiness__card-row--reminder { display:grid; grid-template-columns:minmax(0,1fr); grid-column:1/-1; }
+  .payroll-readiness__workspace .payroll-readiness__card-footer { display:flex; flex-wrap:wrap; gap:8px; padding-top:8px; }
+  .payroll-readiness__workspace .payroll-readiness__card-footer .wp-button { flex:1 1 7rem; min-height:44px; padding:10px 8px; white-space:normal; font-size:.8125rem; }
+  .payroll-readiness__workspace .payroll-readiness__mobile-select-all { margin:0 12px 12px; padding:8px 0; font-size:.75rem; min-height:44px; }
+}
+
+@media(max-width:768px) {
+  .payroll-readiness__workspace > .wp-filter-pills { margin:0; }
+  .payroll-readiness__workspace .payroll-readiness__bulk-bar { margin:0; }
+  .payroll-readiness__workspace .payroll-readiness__table { padding:0; }
+  .payroll-readiness__workspace .payroll-readiness__table > header { display:grid; grid-template-columns:minmax(0,1fr); }
+  .payroll-readiness__workspace .payroll-readiness__table > header p { display:none; }
+  .payroll-readiness__workspace .payroll-readiness__table-actions { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; }
+  .payroll-readiness__workspace .payroll-readiness__table-actions label { display:flex; flex-direction:row; align-items:center; width:auto; margin:0; }
+  .payroll-readiness__workspace .payroll-readiness__table-actions select { width:64px; min-width:0; min-height:44px; }
+  .payroll-readiness__workspace .payroll-readiness__cards-grid { margin-top:0; }
+}

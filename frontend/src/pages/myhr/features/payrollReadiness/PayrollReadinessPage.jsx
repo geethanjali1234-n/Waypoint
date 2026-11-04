@@ -432,7 +432,11 @@ export function PayrollReadinessWorkspace() {
       </ReadinessFilterPopover>
     </section>
 
-<FilterPills label="Payroll readiness filters" options={readinessPills} value={status} onChange={applyFilters} />
+<FilterPills label="Payroll readiness filters" options={isMobile ? readinessPills.slice(0, 4) : readinessPills} value={status} onChange={applyFilters} />
+    {isMobile && <details className="payroll-readiness__more-statuses">
+      <summary>More statuses{readinessPills.slice(4).some((option) => option.value === status) && <span>{readinessPills.find((option) => option.value === status)?.label}</span>}</summary>
+      <FilterPills label="Additional payroll readiness filters" options={readinessPills.slice(4)} value={status} onChange={applyFilters} />
+    </details>}
 
     {error && <div className="payroll-readiness__error" role="alert"><p>{error}</p><Button type="button" variant="secondary" onClick={() => load(page, size)}>Retry</Button></div>}
     {feedback && <div className="payroll-readiness__feedback" role="status"><p>{feedback}</p></div>}
