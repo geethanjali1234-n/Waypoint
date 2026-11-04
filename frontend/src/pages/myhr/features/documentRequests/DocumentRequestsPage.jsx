@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { renderAsync } from 'docx-preview';
-import { Button, Dropdown, EmptyState, FilterPills, Modal, SearchInput, StatusBadge as StatusTag, DocumentViewerModal } from '../../../../components';
+import { Button, Dropdown, EmptyState, Modal, SearchInput, StatusBadge as StatusTag, DocumentViewerModal } from '../../../../components';
 import { getMyHrSession } from '../../../../auth/myHrSession';
 import myHrDocumentRequestApi from '../../../../api/myHrDocumentRequestApi';
 import { formatDateOnly } from '../../../../utils/dateFormat';
@@ -87,7 +87,7 @@ export default function DocumentRequestsPage({ role }) {
   });
   // Phones (<=768px) get the compact list layout; desktop rendering is unchanged.
   const isMobile = useIsMobileViewport();
-  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState('');
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query.trim()), 250);
@@ -351,7 +351,8 @@ export default function DocumentRequestsPage({ role }) {
   if (myRequestsView) mobileActions.push(myRequestsScope === 'SELF'
     ? { label: 'Request for myself', path: `${base}/document-requests/request-from-manager` }
     : { label: 'Request from employee', path: `${base}/document-requests/new` });
-  const advancedFiltersActive = priorityFilter !== 'ALL' || categoryFilter !== 'ALL' || !['ALL', 'PENDING', 'OVERDUE'].includes(status);
+  // Search is visible on the row, so the Filters dot only reflects the options inside the panel.
+  const panelFiltersActive = status !== 'ALL' || priorityFilter !== 'ALL' || categoryFilter !== 'ALL';
 
   return <MyHrFeaturePage className={isMobile ? 'phase-six document-requests-mobile' : 'phase-six'}
     title={myRequestsView ? 'My Requests' : 'Document Requests'}
@@ -376,16 +377,15 @@ export default function DocumentRequestsPage({ role }) {
       </section>}
       {requestsSwitch}
       <div className="document-requests-mobile__filters">
-        {searchField}
-        <div className="document-requests-mobile__quick">
-          <FilterPills label="Status" className="document-requests-mobile__status" value={status} onChange={setStatus}
-            options={[{ value: 'ALL', label: 'All' }, { value: 'PENDING', label: 'Pending' }, { value: 'OVERDUE', label: 'Overdue' }]} />
-          <button type="button" className="document-requests-mobile__more" aria-expanded={moreFiltersOpen} aria-controls="document-requests-more-filters"
-            onClick={() => setMoreFiltersOpen((open) => !open)}>
-            More filters{advancedFiltersActive && <span className="document-requests-mobile__dot" aria-label="(active)" />}
+        <div className="document-requests-mobile__search-row">
+          {searchField}
+          <button type="button" className="document-requests-mobile__filters-btn" aria-expanded={mobileFiltersOpen} aria-controls="document-requests-mobile-filters"
+            onClick={() => setMobileFiltersOpen((open) => !open)}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>
+            <span>Filters</span>{panelFiltersActive && <span className="document-requests-mobile__dot" role="img" aria-label="(active)" />}
           </button>
         </div>
-        {moreFiltersOpen && <div id="document-requests-more-filters" className="document-requests-mobile__advanced">
+        {mobileFiltersOpen && <div id="document-requests-mobile-filters" className="document-requests-mobile__advanced">
           {statusDropdown}
           {priorityDropdown}
           {categoryDropdown}
