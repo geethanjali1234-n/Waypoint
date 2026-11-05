@@ -3633,3 +3633,47 @@
   .wp-exp-hero-actions { width: 100%; }
   .wp-exp-hero-actions .wp-exp-btn { width: 100%; justify-content: center; }
 }
+
+/* Public home: a clear route into the portal, with a calm, branded introduction. */
+.wp-exp-root .wp-exp-hero { min-height:auto; padding:64px 32px; background:linear-gradient(150deg,var(--wp-color-primary-soft),var(--wp-color-bg)); }
+.wp-exp-root .wp-exp-hero-content { max-width:960px; margin:0 auto; text-align:left; }
+.wp-exp-root .wp-exp-eyebrow { justify-content:flex-start; width:fit-content; max-width:100%; padding:10px 16px; border-radius:var(--wp-radius-pill); color:var(--wp-color-primary); background:var(--wp-color-surface); border:1px solid var(--wp-color-border); }
+.wp-exp-root .wp-exp-eyebrow-pulse { display:none; }
+.wp-exp-root .wp-exp-title { margin:28px 0 24px; text-align:left; font:500 clamp(2.5rem,5.6vw,4.75rem)/1.08 var(--wp-font-display); color:var(--wp-color-text); letter-spacing:-.04em; text-transform:none; background:none; -webkit-text-fill-color:currentColor; }
+.wp-exp-root .wp-exp-lead { max-width:50ch; margin:0; text-align:left; font-size:1.125rem; line-height:1.7; color:var(--wp-color-text-muted); }
+.wp-exp-root .wp-exp-hero-ctas { justify-content:flex-start; gap:12px; margin:28px 0 0; }
+.wp-exp-root .wp-exp-hero-ctas .wp-exp-btn { min-height:52px; gap:8px; padding:14px 22px; border-radius:16px; font-size:.9375rem; font-weight:600; letter-spacing:0; text-transform:none; box-shadow:none; }
+.wp-exp-root .wp-exp-hero-ctas .wp-exp-btn--primary { background:var(--wp-color-primary-deep); color:#FBF9F3; border:1px solid var(--wp-color-primary-deep); }
+.wp-exp-root .wp-exp-hero-ctas .wp-exp-btn--secondary { background:var(--wp-color-surface); color:var(--wp-color-primary); border:1px solid var(--wp-color-border); }
+.wp-exp-hero-tour { display:inline-flex; align-items:center; gap:8px; min-height:44px; margin-top:12px; color:var(--wp-color-primary); font-size:.875rem; text-underline-offset:4px; }
+.wp-home-workflow { max-width:560px; margin-top:28px; padding:24px; border:1px solid var(--wp-color-border); border-radius:24px; background:var(--wp-color-surface); }
+.wp-home-workflow > p { margin:0 0 20px; color:var(--wp-color-primary); font:600 .75rem var(--wp-font-sans); text-transform:uppercase; letter-spacing:.14em; }
+.wp-home-workflow ol { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); list-style:none; padding:0; margin:0; }
+.wp-home-workflow li { position:relative; display:flex; flex-direction:column; align-items:center; gap:12px; min-width:0; color:var(--wp-color-text-muted); font-size:.875rem; }
+.wp-home-workflow li:not(:last-child)::after { content:''; position:absolute; top:19px; left:50%; width:100%; border-top:2px dashed var(--wp-color-border); }
+.wp-home-workflow li:first-child::after { border-top-style:solid; border-color:var(--wp-color-primary); }
+.wp-home-workflow strong { color:var(--wp-color-text); font-weight:600; }
+.wp-home-workflow__stop { position:relative; z-index:1; display:grid; place-items:center; width:40px; height:40px; border:2px solid var(--wp-color-border); border-radius:50%; background:var(--wp-color-surface); }
+.wp-home-workflow__stop.is-done { background:var(--wp-color-primary-deep); color:#FBF9F3; border-color:var(--wp-color-primary-deep); }
+.wp-home-workflow__stop.is-current { border:3px solid #d99a1b; }
+.wp-home-workflow__stop.is-next { border-style:dashed; }
+.wp-exp-mobile-menu button { min-height:44px; padding:8px 10px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-surface); color:var(--wp-color-text); font:inherit; text-align:left; }
+@media(max-width:767px) {
+  .wp-exp-root .wp-exp-nav-inner { display:flex; gap:8px; padding:8px 12px; }
+  .wp-exp-root .wp-exp-brand { flex:1 1 auto; min-width:0; gap:8px; }
+  .wp-exp-root .wp-exp-brand .wp-waypoint-mark { width:32px; height:32px; flex:0 0 32px; }
+  .wp-exp-root .wp-exp-brand-name { font-size:1.0625rem; max-width:none; }
+  .wp-exp-root .wp-exp-nav-actions { order:2; margin-left:0; flex:0 0 auto; }
+  .wp-exp-root .wp-exp-mobile-menu-toggle { order:3; }
+  .wp-exp-root .wp-exp-nav-actions .wp-exp-theme-btn { display:none; }
+  .wp-exp-root .wp-exp-nav-actions .wp-exp-login-btn.wp-exp-portal-link { display:inline-flex; align-items:center; justify-content:center; min-width:72px; min-height:44px; padding:8px 12px; font-size:.875rem; border:1px solid var(--wp-color-primary); border-radius:12px; background:var(--wp-color-surface); color:var(--wp-color-primary); white-space:nowrap; }
+  .wp-exp-root .wp-exp-nav-actions .wp-exp-portal-link::after { content:none; }
+  .wp-exp-root .wp-exp-hero { padding:28px 20px 36px; }
+  .wp-exp-root .wp-exp-eyebrow { font-size:.625rem; padding:8px 12px; letter-spacing:.08em; line-height:1.5; }
+  .wp-exp-root .wp-exp-title { margin:24px 0 20px; font-size:clamp(2rem,9vw,3.25rem); line-height:1.08; }
+  .wp-exp-root .wp-exp-lead { font-size:1rem; line-height:1.6; }
+  .wp-exp-root .wp-exp-hero-ctas { margin-top:24px; gap:10px; }
+  .wp-exp-root .wp-exp-hero-ctas .wp-exp-btn { width:100%; min-height:48px; padding:12px 14px; }
+  .wp-home-workflow { margin-top:20px; padding:18px 14px; border-radius:20px; }
+  .wp-home-workflow li { font-size:.75rem; }
+}

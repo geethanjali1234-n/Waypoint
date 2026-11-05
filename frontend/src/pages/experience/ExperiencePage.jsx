@@ -231,7 +231,7 @@ export default function ExperiencePage() {
   // Keyboard accessibility: ESC clears selection
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === 'Escape') setSelectedNode(null);
+      if (e.key === 'Escape') { setSelectedNode(null); setMobileMenuOpen(false); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -321,8 +321,8 @@ export default function ExperiencePage() {
             <Link to="/register/organization" className="wp-exp-login-btn wp-exp-login-btn--outline">
               Create Organization Account
             </Link>
-            <Link to="/login" className="wp-exp-login-btn">
-              Sign In →
+            <Link to="/login" className="wp-exp-login-btn wp-exp-portal-link">
+              Sign in
             </Link>
           </div>
         </div>
@@ -334,6 +334,7 @@ export default function ExperiencePage() {
           <a href="#section-architecture" onClick={() => setMobileMenuOpen(false)}>Architecture</a>
           <Link to="/register/organization" onClick={() => setMobileMenuOpen(false)}>Create Organization Account</Link>
           <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
+          <button type="button" onClick={toggleTheme}>{theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</button>
         </div>
       </header>
 
@@ -342,51 +343,24 @@ export default function ExperiencePage() {
         <div className="wp-exp-hero-content">
           <div className="wp-exp-eyebrow">
             <span className="wp-exp-eyebrow-pulse" aria-hidden="true" />
-            <span>ENTERPRISE WORKFORCE ORCHESTRATION & COMPLIANCE</span>
+            <span>WORKFORCE &amp; DOCUMENT TRACKING</span>
           </div>
 
-          <h1 className="wp-exp-title">
-            PEOPLE OPERATIONS<br />
-            <span className="wp-exp-title-gradient">AT THE SPEED OF LIGHT.</span>
-          </h1>
-
-          <p className="wp-exp-lead">
-            Waypoint unifies timesheets, direct-report approvals, statutory FLSA compliance, and cloud document verification into an enterprise-grade, secure platform.
-          </p>
+          <h1 className="wp-exp-title">Track your people.<br />Deliver every document.</h1>
+          <p className="wp-exp-lead">Waypoint brings timesheets, approvals, and document requests into one clear route, so nothing gets lost between request and delivery.</p>
 
           <div className="wp-exp-hero-ctas">
-            <a
-              href="#section-constellation"
-              className="wp-exp-btn wp-exp-btn--primary"
-            >
-              ✦ Explore Architecture Topology ↓
-            </a>
-            <Link
-              to="/myhr/employee/timesheets"
-              className="wp-exp-btn wp-exp-btn--secondary"
-            >
-              Launch Live Timesheet Module ↗
-            </Link>
+            <Link to="/login" className="wp-exp-btn wp-exp-btn--primary">Launch portal <StrokeIcon name="arrow-right" size={18} /></Link>
+            <Link to="/register/organization" className="wp-exp-btn wp-exp-btn--secondary">Create organization account</Link>
           </div>
-
-          {/* Real-time Enterprise Telemetry Bar */}
-          <div className="wp-exp-stats-strip">
-            <div className="wp-exp-stat-box">
-              <span className="wp-exp-stat-num">99.98%</span>
-              <span className="wp-exp-stat-label">Audit Accuracy</span>
-            </div>
-            <div className="wp-exp-stat-box">
-              <span className="wp-exp-stat-num">0.4s</span>
-              <span className="wp-exp-stat-label">OCR Extraction Speed</span>
-            </div>
-            <div className="wp-exp-stat-box">
-              <span className="wp-exp-stat-num">14,800+</span>
-              <span className="wp-exp-stat-label">Active Records</span>
-            </div>
-            <div className="wp-exp-stat-box">
-              <span className="wp-exp-stat-num">100%</span>
-              <span className="wp-exp-stat-label">Cloudflare R2 Integrity</span>
-            </div>
+          <a href="#section-timesheets" className="wp-exp-hero-tour">See how timesheets work <StrokeIcon name="arrow-right" size={18} /></a>
+          <div className="wp-home-workflow" aria-label="Example document workflow">
+            <p>Example request</p>
+            <ol>
+              <li><span className="wp-home-workflow__stop is-done" aria-hidden="true"><StrokeIcon name="check" size={20} /></span><span>Requested</span></li>
+              <li><span className="wp-home-workflow__stop is-current" aria-hidden="true" /><strong>In review</strong></li>
+              <li><span className="wp-home-workflow__stop is-next" aria-hidden="true" /><span>Delivered</span></li>
+            </ol>
           </div>
         </div>
       </section>

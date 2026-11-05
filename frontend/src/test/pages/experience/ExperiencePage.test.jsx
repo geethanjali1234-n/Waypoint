@@ -34,8 +34,9 @@ describe('Waypoint Next-Gen Experience Page', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/PEOPLE OPERATIONS/i)).toBeInTheDocument();
-    expect(screen.getByText(/AT THE SPEED OF LIGHT/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Track your people.*Deliver every document/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Launch portal/i })).toHaveAttribute('href', '/login');
+    expect(screen.getByLabelText('Example document workflow')).toBeInTheDocument();
 
     const nav = screen.getByRole('navigation', { name: /Primary Experience Navigation/i });
     expect(within(nav).getByRole('link', { name: /^Topology$/i })).toBeInTheDocument();
