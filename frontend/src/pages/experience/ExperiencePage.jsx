@@ -350,10 +350,9 @@ export default function ExperiencePage() {
           <p className="wp-exp-lead">Waypoint brings timesheets, approvals, and document requests into one clear route, so nothing gets lost between request and delivery.</p>
 
           <div className="wp-exp-hero-ctas">
-            <Link to="/login" className="wp-exp-btn wp-exp-btn--primary">Launch portal <StrokeIcon name="arrow-right" size={18} /></Link>
-            <Link to="/register/organization" className="wp-exp-btn wp-exp-btn--secondary">Create organization account</Link>
+            <Link to="/register/organization" className="wp-exp-btn wp-exp-btn--primary">Create organization account</Link>
+            <a href="#section-timesheets" className="wp-exp-btn wp-exp-btn--secondary">See how timesheets work <StrokeIcon name="arrow-right" size={18} /></a>
           </div>
-          <a href="#section-timesheets" className="wp-exp-hero-tour">See how timesheets work <StrokeIcon name="arrow-right" size={18} /></a>
           <div className="wp-home-workflow" aria-label="Example document workflow">
             <p>Example request</p>
             <ol>

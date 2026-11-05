@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ExperiencePage from '../../../pages/experience/ExperiencePage';
 import TimesheetSimulator from '../../../pages/experience/components/TimesheetSimulator';
 import WorkforceRadar from '../../../pages/experience/components/WorkforceRadar';
@@ -35,7 +35,10 @@ describe('Waypoint Next-Gen Experience Page', () => {
     );
 
     expect(screen.getByRole('heading', { name: /Track your people.*Deliver every document/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Launch portal/i })).toHaveAttribute('href', '/login');
+    expect(screen.queryByRole('link', { name: /Launch portal/i })).not.toBeInTheDocument();
+    const hero = document.querySelector('.wp-exp-hero');
+    expect(within(hero).getByRole('link', { name: /Create organization account/i })).toHaveAttribute('href', '/register/organization');
+    expect(within(hero).getByRole('link', { name: /See how timesheets work/i })).toHaveAttribute('href', '#section-timesheets');
     expect(screen.getByLabelText('Example document workflow')).toBeInTheDocument();
 
     const nav = screen.getByRole('navigation', { name: /Primary Experience Navigation/i });
@@ -215,4 +218,23 @@ describe('Waypoint Next-Gen Experience Page', () => {
 
     vi.useRealTimers();
   });
+});
+
+it.each([false, true])('keeps header sign-in directly connected to the portal (native app: %s)', (native) => {
+  const previousCapacitor = window.Capacitor;
+  if (native) window.Capacitor = { isNativePlatform: () => true };
+  try {
+    render(<MemoryRouter initialEntries={['/']}><Routes>
+      <Route path="/" element={<ExperiencePage />} />
+      <Route path="/login" element={<h1>Portal sign in</h1>} />
+    </Routes></MemoryRouter>);
+    const actions = document.querySelector('.wp-exp-nav-actions');
+    const signIn = within(actions).getByRole('link', { name: /^Sign in$/i });
+    expect(signIn).toHaveAttribute('href', '/login');
+    fireEvent.click(signIn);
+    expect(screen.getByRole('heading', { name: 'Portal sign in' })).toBeInTheDocument();
+  } finally {
+    if (previousCapacitor === undefined) delete window.Capacitor;
+    else window.Capacitor = previousCapacitor;
+  }
 });
