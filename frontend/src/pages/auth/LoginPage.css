@@ -3,7 +3,7 @@
 .wp-login-page .wp-auth-layout__columns { min-height: 100svh; height: auto; }
 .wp-login-page .wp-auth-layout__columns.wp-two-column--1-1 { grid-template-columns: 51% 49%; }
 .wp-login-page .wp-auth-layout__main { position: relative; height: auto; min-height: 100svh; min-width: 0; padding: 88px clamp(24px, 4vw, 64px) 48px; background: var(--wp-color-bg); }
-.wp-login-page .wp-auth-layout__card { max-width: 480px; padding: 32px; }
+.wp-login-page .wp-auth-layout__card { max-width: 480px; padding: 32px; background:var(--wp-color-surface); color:var(--wp-color-text); box-shadow:0 8px 24px rgb(0 0 0 / .06); backdrop-filter:none; -webkit-backdrop-filter:none; }
 .wp-login-theme { position: absolute; top: max(24px, env(safe-area-inset-top)); right: max(24px, env(safe-area-inset-right)); }
 .wp-login-page .wp-page-header { margin-bottom: 28px; padding: 0; }
 .wp-login-page .wp-page-header__title { font-size: 36px; line-height: 1.15; letter-spacing: -.025em; }
@@ -41,4 +41,24 @@
   .wp-login-page .wp-auth-side-panel__content + .wp-workspace-explorer { margin-top: 24px; max-width: none; padding: 16px; }
   .wp-login-page .wp-auth-layout__main { min-height: 0; padding: 80px 16px max(32px, env(safe-area-inset-bottom)); }
   .wp-login-page .wp-auth-layout__card { padding: 24px; }
+}
+
+/* Keep form controls first in both reading and focus order. Desktop retains its brand/form split. */
+.wp-login-mobile-brand { display:none; }
+.wp-login-page.wp-auth-layout--form-first .wp-two-column__main { grid-column:2; grid-row:1; }
+.wp-login-page.wp-auth-layout--form-first .wp-two-column__side { grid-column:1; grid-row:1; }
+@media(max-width:900px) {
+  .wp-login-page.wp-auth-layout--form-first .wp-two-column__main { grid-column:1; grid-row:1; }
+  .wp-login-page.wp-auth-layout--form-first .wp-two-column__side { grid-column:1; grid-row:2; }
+  .wp-login-page .wp-auth-layout__main { padding:16px 16px 24px; align-items:flex-start; }
+  .wp-login-page .wp-auth-layout__card { padding:20px; }
+  .wp-login-mobile-brand { display:flex; align-items:center; gap:8px; min-height:44px; padding-right:56px; margin-bottom:16px; color:var(--wp-color-text); text-decoration:none; font:600 1.125rem var(--wp-font-sans); }
+  .wp-login-mobile-brand .wp-waypoint-mark { width:32px; height:32px; }
+  .wp-login-theme { top:28px; right:28px; }
+  .wp-login-page .wp-page-header { margin-bottom:20px; }
+  .wp-login-page .wp-page-header__title { font-size:28px; }
+  .wp-login-page input:is([name='loginId'],[name='password']) { font-size:16px; }
+  .wp-login-page .wp-login-destinations { gap:8px; padding-top:16px; margin-top:16px; }
+  .wp-login-page .wp-login-destination { min-height:48px; padding:8px 10px; }
+  .wp-login-page .wp-auth-side-panel { min-height:0; }
 }

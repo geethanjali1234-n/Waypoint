@@ -88,3 +88,11 @@ describe('LoginPage', () => {
     expect(await screen.findByText('This login is for My HR accounts only.')).toBeInTheDocument();
   });
 });
+
+it('places sign-in controls before promotional content in reading and keyboard order', () => {
+  renderPage();
+  const signIn = screen.getByRole('button', { name: /sign in/i });
+  const explainer = screen.getByRole('heading', { name: /A clearer route/ });
+  expect(signIn.compareDocumentPosition(explainer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Forgot password?' })).toHaveAttribute('href', '/forgot-password');
+});

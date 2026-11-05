@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { PageHeader, ThemeToggle } from '../../components';
+import WaypointMark from '../../components/branding/WaypointMark';
 import StrokeIcon from '../../components/global/StrokeIcon';
 import MobileAppBanner from '../../components/MobileAppBanner';
 import AuthLayout from './components/AuthLayout';
@@ -19,6 +20,7 @@ export default function LoginPage() {
       <MobileAppBanner />
       <AuthLayout
         className="wp-login-page"
+        formFirst
         sidePanel={
           <AuthSidePanel
             workspaceLabel="Waypoint"
@@ -36,6 +38,7 @@ export default function LoginPage() {
           />
         }
       >
+        <Link to="/" className="wp-login-mobile-brand" aria-label="Waypoint home"><WaypointMark /><span>Waypoint</span></Link>
         <div className="wp-login-theme"><ThemeToggle id="login-theme-toggle" /></div>
         <PageHeader title="Welcome back" subtitle="Sign in to continue." />
         <LoginForm workspace="MY_HR" />

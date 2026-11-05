@@ -14,6 +14,7 @@ import './AuthLayout.css';
  * @param {Object} props
  * @param {import('react').ReactNode} props.sidePanel - Branding panel content, typically an AuthSidePanel.
  * @param {import('react').ReactNode} props.children - Page-specific content (PageHeader + form) rendered inside the Card.
+ * @param {boolean} [props.formFirst=false] - Place authentication before promotional links in document order.
  * @param {string} [props.className=''] - Additional class names on the outer wrapper.
  *
  * @example
@@ -22,21 +23,15 @@ import './AuthLayout.css';
  *   <LoginForm />
  * </AuthLayout>
  */
-export default function AuthLayout({ sidePanel, children, className = '' }) {
-  const classes = ['wp-auth-layout', className].filter(Boolean).join(' ');
+export default function AuthLayout({ sidePanel, children, className = '', formFirst = false }) {
+  const classes = ['wp-auth-layout', formFirst && 'wp-auth-layout--form-first', className].filter(Boolean).join(' ');
+  const brand = <div className="wp-auth-layout__side">{sidePanel}</div>;
+  const form = <div className="wp-auth-layout__main"><Card className="wp-auth-layout__card">{children}</Card></div>;
 
   return (
     <div className={classes}>
-      <TwoColumnLayout
-        ratio="1:1"
-        className="wp-auth-layout__columns"
-        main={<div className="wp-auth-layout__side">{sidePanel}</div>}
-        side={
-          <div className="wp-auth-layout__main">
-            <Card className="wp-auth-layout__card">{children}</Card>
-          </div>
-        }
-      />
+      <TwoColumnLayout ratio="1:1" className="wp-auth-layout__columns"
+        main={formFirst ? form : brand} side={formFirst ? brand : form} />
     </div>
   );
 }
