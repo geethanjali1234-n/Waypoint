@@ -1048,3 +1048,10 @@
   .document-request-detail-page .document-workflow-layout > .document-requests__detail { height:100%; min-height:0; overflow-y:auto; scrollbar-gutter:stable; overscroll-behavior-y:contain; }
 }
 .document-requests__detail:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
+
+/* Offer letter Work Location autocomplete (same look as the Employee Management address suggestions). */
+.offer-letter__location { position:relative; min-width:0; }
+.offer-letter__location-suggestions { position:absolute; top:100%; left:0; right:0; z-index:25; max-height:240px; overflow:auto; list-style:none; padding:8px; margin:4px 0 0; background:var(--wp-color-surface); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); }
+.offer-letter__location-suggestions button { min-height:44px; width:100%; padding:8px; background:transparent; border:0; border-radius:var(--wp-radius-control); font:inherit; color:var(--wp-color-text); text-align:left; cursor:pointer; }
+.offer-letter__location-suggestions button:hover, .offer-letter__location-suggestions button.is-active { background:var(--wp-color-hover); }
+.offer-letter__location-suggestions button:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:-2px; }

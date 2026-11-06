@@ -22,6 +22,7 @@ import {
   getStandardOfferLetterClauses,
 } from './offerLetterTemplates';
 import { approverLabel } from './offerLetterState';
+import { getWorkLocationSuggestions } from './workLocationSuggestions';
 import './documentRequests.css';
 import './offerLetterApproval.css';
 
@@ -117,6 +118,13 @@ export default function OfferLetterPreparePage({ role }) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
+  // Work Location autocomplete: suggestions come from the built-in US city list.
+  const [workLocationOpen, setWorkLocationOpen] = useState(false);
+  const [workLocationActive, setWorkLocationActive] = useState(-1);
+  const workLocationSuggestions = useMemo(
+    () => (workLocationOpen ? getWorkLocationSuggestions(form.workLocation) : []),
+    [workLocationOpen, form.workLocation],
+  );
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
@@ -399,6 +407,45 @@ export default function OfferLetterPreparePage({ role }) {
       return next;
     });
     setErrors((current) => ({ ...current, [field]: undefined }));
+  };
+
+  // Work Location still saves whatever HR types; suggestions only fill it in faster.
+  const changeWorkLocation = (event) => {
+    setField('workLocation')(event);
+    setWorkLocationOpen(true);
+    setWorkLocationActive(-1);
+  };
+
+  const selectWorkLocation = (location) => {
+    setField('workLocation')({ target: { value: location } });
+    setWorkLocationOpen(false);
+    setWorkLocationActive(-1);
+  };
+
+  const workLocationKeyDown = (event) => {
+    const count = workLocationSuggestions.length;
+    if (event.key === 'Escape') { setWorkLocationOpen(false); return; }
+    if (!count) return;
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const delta = event.key === 'ArrowDown' ? 1 : -1;
+      setWorkLocationActive((current) => (current < 0
+        ? (delta > 0 ? 0 : count - 1)
+        : (current + delta + count) % count));
+    } else if (event.key === 'Enter' && workLocationActive >= 0) {
+      event.preventDefault();
+      selectWorkLocation(workLocationSuggestions[workLocationActive]);
+    }
+  };
+
+  // Closes the list when focus leaves the field and its suggestions.
+  const workLocationBlur = (event) => {
+    if (!event.currentTarget.contains(event.relatedTarget)) setWorkLocationOpen(false);
+  };
+
+  // Stops the browser's own saved-entries list from covering the suggestions.
+  const disableBrowserAutofill = (node) => {
+    node?.querySelector('input')?.setAttribute('autocomplete', 'off');
   };
 
   const validateStep1 = () => {
@@ -951,8 +998,27 @@ export default function OfferLetterPreparePage({ role }) {
               onChange={setField('joiningDate')} error={errors.joiningDate} min={form.issueDate || undefined} />
             <TextInput name="issueDate" label="Issue Date" type="date" required value={form.issueDate}
               onChange={setField('issueDate')} error={errors.issueDate} />
-            <TextInput name="workLocation" label="Work Location" required value={form.workLocation}
-              onChange={setField('workLocation')} error={errors.workLocation} maxLength={240} />
+            <div className="offer-letter__location" ref={disableBrowserAutofill}
+              onFocus={() => setWorkLocationOpen(true)} onBlur={workLocationBlur}>
+              <TextInput name="workLocation" label="Work Location" required value={form.workLocation}
+                onChange={changeWorkLocation} onKeyDown={workLocationKeyDown}
+                error={errors.workLocation} maxLength={240} />
+              {workLocationSuggestions.length > 0 && (
+                <ul className="offer-letter__location-suggestions" aria-label="Work location suggestions">
+                  {workLocationSuggestions.map((location, index) => (
+                    <li key={location}>
+                      <button type="button"
+                        className={index === workLocationActive ? 'is-active' : undefined}
+                        // Keeps focus in the input so the list doesn't close before the tap lands.
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => selectWorkLocation(location)}>
+                        {location}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
 
           <h3 className="offer-letter__section-title">Employee Address</h3>
