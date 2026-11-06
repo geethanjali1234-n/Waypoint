@@ -14,5 +14,6 @@ public record ReportingManagerSummary(
         String employeeId,
         String name,
         String loginId,
-        String email) {
+        String email,
+        String designation) {
 }

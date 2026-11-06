@@ -142,8 +142,8 @@ public class EmployeeManagementService {
             reportingManager = new ReportingManagerRef(
                     managerUserId,
                     managerProfile == null ? null : managerProfile.getEmployeeId(),
-                    managerUser == null ? null : displayName(managerUser, managerProfile),
-                    managerUser == null ? null : managerUser.getRole().name(),
+                    managerUser == null ? null : managerFormatter().fullName(managerUser, managerProfile),
+                    managerUser == null ? null : NotificationActorFormatter.designation(managerUser.getRole()),
                     activeAssignment.getEffectiveFrom(),
                     null);
         }
@@ -346,11 +346,13 @@ public class EmployeeManagementService {
         return "employee";
     }
 
-    /** "Full Name (EMPLOYEE-ID)", falling back to just the identity when no employee id exists (e.g. Company Admin). */
+    private NotificationActorFormatter managerFormatter() {
+        return new NotificationActorFormatter(userRepository, employeeProfileRepository, organizationRepository);
+    }
+
+    /** "Full Name (Designation)" for notification text; never the login or employee ID. */
     private String participantLabel(User user, EmployeeProfile profile) {
-        String employeeId = profile == null ? null : profile.getEmployeeId();
-        String identity = displayName(user, profile);
-        return employeeId == null || employeeId.isBlank() ? identity : identity + " (" + employeeId + ")";
+        return new NotificationActorFormatter(userRepository, employeeProfileRepository, organizationRepository).describe(user, profile);
     }
 
     /**
@@ -564,11 +566,12 @@ public class EmployeeManagementService {
             String managerUserId = active.getReportingManagerUserId();
             EmployeeProfile managerProfile = managerUserId == null ? null
                     : employeeProfileRepository.findByUserId(managerUserId).orElse(null);
+            User managerUser = managerUserId == null ? null : userRepository.findById(managerUserId).orElse(null);
             managerRef = new ReportingManagerRef(
                     managerUserId,
                     managerProfile == null ? null : managerProfile.getEmployeeId(),
-                    names.get(managerUserId),
-                    null,
+                    managerUser == null ? null : managerFormatter().fullName(managerUser, managerProfile),
+                    managerUser == null ? null : NotificationActorFormatter.designation(managerUser.getRole()),
                     active.getEffectiveFrom(),
                     active.getAssignedByUserId() == null ? null : names.get(active.getAssignedByUserId()));
         }

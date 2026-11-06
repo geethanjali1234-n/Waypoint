@@ -701,12 +701,8 @@ public class PayrollReadinessService {
     }
 
     private String reminderSender(AuthenticatedMyHrUser actor) {
-        String role = actor.role() == UserRole.COMPANY_ADMIN ? "Company Admin" : "HR";
-        String name = employeeProfileRepository.findByUserId(actor.userId())
-                .filter(profile -> actor.organizationId().equals(profile.getOrganizationId()))
-                .map(EmployeeProfile::getName).filter(StringUtils::hasText)
-                .orElse(actor.loginId());
-        return StringUtils.hasText(name) ? name + " (" + role + ")" : role;
+        // Same "Full Name (Designation)" format as every other notification; never the login ID.
+        return new NotificationActorFormatter(userRepository, employeeProfileRepository, null).describe(actor.userId());
     }
 
     private ReminderContent reminderContent(PayrollReadinessState state, Period period) {

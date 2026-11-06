@@ -250,6 +250,47 @@ class EmployeeManagementServiceTest {
     }
 
     @Test
+    void hrOwnProfileShowsACompanyAdminManagerByRealNameAndDesignationNeverByLoginId() {
+        actor("hr-1", UserRole.HR);
+        User hr = user("hr-1", UserRole.HR, AccountStatus.ACTIVE);
+        when(userRepository.findById("hr-1")).thenReturn(Optional.of(hr));
+        when(employeeProfileRepository.findByUserId("hr-1")).thenReturn(Optional.empty());
+        when(organizationRepository.findById("org-1")).thenReturn(Optional.of(
+                Organization.builder().id("org-1").organizationName("Tardus").adminName("Vasavi Anna").build()));
+        when(reportingAssignmentRepository.findByEmployeeUserIdAndRelationshipTypeAndIsActiveTrue(
+                "hr-1", RelationshipType.PRIMARY_REPORTING_MANAGER))
+                .thenReturn(Optional.of(active("hr-1", "admin-9")));
+        when(userRepository.findById("admin-9")).thenReturn(Optional.of(
+                User.builder().id("admin-9").loginId("TARDUADMIN").role(UserRole.COMPANY_ADMIN).organizationId("org-1").build()));
+        when(employeeProfileRepository.findByUserId("admin-9")).thenReturn(Optional.empty());
+
+        MyHrOwnProfileResponse detail = service.getOwnDetail("hr-1");
+
+        assertThat(detail.reportingManager().name()).isEqualTo("Vasavi Anna");
+        assertThat(detail.reportingManager().roleLabel()).isEqualTo("Company Admin");
+        assertThat(detail.reportingManager().name()).doesNotContain("TARDUADMIN");
+    }
+
+    @Test
+    void ownProfileHasNoManagerNameWhenNoRealNameExistsInsteadOfFallingBackToTheLoginId() {
+        actor("hr-1", UserRole.HR);
+        when(userRepository.findById("hr-1")).thenReturn(Optional.of(user("hr-1", UserRole.HR, AccountStatus.ACTIVE)));
+        when(employeeProfileRepository.findByUserId("hr-1")).thenReturn(Optional.empty());
+        when(organizationRepository.findById("org-1")).thenReturn(Optional.of(Organization.builder().id("org-1").build()));
+        when(reportingAssignmentRepository.findByEmployeeUserIdAndRelationshipTypeAndIsActiveTrue(
+                "hr-1", RelationshipType.PRIMARY_REPORTING_MANAGER))
+                .thenReturn(Optional.of(active("hr-1", "admin-9")));
+        when(userRepository.findById("admin-9")).thenReturn(Optional.of(
+                User.builder().id("admin-9").loginId("TARDUADMIN").role(UserRole.COMPANY_ADMIN).organizationId("org-1").build()));
+        when(employeeProfileRepository.findByUserId("admin-9")).thenReturn(Optional.empty());
+
+        MyHrOwnProfileResponse detail = service.getOwnDetail("hr-1");
+
+        assertThat(detail.reportingManager().name()).isNull();
+        assertThat(detail.reportingManager().roleLabel()).isEqualTo("Company Admin");
+    }
+
+    @Test
     void hrCanViewTheirOwnProfileDetail() {
         actor("hr-1", UserRole.HR);
         User hr = user("hr-1", UserRole.HR, AccountStatus.ACTIVE);
@@ -771,6 +812,8 @@ class EmployeeManagementServiceTest {
         when(reportingAssignmentRepository
                 .findByEmployeeUserIdOrderByEffectiveFromDescCreatedAtDesc("emp-1")).thenReturn(List.of());
         when(employeeProfileRepository.findByUserId("emp-1")).thenReturn(Optional.empty());
+        when(employeeProfileRepository.findByUserIdIn(any())).thenReturn(List.of(com.waypoint.entity.EmployeeProfile.builder()
+                .userId("emp-1").organizationId("org-1").employeeId("TARDU004").firstName("Emily").lastName("Rao").build()));
         when(employeeProfileRepository.findByUserId("hr-1")).thenReturn(Optional.empty());
         when(userRepository.findByIdIn(any())).thenReturn(List.of(employee, newManager));
 
@@ -780,7 +823,7 @@ class EmployeeManagementServiceTest {
 
         verify(inAppNotificationService).createNotification(eq("org-1"), eq("hr-1"),
                 eq(NotificationType.EMPLOYEE_ASSIGNED), eq("New employee assigned"),
-                contains("emp-1"), eq("emp-1"), contains("/employees"));
+                eq("Emily Rao (Employee) has been assigned to you as a direct report."), eq("emp-1"), contains("/employees"));
         verify(inAppNotificationService).createNotification(eq("org-1"), eq("emp-1"),
                 eq(NotificationType.REPORTING_MANAGER_UPDATED), eq("Reporting manager updated"),
                 contains("set to"), eq("emp-1"), contains("/profile"));

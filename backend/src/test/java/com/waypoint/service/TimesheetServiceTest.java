@@ -441,6 +441,9 @@ class TimesheetServiceTest {
         MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor = actor("admin-1", UserRole.COMPANY_ADMIN);
         Timesheet submitted = timesheet("submitted", actor.organizationId(), "employee-1", TimesheetStatus.SUBMITTED);
 
+        when(userRepository.findById("admin-1")).thenReturn(Optional.of(user("admin-1", UserRole.COMPANY_ADMIN)));
+        when(employeeProfileRepository.findByUserId("admin-1")).thenReturn(Optional.of(EmployeeProfile.builder()
+                .userId("admin-1").employeeId("TARDU001").firstName("Alex").lastName("Admin").build()));
         when(authenticatedUserService.require(eq(actor.userId()), anySet(), eq(false))).thenReturn(actor);
         when(timesheetRepository.findById("submitted")).thenReturn(Optional.of(submitted));
         when(timesheetRepository.save(any(Timesheet.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -454,7 +457,7 @@ class TimesheetServiceTest {
                 eq("employee-1"),
                 eq(com.waypoint.enums.NotificationType.TIMESHEET_REJECTED),
                 eq("Timesheet rejected"),
-                eq("Your timesheet for 2026-08-31 to 2026-09-06 was rejected by ADMIN-1. Reason: Invalid hours on Sep 1. Please revise and resubmit."),
+                eq("Your timesheet for 2026-08-31 to 2026-09-06 was rejected by Alex Admin (Company Admin). Reason: Invalid hours on Sep 1. Please revise and resubmit."),
                 eq("submitted"),
                 contains("/myhr/employee/timesheets"));
     }
@@ -784,6 +787,9 @@ class TimesheetServiceTest {
         Timesheet timesheet = timesheet("ts-sub-1", adminActor.organizationId(), "employee-1", TimesheetStatus.SUBMITTED);
         timesheet.setReportingManagerUserId("hr-1");
 
+        when(userRepository.findById("admin-1")).thenReturn(Optional.of(user("admin-1", UserRole.COMPANY_ADMIN)));
+        when(employeeProfileRepository.findByUserId("admin-1")).thenReturn(Optional.of(EmployeeProfile.builder()
+                .userId("admin-1").employeeId("TARDU001").firstName("Alex").lastName("Admin").build()));
         when(authenticatedUserService.require(eq(adminActor.userId()), anySet(), eq(false))).thenReturn(adminActor);
         when(timesheetRepository.findById("ts-sub-1")).thenReturn(Optional.of(timesheet));
         when(timesheetRepository.save(any(Timesheet.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -797,7 +803,7 @@ class TimesheetServiceTest {
                 eq("employee-1"),
                 eq(NotificationType.TIMESHEET_APPROVED),
                 eq("Timesheet approved"),
-                contains("has been approved by ADMIN-1"),
+                contains("has been approved by Alex Admin (Company Admin)."),
                 eq("ts-sub-1"),
                 anyString());
 
@@ -806,7 +812,7 @@ class TimesheetServiceTest {
                 eq(adminActor.organizationId()),
                 eq("hr-1"),
                 eq(NotificationType.TIMESHEET_APPROVED),
-                eq("Timesheet approved by ADMIN-1"),
+                eq("Timesheet approved by Alex Admin (Company Admin)"),
                 anyString(),
                 eq("ts-sub-1"),
                 contains("/myhr/hr/timesheets?view=team&timesheetId=ts-sub-1"));

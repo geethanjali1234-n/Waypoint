@@ -1,3 +1,4 @@
+import { formatReportingManager } from '../../../../utils/reportingManagerLabel';
 import { useEffect, useState } from 'react';
 import { Button, Card, EmptyState, Loader, StatusBadge } from '../../../../components';
 import myHrEmployeeApi from '../../../../api/myHrEmployeeApi';
@@ -26,16 +27,6 @@ function initials(value) {
   const parts = String(value || '').trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '?';
   return parts.slice(0, 2).map((part) => part[0]).join('').toUpperCase();
-}
-
-function formatReportingManager(manager) {
-  if (!manager) return 'Not assigned';
-  const identifier = manager.employeeId || manager.userId || manager.loginId || '';
-  const name = manager.name || '';
-  if (identifier && name) return `${identifier} · ${name}`;
-  if (identifier) return identifier;
-  if (name) return name;
-  return 'Not assigned';
 }
 
 function Fields({ items }) {

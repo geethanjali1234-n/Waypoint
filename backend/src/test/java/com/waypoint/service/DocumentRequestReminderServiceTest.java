@@ -89,6 +89,8 @@ class DocumentRequestReminderServiceTest {
         });
         when(users.findById(anyString())).thenAnswer(call -> Optional.of(user(call.getArgument(0), AccountStatus.ACTIVE)));
         when(profiles.findByUserId(anyString())).thenReturn(Optional.empty());
+        when(profiles.findByUserId("employee-1")).thenReturn(Optional.of(com.waypoint.entity.EmployeeProfile.builder()
+                .userId("employee-1").employeeId("TARDU003").firstName("Emma").lastName("Stone").build()));
     }
 
     @Test
@@ -183,7 +185,7 @@ class DocumentRequestReminderServiceTest {
         assertThat(events).extracting(NotificationEvent::getRelatedEntityId).containsExactlyInAnyOrder("on-activation", "ten-days-ago");
         assertThat(events).extracting(NotificationEvent::getRecipientUserId).containsOnly("hr-1");
         assertThat(events).extracting(NotificationEvent::getType).containsOnly(NotificationType.DOCUMENT_REQUEST_OVERDUE);
-        assertThat(events.getFirst().getMessage()).contains("employee-1").contains("has not completed");
+        assertThat(events.getFirst().getMessage()).contains("Emma Stone (Employee)").doesNotContain("TARDU003").contains("has not completed");
     }
 
     @Test
@@ -307,7 +309,7 @@ class DocumentRequestReminderServiceTest {
         assertThat(events).extracting(NotificationEvent::getRecipientUserId).containsOnly("hr-1");
         assertThat(events).extracting(NotificationEvent::getType).containsOnly(NotificationType.DOCUMENT_REQUEST_REMINDER);
         assertThat(events).extracting(NotificationEvent::getTitle).containsOnly("Employee document request due soon");
-        assertThat(events).allSatisfy(event -> assertThat(event.getMessage()).contains("employee-1 requested"));
+        assertThat(events).allSatisfy(event -> assertThat(event.getMessage()).contains("Emma Stone (Employee) requested"));
         assertThat(events.getFirst().getActionPath()).startsWith("/myhr/hr/document-requests/");
     }
 
@@ -338,7 +340,7 @@ class DocumentRequestReminderServiceTest {
         assertThat(alert.getRelatedEntityId()).isEqualTo("after-activation");
         assertThat(alert.getRecipientUserId()).isEqualTo("hr-1");
         assertThat(alert.getType()).isEqualTo(NotificationType.DOCUMENT_REQUEST_OVERDUE);
-        assertThat(alert.getMessage()).contains("employee-1 requested").contains("not completed yet");
+        assertThat(alert.getMessage()).contains("Emma Stone (Employee) requested").contains("not completed yet");
     }
 
     @Test
@@ -435,7 +437,7 @@ class DocumentRequestReminderServiceTest {
         assertThat(event.getRelatedEntityId()).isEqualTo("i983");
         assertThat(event.getRecipientUserId()).isEqualTo("hr-1");
         assertThat(event.getTitle()).isEqualTo("Signed I-983 review due soon");
-        assertThat(event.getMessage()).contains("employee-1's Signed I-983 is due in 3 days");
+        assertThat(event.getMessage()).contains("Emma Stone (Employee)'s Signed I-983 is due in 3 days");
         assertThat(event.getActionLabel()).isEqualTo("Review I-983");
         ArgumentCaptor<DocumentRequestReminder> claim = ArgumentCaptor.forClass(DocumentRequestReminder.class);
         verify(reminders).insert(claim.capture());

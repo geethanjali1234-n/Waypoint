@@ -468,7 +468,7 @@ public class ProfileChangeRequestService {
         if (id == null) return null;
         return employeeProfileRepository.findByUserId(id)
                 .map(profile -> new ReportingManagerSummary(profile.getUserId(), profile.getEmployeeId(),
-                        profile.getName(), null, null))
+                        managerName(profile), null, null, designationOf(id)))
                 .or(() -> userRepository.findById(id).map(this::managerFromUser))
                 .orElse(null);
     }
@@ -478,12 +478,26 @@ public class ProfileChangeRequestService {
         if (id == null) return null;
         EmployeeProfile profile = profiles.get(id);
         return profile != null
-                ? new ReportingManagerSummary(id, profile.getEmployeeId(), profile.getName(), null, null)
+                ? new ReportingManagerSummary(id, profile.getEmployeeId(), managerName(profile), null, null,
+                        users.containsKey(id) ? NotificationActorFormatter.designation(users.get(id).getRole()) : designationOf(id))
                 : users.containsKey(id) ? managerFromUser(users.get(id)) : null;
     }
 
     private ReportingManagerSummary managerFromUser(User user) {
-        return new ReportingManagerSummary(user.getId(), null, null, user.getLoginId(), user.getEmail());
+        String name = new NotificationActorFormatter(userRepository, employeeProfileRepository, null)
+                .fullName(user, null);
+        return new ReportingManagerSummary(user.getId(), null, name, user.getLoginId(), user.getEmail(),
+                NotificationActorFormatter.designation(user.getRole()));
+    }
+
+    /** The manager's real name from their profile (first and last name, else the profile name). */
+    private String managerName(EmployeeProfile profile) {
+        return new NotificationActorFormatter(userRepository, employeeProfileRepository, null)
+                .fullName(User.builder().build(), profile);
+    }
+
+    private String designationOf(String userId) {
+        return userRepository.findById(userId).map(User::getRole).map(NotificationActorFormatter::designation).orElse(null);
     }
 
     private String personaSegment(UserRole role) {
@@ -501,9 +515,8 @@ public class ProfileChangeRequestService {
     private void notifyProfileChangeSubmitted(MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor,
             EmployeeProfile profile, User reviewer, ProfileChangeRequest saved) {
         String fieldLabel = FIELD_LABELS.getOrDefault(saved.getFieldName(), saved.getFieldName().name());
-        String employeeId = profile.getEmployeeId();
-        String employeeLabel = employeeId == null || employeeId.isBlank()
-                ? profile.getName() : profile.getName() + " (" + employeeId + ")";
+        String employeeLabel = new NotificationActorFormatter(userRepository, employeeProfileRepository, null)
+                .describe(actor.userId());
         String message = employeeLabel + " submitted a profile change request for " + fieldLabel + ".";
 
         notifySafely(() -> notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor.organizationId()).recipientUserId(reviewer.getId())

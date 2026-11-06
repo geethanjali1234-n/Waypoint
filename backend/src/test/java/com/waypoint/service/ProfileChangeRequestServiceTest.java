@@ -1275,6 +1275,8 @@ class ProfileChangeRequestServiceTest {
         when(profileChangeRequestRepository.findById("request-1")).thenReturn(Optional.of(request));
         when(employeeProfileRepository.findByUserId("employee-1")).thenReturn(Optional.of(requesterProfile));
         when(employeeProfileRepository.findByUserId("hr-1")).thenReturn(Optional.of(managerProfile));
+        when(userRepository.findById("hr-1")).thenReturn(Optional.of(User.builder().id("hr-1")
+                .organizationId("organization-1").role(UserRole.HR).build()));
 
         ProfileChangeRequestDetailResponse detail = service().getDetailForAdmin("admin-1", "request-1");
 
@@ -1295,9 +1297,8 @@ class ProfileChangeRequestServiceTest {
         assertThat(detail.reportingManager().name()).isEqualTo("Alex Morgan");
         assertThat(detail.reportingManager().loginId()).isNull();
         assertThat(detail.reportingManager().email()).isNull();
-
-        // The manager resolved from EmployeeProfile - the User fallback must never be queried.
-        verify(userRepository, never()).findById(any());
+        // The designation comes from the manager's account role, never from an ID.
+        assertThat(detail.reportingManager().designation()).isEqualTo("HR");
     }
 
     @Test
@@ -1652,6 +1653,8 @@ class ProfileChangeRequestServiceTest {
         when(userRepository.findByOrganizationIdAndRoleIn("organization-1", List.of(UserRole.COMPANY_ADMIN)))
                 .thenReturn(List.of(User.builder().id("admin-1").organizationId("organization-1")
                         .role(UserRole.COMPANY_ADMIN).accountStatus(AccountStatus.ACTIVE).build()));
+        when(userRepository.findById("employee-1")).thenReturn(Optional.of(User.builder().id("employee-1")
+                .organizationId("organization-1").role(UserRole.EMPLOYEE).accountStatus(AccountStatus.ACTIVE).build()));
 
         CreateProfileChangeRequestRequest createRequest =
                 new CreateProfileChangeRequestRequest(ProfileChangeField.PHONE_NUMBER, "(555) 010-9999", null);
@@ -1663,11 +1666,11 @@ class ProfileChangeRequestServiceTest {
         // persona-correct route segment (hr vs admin).
         verify(inAppNotificationService).createInAppOnlyNotification(eq("organization-1"), eq("hr-1"),
                 eq(NotificationType.PROFILE_CHANGE_SUBMITTED), eq("Profile change request submitted"),
-                contains("Jordan Lee (TD002) submitted a profile change request for Phone Number"),
+                contains("Jordan Lee (Employee) submitted a profile change request for Phone Number"),
                 eq("request-1"), eq("/myhr/hr/profile-change-requests?view=assigned&requestId=request-1"));
         verify(inAppNotificationService).createInAppOnlyNotification(eq("organization-1"), eq("admin-1"),
                 eq(NotificationType.PROFILE_CHANGE_SUBMITTED), eq("Profile change request submitted"),
-                contains("Jordan Lee (TD002)"), eq("request-1"),
+                contains("Jordan Lee (Employee)"), eq("request-1"),
                 eq("/myhr/admin/profile-change-requests?view=assigned&requestId=request-1"));
         // The Company Admin lookup never crosses into another organization.
         verify(userRepository).findByOrganizationIdAndRoleIn("organization-1", List.of(UserRole.COMPANY_ADMIN));

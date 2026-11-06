@@ -55,7 +55,7 @@ const listResponse = (overrides = {}) => ({
       processedAt: null,
       employeeId: 'TD002',
       employeeName: 'Priya Shah',
-      reportingManager: { userId: 'hr-1', employeeId: 'TD001', name: 'Riley Chen', loginId: null, email: null },
+      reportingManager: { userId: 'hr-1', employeeId: 'TD001', name: 'Riley Chen', designation: 'HR', loginId: null, email: null },
       requesterRole: 'EMPLOYEE',
       ...overrides,
     }],
@@ -71,7 +71,7 @@ const mixedListResponse = () => ({
         requestReason: 'Number changed', status: 'PENDING', processedByUserId: null, processingComment: null,
         requestedAt: '2026-08-25T13:10:00', processedAt: null,
         employeeId: 'TD002', employeeName: 'Emma Employee',
-        reportingManager: { userId: 'hr-1', employeeId: 'TD001', name: 'Riley Chen', loginId: null, email: null },
+        reportingManager: { userId: 'hr-1', employeeId: 'TD001', name: 'Riley Chen', designation: 'HR', loginId: null, email: null },
         requesterRole: 'EMPLOYEE',
       },
       {
@@ -80,7 +80,7 @@ const mixedListResponse = () => ({
         requestReason: 'Promotion', status: 'PENDING', processedByUserId: null, processingComment: null,
         requestedAt: '2026-08-24T09:00:00', processedAt: null,
         employeeId: 'TD005', employeeName: 'Hank HR',
-        reportingManager: { userId: 'admin-1', employeeId: null, name: null, loginId: 'TDADMIN', email: 'admin@x.test' },
+        reportingManager: { userId: 'admin-1', employeeId: null, name: 'Vasavi Anna', designation: 'Company Admin', loginId: 'TDADMIN', email: 'admin@x.test' },
         requesterRole: 'HR',
       },
     ],
@@ -107,7 +107,7 @@ const detailResponse = (overrides = {}) => ({
       requestedAt: '2026-08-25T13:10:00',
       processedAt: null,
       requester: { userId: 'employee-1', employeeId: 'TD002', name: 'Priya Shah', role: 'EMPLOYEE' },
-      reportingManager: { userId: 'hr-1', employeeId: 'TD001', name: 'Riley Chen', loginId: null, email: null },
+      reportingManager: { userId: 'hr-1', employeeId: 'TD001', name: 'Riley Chen', designation: 'HR', loginId: null, email: null },
       ...overrides,
     },
   },
@@ -137,7 +137,7 @@ describe('ProfileChangeRequestsPage (COMPANY_ADMIN)', () => {
     renderAdminPage();
 
     expect(await screen.findByText('Priya Shah')).toBeInTheDocument();
-    expect(screen.getAllByText(/TD001 · Riley Chen/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^Riley Chen \(HR\)$/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Jordan Lee/)).not.toBeInTheDocument();
   });
 
@@ -636,7 +636,7 @@ describe('ProfileChangeRequestsPage (EMPLOYEE/HR self-service)', () => {
             requestReason: 'Number changed', status: 'PENDING', processedByUserId: null, processingComment: null,
             requestedAt: '2026-09-10T13:23:00', processedAt: null,
             employeeId: 'TD010', employeeName: 'Hank HR',
-            reportingManager: { userId: 'manager-1', employeeId: 'TD001', name: 'Riley Chen', loginId: null, email: null },
+            reportingManager: { userId: 'manager-1', employeeId: 'TD001', name: 'Riley Chen', designation: 'HR', loginId: null, email: null },
             requesterRole: 'HR',
           },
           {
@@ -645,7 +645,7 @@ describe('ProfileChangeRequestsPage (EMPLOYEE/HR self-service)', () => {
             requestReason: null, status: 'APPROVED', processedByUserId: 'manager-1', processingComment: 'Looks good',
             requestedAt: '2026-09-08T10:20:00', processedAt: '2026-09-09T09:00:00',
             employeeId: 'TD010', employeeName: 'Hank HR',
-            reportingManager: { userId: 'manager-1', employeeId: 'TD001', name: 'Riley Chen', loginId: null, email: null },
+            reportingManager: { userId: 'manager-1', employeeId: 'TD001', name: 'Riley Chen', designation: 'HR', loginId: null, email: null },
             requesterRole: 'HR',
           },
         ],
