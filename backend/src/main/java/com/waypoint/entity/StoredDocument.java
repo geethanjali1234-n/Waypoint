@@ -56,6 +56,9 @@ public class StoredDocument {
 
     private String uploadedByUserId;
 
+    private String identityValidationStatus;
+    private String identityValidationMessage;
+
     @Indexed(direction = IndexDirection.DESCENDING)
     private LocalDateTime createdAt;
 }

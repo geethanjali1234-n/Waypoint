@@ -1317,9 +1317,10 @@
 .payroll-readiness__table > header { padding: 14px 20px; }
 .payroll-readiness__bulk-bar { padding: 12px 20px; border-radius: 12px 12px 0 0; background:var(--wp-color-surface); box-shadow:none; gap: 12px; }
 .payroll-readiness__coverage { display: grid; gap: 6px; min-width: 100px; }
-.payroll-readiness__coverage progress { width: 100%; height: 6px; border: 0; border-radius: 8px; overflow: hidden; accent-color:var(--wp-color-text); }
-.payroll-readiness__coverage progress::-webkit-progress-bar { background:var(--wp-color-surface); border-radius: 8px; }
-.payroll-readiness__coverage progress::-webkit-progress-value { background:var(--wp-color-surface); border-radius: 8px; }
+.payroll-readiness__coverage progress { display:block; appearance:none; width:100%; height:6px; border:0; border-radius:8px; overflow:hidden; background:var(--wp-color-border); accent-color:var(--wp-color-primary); }
+.payroll-readiness__coverage progress::-webkit-progress-bar { background:var(--wp-color-border); border-radius:8px; }
+.payroll-readiness__coverage progress::-webkit-progress-value { background:var(--wp-color-primary); border-radius:8px; }
+.payroll-readiness__coverage progress::-moz-progress-bar { background:var(--wp-color-primary); border-radius:8px; }
 [data-theme="dark"] .payroll-readiness__hero { background:var(--wp-color-surface); border-color:var(--wp-color-border); }
 [data-theme="dark"] .payroll-readiness__hero h2, [data-theme="dark"] .payroll-readiness__hero dd { color:var(--wp-color-text); }
 [data-theme="dark"] .payroll-readiness__hero span, [data-theme="dark"] .payroll-readiness__summary small { color:var(--wp-color-text); }
@@ -1510,3 +1511,40 @@
   .payroll-readiness__workspace .payroll-readiness__table-actions select { width:64px; min-width:0; min-height:44px; }
   .payroll-readiness__workspace .payroll-readiness__cards-grid { margin-top:0; }
 }
+
+/* Period metadata gets its own row rather than narrowing the page introduction. */
+@media(min-width:769px) {
+  .payroll-readiness__workspace .payroll-readiness__hero { grid-template-columns:minmax(0,1fr) auto; align-items:start; }
+  .payroll-readiness__workspace .payroll-readiness__hero > div:first-child { min-width:0; }
+  .payroll-readiness__workspace .payroll-readiness__hero > dl { grid-row:2; grid-column:1/-1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; width:100%; }
+  .payroll-readiness__workspace .payroll-readiness__hero > dl > div { min-width:0; }
+  .payroll-readiness__workspace .payroll-readiness__hero dd { white-space:normal; overflow-wrap:break-word; }
+  .payroll-readiness__workspace .payroll-readiness__filter-popover { grid-row:1; grid-column:2; }
+}
+
+/* Size to the workspace, including when a sidebar is open or the browser is zoomed. */
+.payroll-readiness__workspace .payroll-readiness__table { min-width:0; }
+.payroll-readiness__workspace .payroll-readiness__data-table table { width:100%; min-width:0; table-layout:fixed; }
+#workspace-content .payroll-readiness__workspace .payroll-readiness__data-table :is(th,td) { padding:12px 8px; font-size:.8125rem; white-space:normal; overflow-wrap:anywhere; vertical-align:middle; }
+.payroll-readiness__data-table th:nth-child(1) { width:4%; }
+.payroll-readiness__data-table th:nth-child(2) { width:21%; }
+.payroll-readiness__data-table th:nth-child(3) { width:14%; }
+.payroll-readiness__data-table th:nth-child(4) { width:12%; }
+.payroll-readiness__data-table th:nth-child(5) { width:11%; }
+.payroll-readiness__data-table th:nth-child(6) { width:11%; }
+.payroll-readiness__data-table th:nth-child(7) { width:15%; }
+.payroll-readiness__data-table th:nth-child(8) { width:12%; }
+#workspace-content .payroll-readiness__workspace .payroll-readiness__data-table th { overflow-wrap:normal; word-break:normal; hyphens:none; font-size:.75rem; line-height:1.5; }
+.payroll-readiness__column-heading { display:inline-block; white-space:normal; }
+.payroll-readiness__column-heading > :is(span,small) { display:block; white-space:nowrap; }
+.payroll-readiness__column-heading small { font-size:.6875rem; font-weight:400; color:var(--wp-color-text-muted); }
+.payroll-readiness__data-table .wp-data-table__person { min-width:0; gap:8px; }
+.payroll-readiness__data-table .wp-data-table__person > span:last-child { min-width:0; overflow-wrap:break-word; }
+.payroll-readiness__data-table .wp-data-table__avatar { flex-basis:28px; height:28px; }
+.payroll-readiness__data-table .wp-status-badge { max-width:100%; white-space:normal; text-align:left; }
+.payroll-readiness__data-table .payroll-readiness__coverage { min-width:0; }
+.payroll-readiness__data-table .payroll-readiness__coverage progress { width:100%; max-width:100%; }
+.payroll-readiness__data-table .payroll-readiness__row-actions { display:flex; flex-wrap:wrap; gap:4px; }
+.payroll-readiness__data-table .payroll-readiness__row-actions button { min-height:44px; min-width:0; padding:6px 8px; white-space:normal; }
+/* React owns Table/Cards selection. Do not turn a selected desktop table into
+   CSS cards when a sidebar or browser zoom narrows the content area. */

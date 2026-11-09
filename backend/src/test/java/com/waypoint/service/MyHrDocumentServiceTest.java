@@ -39,10 +39,12 @@ class MyHrDocumentServiceTest {
     private MyHrAuthenticatedUserService authenticatedUserService;
 
     private MyHrDocumentService service;
+    @Mock
+    private TimesheetDocumentIdentityService identityService;
 
     @BeforeEach
     void setUp() {
-        service = new MyHrDocumentService(documentService, authenticatedUserService);
+        service = new MyHrDocumentService(documentService, authenticatedUserService, identityService);
     }
 
     private void authenticateAs(String userId, UserRole role, String organizationId) {
@@ -75,6 +77,7 @@ class MyHrDocumentServiceTest {
 
         assertThat(response.id()).isEqualTo("document-1");
         assertThat(response.documentType()).isEqualTo("TIMESHEET_SUPPORTING_DOCUMENT");
+        verify(identityService).validate(any(StoredDocument.class), any(byte[].class));
 
         ArgumentCaptor<DocumentUploadRequest> captor = ArgumentCaptor.forClass(DocumentUploadRequest.class);
         verify(documentService).store(captor.capture());

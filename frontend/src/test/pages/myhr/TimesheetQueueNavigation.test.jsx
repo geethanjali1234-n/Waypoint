@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, expect, it, vi } from 'vitest';
 import TimesheetsPage from '../../../pages/myhr/features/timesheets/TimesheetsPage';
@@ -21,4 +21,15 @@ it.each(['HR', 'COMPANY_ADMIN'])('opens Required Actions from the %s dashboard U
   render(<MemoryRouter initialEntries={['/myhr/hr/timesheets?view=team&subtab=actions&status=SUBMITTED']}><TimesheetsPage role={role} /></MemoryRouter>);
   await waitFor(() => expect(screen.getByRole('button', { name: /Required Actions/ })).toHaveAttribute('aria-pressed', 'true'));
   expect(screen.getByRole('button', { name: /All Submissions/ })).toHaveAttribute('aria-pressed', 'false');
+});
+
+it('shows the active timesheet status and updates it when a different status is chosen', async () => {
+  localStorage.setItem('myHrAuthenticatedUser', JSON.stringify({ userId: 'reviewer-1', role: 'HR' }));
+  render(<MemoryRouter initialEntries={['/myhr/hr/timesheets?view=team&subtab=actions&status=SUBMITTED']}><TimesheetsPage role="HR" /></MemoryRouter>);
+  const submitted = await screen.findByRole('button', { name: /Filter by submitted:/ });
+  expect(submitted).toHaveAttribute('aria-pressed', 'true');
+  const approved = screen.getByRole('button', { name: /Filter by approved:/ });
+  fireEvent.click(approved);
+  await waitFor(() => expect(screen.getByRole('button', { name: /Filter by approved:/ })).toHaveAttribute('aria-pressed', 'true'));
+  expect(screen.getByRole('button', { name: /Filter by submitted:/ })).toHaveAttribute('aria-pressed', 'false');
 });

@@ -506,6 +506,15 @@ public class TimesheetDocumentParserService {
         return result;
     }
 
+    /** Server-side extraction only: browser OCR is never identity evidence. */
+    public String extractIdentityText(byte[] bytes, String name) {
+        try {
+            return extract(bytes, name == null ? "" : name);
+        } catch (Exception exception) {
+            return "";
+        }
+    }
+
     private String extract(byte[] bytes, String name) throws Exception {
         if (bytes == null || bytes.length == 0 || bytes.length > 5 * 1024 * 1024) return "";
         String lower = name.toLowerCase(Locale.ROOT);

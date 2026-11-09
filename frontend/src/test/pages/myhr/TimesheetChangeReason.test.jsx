@@ -27,7 +27,7 @@ function Review({ needsReason = true, onSubmit = vi.fn(), initialReason = '', ap
   const [reason, setReason] = useState(initialReason);
   return <EntryWorkspace step="review" today="2026-11-04" rangeStart="2026-11-02" rangeEnd="2026-11-02"
     rangeDays={['2026-11-02']} rangeHours={{ '2026-11-02': 8 }} rangeDescriptions={{}} rangeEntryTypes={{}}
-    rangeEntries={entries} reviewTotal={8} supportingDocuments={[]} managerDisplayName="Reporting manager"
+    rangeEntries={entries} reviewTotal={8} supportingDocuments={[{ id: 'doc-1', fileName: 'hours.pdf' }]} managerDisplayName="Reporting manager"
     requiresChangeReason={needsReason} reeditSubmitted={false} approvedCorrection={approvedCorrection} changeReason={reason} setChangeReason={setReason}
     onSubmit={() => onSubmit(reason)} />;
 }

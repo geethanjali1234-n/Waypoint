@@ -7,6 +7,7 @@ import timesheetApi from '../../../../api/timesheetApi';
 import { formatDateOnly, formatDateTime } from '../../../../utils/dateFormat';
 import { downloadReportCsv, downloadReportExcel, downloadReportPdf } from './reportExport';
 import './reports.css';
+import '../timeAndPaySpacing.css';
 import Table from '../../components/WorkspaceDataTable';
 import StrokeIcon from '../../../../components/global/StrokeIcon';
 
@@ -546,7 +547,7 @@ export default function ReportsPage({ role }) {
   }
 
   return (
-    <MyHrFeaturePage hideBack className="phase-six"
+    <MyHrFeaturePage hideBack className="phase-six time-pay-page"
       title="Reports"
       description={role === 'COMPANY_ADMIN' ? 'Organization-wide workforce and timesheet reporting.' : 'Workforce and timesheet reporting for your direct reports.'}
       onBack={activeItem ? () => setSelected(null) : undefined}

@@ -37,6 +37,7 @@ public class MyHrDocumentService {
 
     private final DocumentService documentService;
     private final MyHrAuthenticatedUserService authenticatedUserService;
+    private final TimesheetDocumentIdentityService identityService;
 
     public DocumentUploadResponse upload(
             String actorUserId, MultipartFile file, DocumentType documentType) {
@@ -76,12 +77,20 @@ public class MyHrDocumentService {
                 null,
                 actor.userId()));
 
+        if (resolvedType == DocumentType.TIMESHEET_SUPPORTING_DOCUMENT) {
+            identityService.validate(stored, content);
+        }
         return new DocumentUploadResponse(
                 stored.getId(),
                 stored.getFileName(),
                 stored.getContentType(),
                 stored.getFileSize() == null ? content.length : stored.getFileSize(),
-                stored.getDocumentType().name());
+                stored.getDocumentType().name(),
+                stored.getIdentityValidationStatus(), stored.getIdentityValidationMessage());
+    }
+
+    public void verifyTimesheetIdentity(DocumentService.DocumentContent content) {
+        identityService.validate(content.metadata(), content.content());
     }
 
     public DocumentService.DocumentContent download(String actorUserId, String documentId) {

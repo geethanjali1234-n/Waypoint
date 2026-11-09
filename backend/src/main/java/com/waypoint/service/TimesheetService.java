@@ -76,6 +76,7 @@ public class TimesheetService {
     private final OrganizationSettingsRepository organizationSettingsRepository;
     private final InAppNotificationService inAppNotificationService;
     private final MyHrAuthenticatedUserService authenticatedUserService;
+    private final TimesheetDocumentIdentityService identityService;
 
     public PayrollPeriod getPayrollPeriodForOrganization(String actorUserId) {
         MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor = requireActor(actorUserId);
@@ -129,16 +130,39 @@ public class TimesheetService {
         if (timesheet.getStatus() != TimesheetStatus.SUBMITTED) {
             throw new BusinessException("Only submitted timesheets can be reviewed");
         }
+        boolean needsManualDocumentReview = false;
+        if (request.status() == TimesheetStatus.APPROVED) {
+            var documentIds = sanitizedDocumentIds(timesheet.getSupportingDocumentIds());
+            if (documentIds.isEmpty()) {
+                throw new BusinessException("A supporting document is required before approval. Ask the employee to attach one and resubmit.");
+            }
+            for (String documentId : documentIds) {
+                StoredDocument document = storedDocumentRepository.findById(documentId)
+                        .orElseThrow(() -> new BusinessException("Supporting document not found"));
+                if (!timesheet.getOrganizationId().equals(document.getOrganizationId())
+                        || !timesheet.getUserId().equals(document.getOwnerUserId())
+                        || document.getDocumentType() != DocumentType.TIMESHEET_SUPPORTING_DOCUMENT) {
+                    throw new BusinessException("The supporting document does not belong to this employee's timesheet");
+                }
+                var validation = identityService.validateStored(document);
+                if (validation == null || !"MATCHED".equals(validation.status())) needsManualDocumentReview = true;
+            }
+            if (needsManualDocumentReview && (!Boolean.TRUE.equals(request.documentReviewConfirmed()) || !StringUtils.hasText(request.comment()))) {
+                throw new BusinessException("The employee name could not be verified. Open the document, confirm manual review, and provide a review note before approving.");
+            }
+        }
 
         LocalDateTime now = LocalDateTime.now();
         timesheet.setStatus(request.status());
         timesheet.setReviewedByUserId(actor.userId());
         timesheet.setReviewedAt(now);
-        timesheet.setReviewComment(trimToNull(request.comment()));
+        String reviewNote = trimToNull(request.comment());
+        if (needsManualDocumentReview) reviewNote = "[Manual document review confirmed] " + reviewNote;
+        timesheet.setReviewComment(reviewNote);
         timesheet.setUpdatedAt(now);
 
         Timesheet reviewed = timesheetRepository.save(timesheet);
-        logReviewAudit(actor, reviewed, request.status(), request.comment());
+        logReviewAudit(actor, reviewed, request.status(), reviewNote);
         notifyTimesheetReview(actor, reviewed, request.status(), request.comment());
         return toResponse(reviewed);
     }
@@ -217,6 +241,9 @@ public class TimesheetService {
 
         validateRequest(request);
         List<String> supportingDocumentIds = sanitizedDocumentIds(request.supportingDocumentIds());
+        if (supportingDocumentIds.isEmpty()) {
+            throw new BusinessException("Upload a supporting timesheet document before saving hours or submitting a timesheet");
+        }
         for (String documentId : supportingDocumentIds) {
             StoredDocument document = storedDocumentRepository.findById(documentId)
                     .orElseThrow(() -> new BusinessException("Supporting document not found"));
@@ -225,6 +252,7 @@ public class TimesheetService {
                     || document.getDocumentType() != DocumentType.TIMESHEET_SUPPORTING_DOCUMENT) {
                 throw new ForbiddenException("Attach a timesheet document uploaded by you in this organization");
             }
+            identityService.validateStored(document);
         }
         ReportingAssignment assignment = reportingAssignmentRepository
                 .findByEmployeeUserIdAndRelationshipTypeAndIsActiveTrue(
@@ -508,7 +536,7 @@ public class TimesheetService {
         if (ChronoUnit.DAYS.between(request.periodStartDate(), request.periodEndDate()) >= 31) {
             throw new BusinessException("Timesheet periods cannot exceed 31 days");
         }
-        if (request.entries() == null || request.entries().isEmpty()) {
+        if (request.entries() == null || (request.entries().isEmpty() && request.status() != TimesheetStatus.DRAFT)) {
             throw new BusinessException("At least one timesheet entry is required");
         }
 
@@ -730,13 +758,19 @@ public class TimesheetService {
         if (supportingDocumentIds == null || supportingDocumentIds.isEmpty()) {
             return List.of();
         }
-        Map<String, String> namesById = new HashMap<>();
+        Map<String, StoredDocument> documentsById = new HashMap<>();
         for (StoredDocument document : storedDocumentRepository.findAllById(supportingDocumentIds)) {
-            namesById.putIfAbsent(document.getId(), trimToNull(document.getFileName()));
+            documentsById.putIfAbsent(document.getId(), document);
         }
         return supportingDocumentIds.stream()
                 .filter(StringUtils::hasText)
-                .map(documentId -> new TimesheetSupportingDocumentResponse(documentId, namesById.get(documentId)))
+                .map(documentId -> {
+                    StoredDocument document = documentsById.get(documentId);
+                    return document == null || document.getIdentityValidationStatus() == null
+                            ? new TimesheetSupportingDocumentResponse(documentId, document == null ? null : document.getFileName())
+                            : new TimesheetSupportingDocumentResponse(documentId, document.getFileName(),
+                                    document.getIdentityValidationStatus(), document.getIdentityValidationMessage());
+                })
                 .toList();
     }
 

@@ -294,3 +294,9 @@
     flex-wrap: wrap;
   }
 }
+
+/* Wrap page actions before the heading is reduced to a narrow text column. */
+@media(min-width:769px) {
+  .myhr-feature .wp-page-header__text { flex:1 1 20rem; }
+  .myhr-feature .wp-page-header__action { max-width:100%; }
+}

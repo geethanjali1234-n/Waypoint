@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { UNSAFE_DataRouterContext, useBlocker, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Button,
   ActionCard,
@@ -21,9 +21,13 @@ import { formatDateOnly, formatDateTime as formatDateTimeShared } from '../../..
 import MyHrFeaturePage from '../MyHrFeaturePage';
 import MyHrPagination from '../MyHrPagination';
 import { requiresTimesheetChangeReason } from './timesheetChangeReason';
+import { approveTimesheetBatch } from './timesheetApprovalBatch';
+import { fillBlankWeekdays } from './timesheetQuickFill';
+import { getApprovedDayEntries } from './approvedTimesheetDays';
 import './timesheets.css';
 import './timesheetsMobile.css';
 import './dateRangePicker.css';
+import '../timeAndPaySpacing.css';
 import TimesheetChronometer from './components/TimesheetChronometer';
 import DocumentTablePreview from './components/DocumentTablePreview';
 import ApplePayBloom from '../../components/ApplePayBloom';
@@ -744,6 +748,12 @@ export default function TimesheetsPage({ role }) {
   const [reviewingId, setReviewingId] = useState(null);
   const [rejectingRecord, setRejectingRecord] = useState(null);
   const [draftRecord, setDraftRecord] = useState(null);
+  const [selectedDraftId, setSelectedDraftId] = useState(null);
+  const [leaveEntryOpen, setLeaveEntryOpen] = useState(false);
+  const [entryBaseline, setEntryBaseline] = useState('');
+  const allowEntryNavigation = useRef(false);
+  const dataRouter = useContext(UNSAFE_DataRouterContext);
+  const wasEditingEntry = useRef(false);
   const [viewedRecord, setViewedRecord] = useState(null);
   const [entryStep, setEntryStep] = useState('source');
   const [importedEntries, setImportedEntries] = useState(null);
@@ -757,6 +767,7 @@ export default function TimesheetsPage({ role }) {
   const [reeditModalRecord, setReeditModalRecord] = useState(null);
   const [reeditSubmitted, setReeditSubmitted] = useState(false);
   const [approvedCorrectionId, setApprovedCorrectionId] = useState(null);
+  const [correctionRecordId, setCorrectionRecordId] = useState(null);
   const [changeReason, setChangeReason] = useState('');
   const [rejectionFeedback, setRejectionFeedback] = useState('');
   const [, setConfirmReedit] = useState(false);
@@ -777,6 +788,26 @@ export default function TimesheetsPage({ role }) {
   const [ownProfile, setOwnProfile] = useState(null);
   const [teamSubTab, setTeamSubTab] = useState('submissions');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const editingEntry = ['enter', 'entry'].includes(ownMode) && entryStep !== 'success';
+  const entryFingerprint = JSON.stringify([rangeStart, rangeEnd, rangeHours, rangeDescriptions, rangeEntryTypes,
+    supportingDocuments.map(doc => doc.id), changeReason]);
+  useEffect(() => {
+    if (editingEntry && !wasEditingEntry.current) {
+      setEntryBaseline(entryFingerprint);
+      allowEntryNavigation.current = false;
+    }
+    wasEditingEntry.current = editingEntry;
+  }, [editingEntry, entryFingerprint]);
+  useEffect(() => {
+    const warnBeforeUnload = (event) => {
+      if (editingEntry && entryFingerprint !== entryBaseline) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', warnBeforeUnload);
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload);
+  }, [editingEntry, entryFingerprint, entryBaseline]);
   const [viewingDoc, setViewingDoc] = useState(null);
 
   // Payroll Readiness has its own page now. Old ?view=payroll links (dashboard,
@@ -853,11 +884,15 @@ export default function TimesheetsPage({ role }) {
     pushQuery((q) => { if (!view || view === defaultView) q.delete('view'); else q.set('view', view); });
   }
 
-  function goToSubTab(subTab) {
+  function goToSubTab(subTab, nextStatus) {
     setTeamSubTab(subTab);
+    if (nextStatus !== undefined) setStatusFilter(nextStatus);
     pushQuery((q) => {
-      if (!subTab || subTab === 'submissions') q.delete('subtab');
-      else q.set('subtab', subTab);
+      q.set('subtab', subTab || 'submissions');
+      if (nextStatus !== undefined) {
+        if (nextStatus === 'ALL') q.delete('status');
+        else q.set('status', nextStatus);
+      }
     });
   }
 
@@ -888,7 +923,9 @@ export default function TimesheetsPage({ role }) {
     timesheetApi.list()
       .then((response) => {
         if (!active) return;
-        setRecords((response.data?.data || []).map(normalizeRecord));
+        const latest = (response.data?.data || []).map(normalizeRecord);
+        setRecords(latest);
+        setViewedRecord(current => current ? latest.find(record => record.id === current.id) || current : null);
         setLoadError('');
       })
       .catch((error) => {
@@ -952,6 +989,8 @@ export default function TimesheetsPage({ role }) {
     return records.filter((record) => record.employeeUserId === session?.userId);
   }, [records, session?.userId]);
 
+  const approvedDayEntries = useMemo(() => getApprovedDayEntries(ownRecords, approvedCorrectionId), [ownRecords, approvedCorrectionId]);
+
   const currentOwnRecord = useMemo(() => {
     const forPeriod = recordForPeriod(ownRecords, period.start, period.end);
     if (forPeriod) return forPeriod;
@@ -990,7 +1029,7 @@ export default function TimesheetsPage({ role }) {
   const currentEntries = draftRecord?.entries || [];
   const currentDays = daysBetween(period.start, period.end);
   const currentTotalHours = currentEntries.reduce((total, entry) => total + Number(entry.hoursWorked || 0), 0);
-  const history = ownRecords.filter((record) => record.status !== 'DRAFT' || record.id !== draftRecord?.id);
+  const history = ownRecords.filter((record) => record.status !== 'DRAFT');
   const managers = useMemo(() => {
     const fromRecords = teamRecords.map((record) => record.reportingManagerName || record.reportingManagerLoginId).filter(Boolean);
     return [...new Set([...allManagers, ...fromRecords])].sort();
@@ -1025,6 +1064,7 @@ export default function TimesheetsPage({ role }) {
   }
 
   function beginEntryFlow() {
+    setSelectedDraftId(null);
     setImportedEntries(null);
     setRangeStart(draftRecord?.periodStartDate || period.start);
     setRangeEnd(draftRecord?.periodEndDate || period.end);
@@ -1043,11 +1083,34 @@ export default function TimesheetsPage({ role }) {
     setOperationError('');
     setOperationMessage('');
     setDocumentError('');
-    setSupportingDocuments(draftRecord?.supportingDocuments || []);
+    setSupportingDocuments([]);
+    goToMode('enter');
+  }
+
+  function resumeDraft(record) {
+    setSelectedDraftId(record.id);
+    setRangeStart(record.periodStartDate);
+    setRangeEnd(record.periodEndDate);
+    setRangeHours(Object.fromEntries((record.entries || []).map(e => [e.workDate, String(e.hoursWorked ?? '')])));
+    setRangeDescriptions(Object.fromEntries((record.entries || []).map(e => [e.workDate, e.description || ''])));
+    setRangeEntryTypes(Object.fromEntries((record.entries || []).map(e => [e.workDate, normalizeEntryType(e.entryType)])));
+    setSupportingDocuments(record.supportingDocuments || []);
+    setRangeEntries(record.entries || []);
+    setImportedEntries(null);
+    setReeditSubmitted(false);
+    setApprovedCorrectionId(null);
+    setConfirmReedit(false);
+    setChangeReason(record.changeReason || '');
+    setSubmittedRecord(null);
+    setOperationError('');
+    setOperationMessage('');
+    setDocumentError('');
+    setEntryStep(record.supportingDocuments?.length ? 'hours' : 'dates');
     goToMode('enter');
   }
 
   function beginResubmitRejected(record) {
+    setSelectedDraftId(null);
     if (!record) return;
     setApprovedCorrectionId(null);
     setImportedEntries(null);
@@ -1088,7 +1151,7 @@ export default function TimesheetsPage({ role }) {
         try {
           const response = await documentApi.upload(file);
           const data = response.data?.data || {};
-          uploaded.push({ id: data.id || null, fileName: data.fileName || file.name });
+          uploaded.push({ ...data, id: data.id || null, fileName: data.fileName || file.name });
         } catch (error) {
           errors.push(`${file.name}: ${errorMessage(error)}`);
         }
@@ -1157,7 +1220,7 @@ export default function TimesheetsPage({ role }) {
       const response = await documentApi.upload(file);
       const document = response.data?.data;
       if (!document?.id) throw new Error('Missing document id');
-      uploaded = { id: document.id, fileName: document.fileName || file.name };
+      uploaded = { ...document, id: document.id, fileName: document.fileName || file.name };
       const parsedResponse = ocrText
         ? await documentApi.parseTimesheet(document.id, dateOrder, ocrText)
         : await documentApi.parseTimesheet(document.id, dateOrder);
@@ -1264,6 +1327,16 @@ export default function TimesheetsPage({ role }) {
   // In-view "Back"/"Cancel"/"Back to overview" buttons: pop one URL step so the
   // browser's own back button and this button stay in sync.
   function backToOverview() {
+    if (editingEntry && entryFingerprint !== entryBaseline) {
+      setLeaveEntryOpen(true);
+      return;
+    }
+    leaveEntry();
+  }
+
+  function leaveEntry() {
+    allowEntryNavigation.current = true;
+    setLeaveEntryOpen(false);
     clearTransientOverlays();
     setEntryStep('dates');
     goToMode('landing');
@@ -1285,7 +1358,7 @@ export default function TimesheetsPage({ role }) {
     if (ownMode === 'enter' && entryStep === 'review') { setEntryStep('hours'); return; }
     if (ownMode === 'enter' && entryStep === 'hours') { setEntryStep('dates'); return; }
     if (ownMode === 'enter' || ownMode === 'history' || ownMode === 'hours') {
-      goToMode('landing');
+      backToOverview();
       return;
     }
     clearTransientOverlays();
@@ -1310,33 +1383,36 @@ export default function TimesheetsPage({ role }) {
 
     const importedMap = {};
     (imported || []).forEach((entry) => {
+      if (approvedDayEntries[entry.workDate]) return;
       existingEntriesMap[entry.workDate] = entry;
       importedMap[entry.workDate] = entry;
     });
     setRangeHours(Object.fromEntries(dates.map((date) => [
       date,
-      importedMap[date]?.hoursWorked != null
+      approvedDayEntries[date] ? String(approvedDayEntries[date].hoursWorked ?? 0) : importedMap[date]?.hoursWorked != null
         ? String(importedMap[date].hoursWorked)
         : ((isReedit ? existingEntriesMap[date]?.hoursWorked : rangeHours[date] ?? existingEntriesMap[date]?.hoursWorked) ?? '')
     ])));
     setRangeDescriptions(Object.fromEntries(dates.map((date) => [
       date,
-      importedMap[date]?.description != null && importedMap[date]?.description !== ''
+      approvedDayEntries[date] ? approvedDayEntries[date].description || '' : importedMap[date]?.description != null && importedMap[date]?.description !== ''
         ? importedMap[date].description
         : ((isReedit ? existingEntriesMap[date]?.description : rangeDescriptions[date] ?? existingEntriesMap[date]?.description) ?? '')
     ])));
     setRangeEntryTypes(Object.fromEntries(dates.map((date) => [
       date,
-      normalizeEntryType(isReedit ? existingEntriesMap[date]?.entryType : importedMap[date]?.entryType || rangeEntryTypes[date] || existingEntriesMap[date]?.entryType)
+      normalizeEntryType(approvedDayEntries[date]?.entryType || (isReedit ? existingEntriesMap[date]?.entryType : importedMap[date]?.entryType || rangeEntryTypes[date] || existingEntriesMap[date]?.entryType))
     ])));
     if (!uploaded?.length && targetRecord?.supportingDocuments?.length) {
       setSupportingDocuments(targetRecord.supportingDocuments);
     }
     if (isReedit) {
+      setCorrectionRecordId(targetRecord?.id || null);
       setReeditSubmitted(true);
       setConfirmReedit(true);
       setChangeReason(targetRecord?.changeReason || '');
     } else {
+      setCorrectionRecordId(null);
       setReeditSubmitted(false);
     setApprovedCorrectionId(null);
       setConfirmReedit(false);
@@ -1347,6 +1423,10 @@ export default function TimesheetsPage({ role }) {
   }
 
   function continueToHours(start, end, imported = importedEntries, uploaded = supportingDocuments) {
+    if (!uploaded.some(doc => doc?.id)) {
+      setDocumentError('Upload a supporting document before entering hours.');
+      return;
+    }
     const s = start || rangeStart || draftRecord?.periodStartDate || period.start;
     const e = end || rangeEnd || draftRecord?.periodEndDate || period.end;
     if (s !== rangeStart) setRangeStart(s);
@@ -1356,20 +1436,12 @@ export default function TimesheetsPage({ role }) {
     if (s > today) { setOperationError('Future dates cannot be recorded. Choose a start date of today or earlier.'); return; }
     if (dates.length > 31) { setOperationError('Choose a date range of 31 days or fewer.'); return; }
 
-    const targetRecord = findConflictingRecord(ownRecords, s, e);
-    const approved = ownRecords.find((record) => record.status === 'APPROVED'
-      && (record.entries || []).some((entry) => dates.includes(entry.workDate)));
-    if (approved) {
-      setOperationError('');
-      setReeditModalRecord(approved);
-      return;
-    }
+    const targetRecord = findConflictingRecord(ownRecords.filter(record => record.status !== 'APPROVED'), s, e);
 
-
-    // Map existing entries across non-draft filed records (SUBMITTED, REJECTED, APPROVED)
+    // Approved entries are locked separately; submitted/rejected edits retain the correction flow.
     const filedEntriesMap = {};
     ownRecords
-      .filter((rec) => rec.status !== 'DRAFT')
+      .filter((rec) => rec.status !== 'DRAFT' && rec.status !== 'APPROVED')
       .forEach((rec) => {
         (rec.entries || []).forEach((entry) => {
           if (entry.workDate && Number(entry.hoursWorked || 0) > 0) {
@@ -1380,7 +1452,7 @@ export default function TimesheetsPage({ role }) {
 
     // Conflicted dates are dates in the selected range that already have hours in filed timesheets
     const conflictedEntries = dates
-      .filter((date) => Boolean(filedEntriesMap[date]))
+      .filter((date) => !approvedDayEntries[date] && Boolean(filedEntriesMap[date]))
       .map((date) => filedEntriesMap[date]);
 
     // Only warn about a conflict when the selected range actually re-covers days that
@@ -1429,6 +1501,7 @@ export default function TimesheetsPage({ role }) {
   }
 
   function beginReeditSubmitted(record) {
+    setSelectedDraftId(null);
     setImportedEntries(null);
     setRangeHours({});
     setRangeDescriptions({});
@@ -1439,14 +1512,10 @@ setRangeEntryTypes({});
     setReeditModalRecord(record);
   }
 
-  function reviewEntry() {
-    if (reeditSubmitted && !changeReason.trim()) {
-      setOperationError('Please provide a reason for the change before reviewing the timesheet.');
-      return;
-    }
+  function collectCurrentEntries() {
     const entries = [];
     for (const date of daysBetween(rangeStart, rangeEnd)) {
-      if (date > today) continue; // future days are read-only
+      if (date > today || approvedDayEntries[date]) continue; // Locked days never enter a new payload.
       const rawHours = rangeHours[date] === '' || rangeHours[date] == null ? 0 : Number(rangeHours[date]);
       if (!Number.isFinite(rawHours) || rawHours < 0 || rawHours > 24) { setOperationError(`Enter between 0 and 24 hours for ${formatWorkDate(date)}.`); return; }
       const description = String(rangeDescriptions[date] || '').trim();
@@ -1459,15 +1528,28 @@ setRangeEntryTypes({});
       // A day left as Work with both 0 hours and no note stays untouched/missing.
       if (rawHours > 0 || description || isTypedNonWorkDay) entries.push({ workDate: date, dayOfWeek: parseDateKey(date).toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase(), hoursWorked: Number(rawHours.toFixed(2)), entryType, description });
     }
+    return entries;
+  }
+
+  function reviewEntry() {
+    if (reeditSubmitted && !changeReason.trim()) {
+      setOperationError('Please provide a reason for the change before reviewing the timesheet.');
+      return;
+    }
+    const entries = collectCurrentEntries();
+    if (!entries) return;
     if (!entries.length) { setOperationError('Add at least one hour, a non-work entry type, or a note for a day with zero hours before reviewing the timesheet.'); return; }
     setRangeEntries(entries);
     setOperationError('');
     setEntryStep('review');
   }
 
-  async function persistRange(status) {
-    if (!rangeEntries.length) { setOperationError('Add at least one hour, a non-work entry type, or a note for a day with zero hours before saving or submitting.'); return; }
-    const submittedDates = new Set(rangeEntries.map((entry) => entry.workDate));
+  async function persistRange(status, { navigateAfterSave = true } = {}) {
+    if (saving || uploadingDocument) return;
+    const entriesToSave = collectCurrentEntries();
+    if (!entriesToSave) return;
+    if (status === 'SUBMITTED' && !entriesToSave.length) { setOperationError('Add at least one hour, a non-work entry type, or a note before submitting.'); return; }
+    const submittedDates = new Set(entriesToSave.map((entry) => entry.workDate));
     const approved = ownRecords.find((record) => record.status === 'APPROVED'
       && (record.entries || []).some((entry) => submittedDates.has(entry.workDate)));
     if (approved && (!reeditSubmitted || approvedCorrectionId !== approved.id)) {
@@ -1479,7 +1561,9 @@ setRangeEntryTypes({});
       setOperationError('Submit this correction for HR review. Approved hours cannot be saved as a draft.');
       return;
     }
-    const existing = approved || findConflictingRecord(ownRecords, rangeStart, rangeEnd);
+    const existing = approved || (reeditSubmitted && ownRecords.find(record => record.id === correctionRecordId))
+      || ownRecords.find(record => record.id === selectedDraftId && record.status === 'DRAFT')
+      || findConflictingRecord(ownRecords.filter(record => record.status !== 'APPROVED'), rangeStart, rangeEnd);
 
     // Update a record in place only for an in-progress draft or an explicit correction
     // the user opted into (the re-edit / resubmit flow, which sets reeditSubmitted). A
@@ -1490,19 +1574,16 @@ setRangeEntryTypes({});
       && !existing.id.startsWith('prototype-') && !existing.id.startsWith('period-')
       && (existing.status === 'DRAFT' || (reeditSubmitted && existing.status !== 'REJECTED'));
 
-    const needsChangeReason = requiresTimesheetChangeReason(existing, rangeEntries, reeditSubmitted);
+    const needsChangeReason = requiresTimesheetChangeReason(existing, entriesToSave, reeditSubmitted);
     if (needsChangeReason && !changeReason.trim() && (approved || !existing?.changeReason)) {
       setOperationError('A reason for change is required when modifying hours you already submitted.');
       return;
     }
 
-    const resolvedDocuments = supportingDocuments.length
-      ? supportingDocuments
-      : (draftRecord?.supportingDocuments || existing?.supportingDocuments || []);
-    const hasSupportingDoc = resolvedDocuments.length > 0;
-    if (status === 'SUBMITTED' && !hasSupportingDoc) {
-      setDocumentError('A supporting document is mandatory to submit your timesheet.');
-      setOperationError('Please upload a supporting timesheet document before submitting.');
+    const resolvedDocuments = supportingDocuments.filter(doc => doc?.id);
+    if (!resolvedDocuments.length) {
+      setDocumentError('A supporting document is mandatory before entering or saving hours.');
+      setOperationError('Please upload a supporting timesheet document before saving or submitting.');
       return;
     }
 
@@ -1510,7 +1591,7 @@ setRangeEntryTypes({});
     const payload = {
       periodStartDate: rangeStart,
       periodEndDate: rangeEnd,
-entries: rangeEntries.map((entry) => ({ workDate: entry.workDate, hoursWorked: Number(entry.hoursWorked), entryType: normalizeEntryType(entry.entryType), description: entry.description || '' })),
+entries: entriesToSave.map((entry) => ({ workDate: entry.workDate, hoursWorked: Number(entry.hoursWorked), entryType: normalizeEntryType(entry.entryType), description: entry.description || '' })),
       supportingDocumentIds: resolvedDocuments.map((doc) => doc.id).filter(Boolean),
       status,
       ...(needsChangeReason ? { changeReason: resolvedChangeReason || 'Correction to submitted timesheet', confirmReedit: true } : {}),
@@ -1521,7 +1602,8 @@ entries: rangeEntries.map((entry) => ({ workDate: entry.workDate, hoursWorked: N
     setOperationMessage('');
     try {
       const response = existingId ? await timesheetApi.update(existingId, payload) : await timesheetApi.create(payload);
-      const saved = response.data?.data || { ...existing, ...payload, id: existingId || `local-${Date.now()}` };
+      const saved = response.data?.data;
+      if (!saved?.id) throw new Error('The server did not confirm the save. Please try again.');
       const normalizedSaved = normalizeRecord(saved);
       replaceRecord(normalizedSaved);
       setSubmittedRecord(normalizedSaved);
@@ -1532,21 +1614,27 @@ entries: rangeEntries.map((entry) => ({ workDate: entry.workDate, hoursWorked: N
       if (status === 'SUBMITTED') {
         setEntryStep('success');
       } else {
-        setOperationMessage('Draft saved.');
-        goToMode('landing');
+        setLeaveEntryOpen(false);
+        setOperationMessage('Draft saved. Resume it from Saved drafts whenever you are ready.');
+        setEntryBaseline(entryFingerprint);
+        if (navigateAfterSave) {
+          allowEntryNavigation.current = true;
+          goToMode('landing');
+        }
       }
       setReeditSubmitted(false);
-    setApprovedCorrectionId(null);
+      setApprovedCorrectionId(null);
       setConfirmReedit(false);
+      return true;
     } catch (error) {
       setOperationError(errorMessage(error));
     } finally { setSaving(false); }
   }
 
-  async function reviewTimesheet(record, status, comment = '') {
+  async function reviewTimesheet(record, status, comment = '', documentReviewConfirmed = false) {
     if (!record?.id) {
       setOperationError('This timesheet does not have a server record yet.');
-      return;
+      return false;
     }
 
     setReviewingId(record.id);
@@ -1556,17 +1644,19 @@ entries: rangeEntries.map((entry) => ({ workDate: entry.workDate, hoursWorked: N
       const response = await timesheetApi.review(record.id, {
         status,
         comment: String(comment || '').trim() || null,
+        documentReviewConfirmed,
       });
-      const reviewed = normalizeRecord(response.data?.data || {
-        ...record,
-        status,
-        reviewComment: String(comment || '').trim() || null,
-      });
+      const confirmed = response.data?.data;
+      if (confirmed?.id !== record.id || confirmed?.status !== status) throw new Error('Approval was not confirmed by the server');
+      const reviewed = normalizeRecord(confirmed);
       setRecords((current) => current.map((item) => item.id === reviewed.id ? reviewed : item));
       setViewedRecord((current) => current?.id === reviewed.id ? reviewed : current);
       setOperationMessage(`Timesheet ${status === 'APPROVED' ? 'approved' : 'rejected'}.`);
+      return true;
     } catch (error) {
       setOperationError(errorMessage(error));
+      setReloadKey(current => current + 1);
+      return false;
     } finally {
       setReviewingId(null);
     }
@@ -1623,7 +1713,7 @@ entries: rangeEntries.map((entry) => ({ workDate: entry.workDate, hoursWorked: N
       setSelectedEmployee={setSelectedEmployee}
     />
   ) : (
-    <EmployeeWorkspace
+    <EmployeeWorkspace approvedDayEntries={approvedDayEntries}
       loading={loading}
       mode={ownMode}
       setMode={goToMode}
@@ -1687,7 +1777,7 @@ entries: rangeEntries.map((entry) => ({ workDate: entry.workDate, hoursWorked: N
   );
 
   return <MyHrFeaturePage
-    className={`timesheets-mobile ${activeView === 'team' ? 'timesheets--review-compact' : ''}`}
+    className={`time-pay-page timesheets-mobile ${activeView === 'team' ? 'timesheets--review-compact' : ''}`}
     title={isOwnTaskOpen ? undefined : title}
     description={isOwnTaskOpen ? undefined : description}
     onBack={handleFeatureBack}
@@ -1698,14 +1788,27 @@ entries: rangeEntries.map((entry) => ({ workDate: entry.workDate, hoursWorked: N
       <button type="button" role="tab" aria-selected={activeView === 'team'} className={activeView === 'team' ? 'active' : ''} onClick={() => goToView('team')}>Team Timesheets</button>
     </div>}
     {workspaceContent}
-    <TimesheetDetails record={viewedRecord} canReview={canReview} reviewingId={reviewingId} onReview={(status, comment) => reviewTimesheet(viewedRecord, status, comment)} onReject={(record) => setRejectingRecord(record)} onClose={closeRecord} onDownload={(id, name) => downloadSupportingDocument(id, name, setOperationError)} onDownloadPdf={(record) => downloadTimesheetPdf(record, setOperationError)} onDownloadPeriodPdf={(start, end) => downloadPeriodPdf(start, end, setOperationError)} onResubmit={(record) => beginResubmitRejected(record)} onViewDoc={(doc) => setViewingDoc(doc)} />
+    {dataRouter && <DraftNavigationGuard shouldBlock={() => editingEntry && entryFingerprint !== entryBaseline && !allowEntryNavigation.current}
+      saving={saving} canSave={!approvedCorrectionId && !uploadingDocument && supportingDocuments.some(doc => doc?.id)}
+      error={operationError} onSave={() => persistRange('DRAFT', { navigateAfterSave: false })} />}
+    {activeView === 'mine' && ownMode === 'landing' && <SavedTimesheetDrafts drafts={ownRecords.filter(record => record.status === 'DRAFT')} onResume={resumeDraft} />}
+    <Modal isOpen={leaveEntryOpen} title="Save your timesheet progress?" onClose={() => !saving && setLeaveEntryOpen(false)} footer={<>
+      <Button variant="secondary" disabled={saving} onClick={() => setLeaveEntryOpen(false)}>Keep editing</Button>
+      <Button variant="secondary" disabled={saving} onClick={leaveEntry}>Leave without saving</Button>
+      {!approvedCorrectionId && <Button disabled={saving || uploadingDocument || !supportingDocuments.some(doc => doc?.id)} onClick={() => persistRange('DRAFT')}>{saving ? 'Saving...' : 'Save draft and leave'}</Button>}
+    </>}>
+      <p>{approvedCorrectionId ? 'Approved corrections must be submitted for review. Keep editing to finish your correction, or leave without saving these changes.' : 'Save your document, selected dates, and entered hours as a draft. It will not be sent for approval.'}</p>
+      {operationError && <p role="alert">{operationError}</p>}
+      {!supportingDocuments.some(doc => doc?.id) && <p>Upload a supporting document before saving a draft.</p>}
+    </Modal>
+    <TimesheetDetails record={viewedRecord} canReview={canReview} reviewingId={reviewingId} onReview={(status, comment, confirmed) => reviewTimesheet(viewedRecord, status, comment, confirmed)} onReject={(record) => setRejectingRecord(record)} onClose={closeRecord} onDownload={(id, name) => downloadSupportingDocument(id, name, setOperationError)} onDownloadPdf={(record) => downloadTimesheetPdf(record, setOperationError)} onDownloadPeriodPdf={(start, end) => downloadPeriodPdf(start, end, setOperationError)} onResubmit={(record) => beginResubmitRejected(record)} onRequestCorrection={canEditOwn && viewedRecord?.employeeUserId === session?.userId ? (record) => { closeRecord(); beginReeditSubmitted(record); } : undefined} onViewDoc={(doc) => setViewingDoc(doc)} />
     <RejectTimesheetModal record={rejectingRecord} isSubmitting={Boolean(reviewingId)} onConfirm={handleConfirmReject} onClose={() => setRejectingRecord(null)} />
     <ReeditConfirmationModal record={reeditModalRecord} selectedStart={rangeStart} selectedEnd={rangeEnd} onConfirm={handleConfirmReedit} onClose={() => setReeditModalRecord(null)} />
     <DocumentViewerModal doc={viewingDoc} onClose={() => setViewingDoc(null)} onError={setOperationError} />
   </MyHrFeaturePage>;
 }
 
-function EmployeeWorkspace({ loading, mode, setMode, today, records, draftRecord, history, entryStep, setEntryStep, rangeStart, setRangeStart, rangeEnd, setRangeEnd, rangeHours, setRangeHours, rangeDescriptions, setRangeDescriptions, rangeEntryTypes, setRangeEntryTypes, rangeEntries, supportingDocuments, uploadingDocument, ocrProgress, documentError, onImportDocument, dateOrder, setDateOrder, onUploadSupportingDocument, onRemoveSupportingDocument, saving, role, onBegin, onBack, onViewHours, onContinue, onReview, onSave, onSubmit, onView, onDownloadPdf, onDownloadPeriodPdf, onReeditSubmitted, reeditSubmitted, approvedCorrection, requiresChangeReason, changeReason, setChangeReason, payrollPeriod, submittedRecord, onViewHistory, rejectionFeedback, onResubmit, managerDisplayName }) {
+function EmployeeWorkspace({ approvedDayEntries, loading, mode, setMode, today, records, draftRecord, history, entryStep, setEntryStep, rangeStart, setRangeStart, rangeEnd, setRangeEnd, rangeHours, setRangeHours, rangeDescriptions, setRangeDescriptions, rangeEntryTypes, setRangeEntryTypes, rangeEntries, supportingDocuments, uploadingDocument, ocrProgress, documentError, onImportDocument, dateOrder, setDateOrder, onUploadSupportingDocument, onRemoveSupportingDocument, saving, role, onBegin, onBack, onViewHours, onContinue, onReview, onSave, onSubmit, onView, onDownloadPdf, onDownloadPeriodPdf, onReeditSubmitted, reeditSubmitted, approvedCorrection, requiresChangeReason, changeReason, setChangeReason, payrollPeriod, submittedRecord, onViewHistory, rejectionFeedback, onResubmit, managerDisplayName }) {
   const reviewTotal = rangeEntries.reduce((sum, entry) => sum + Number(entry.hoursWorked || 0), 0);
   if (mode === 'landing') {
     const recentHours = (history || []).length > 0 ? (history[0].totalHours || 0) : 0;
@@ -1734,8 +1837,32 @@ function EmployeeWorkspace({ loading, mode, setMode, today, records, draftRecord
     );
   }
   if (mode === 'history') return <HistoryWorkspace history={history} draftRecord={draftRecord} payrollPeriod={payrollPeriod} onView={onView} onDownloadPdf={onDownloadPdf} onDownloadPeriodPdf={onDownloadPeriodPdf} onResubmit={onResubmit} />;
-  if (mode === 'enter' || mode === 'entry') return <EntryWorkspace approvedRecords={records.filter((record) => record.status === 'APPROVED')} onRequestCorrection={onReeditSubmitted} step={entryStep} setStep={setEntryStep} today={today} rangeStart={rangeStart} setRangeStart={setRangeStart} rangeEnd={rangeEnd} setRangeEnd={setRangeEnd} rangeDays={daysBetween(rangeStart, rangeEnd)} rangeHours={rangeHours} setRangeHours={setRangeHours} rangeDescriptions={rangeDescriptions} setRangeDescriptions={setRangeDescriptions} rangeEntryTypes={rangeEntryTypes} setRangeEntryTypes={setRangeEntryTypes} rangeEntries={rangeEntries} reviewTotal={reviewTotal} supportingDocuments={supportingDocuments} supportingDocument={supportingDocuments?.[0]} uploadingDocument={uploadingDocument} ocrProgress={ocrProgress} documentError={documentError} onImportDocument={onImportDocument} dateOrder={dateOrder} setDateOrder={setDateOrder} onUploadSupportingDocument={onUploadSupportingDocument} onRemoveSupportingDocument={onRemoveSupportingDocument} saving={saving} role={role} onBack={onBack} onContinue={onContinue} onReview={onReview} onSave={onSave} onSubmit={onSubmit} reeditSubmitted={reeditSubmitted} approvedCorrection={approvedCorrection} requiresChangeReason={requiresChangeReason} changeReason={changeReason} setChangeReason={setChangeReason} submittedRecord={submittedRecord} onViewHistory={onViewHistory} onDownloadPdf={onDownloadPdf} rejectionFeedback={rejectionFeedback} managerDisplayName={managerDisplayName} />;
+  if (mode === 'enter' || mode === 'entry') return <EntryWorkspace approvedDayEntries={approvedDayEntries} approvedRecords={records.filter((record) => record.status === 'APPROVED')} onRequestCorrection={onReeditSubmitted} step={entryStep} setStep={setEntryStep} today={today} rangeStart={rangeStart} setRangeStart={setRangeStart} rangeEnd={rangeEnd} setRangeEnd={setRangeEnd} rangeDays={daysBetween(rangeStart, rangeEnd)} rangeHours={rangeHours} setRangeHours={setRangeHours} rangeDescriptions={rangeDescriptions} setRangeDescriptions={setRangeDescriptions} rangeEntryTypes={rangeEntryTypes} setRangeEntryTypes={setRangeEntryTypes} rangeEntries={rangeEntries} reviewTotal={reviewTotal} supportingDocuments={supportingDocuments} supportingDocument={supportingDocuments?.[0]} uploadingDocument={uploadingDocument} ocrProgress={ocrProgress} documentError={documentError} onImportDocument={onImportDocument} dateOrder={dateOrder} setDateOrder={setDateOrder} onUploadSupportingDocument={onUploadSupportingDocument} onRemoveSupportingDocument={onRemoveSupportingDocument} saving={saving} role={role} onBack={onBack} onContinue={onContinue} onReview={onReview} onSave={onSave} onSubmit={onSubmit} reeditSubmitted={reeditSubmitted} approvedCorrection={approvedCorrection} requiresChangeReason={requiresChangeReason} changeReason={changeReason} setChangeReason={setChangeReason} submittedRecord={submittedRecord} onViewHistory={onViewHistory} onDownloadPdf={onDownloadPdf} rejectionFeedback={rejectionFeedback} managerDisplayName={managerDisplayName} />;
   return <HoursWorkspace loading={loading} records={records} today={today} />;
+}
+
+export function DraftNavigationGuard({ shouldBlock, saving, canSave, error, onSave }) {
+  const blocker = useBlocker(shouldBlock);
+  return <Modal isOpen={blocker.state === 'blocked'} title="Save your timesheet progress?" onClose={() => !saving && blocker.reset?.()} footer={<>
+    <Button variant="secondary" disabled={saving} onClick={() => blocker.reset()}>Keep editing</Button>
+    <Button variant="secondary" disabled={saving} onClick={() => blocker.proceed()}>Leave without saving</Button>
+    <Button disabled={saving || !canSave} onClick={async () => { if (await onSave()) blocker.proceed(); }}>{saving ? 'Saving...' : 'Save draft and leave'}</Button>
+  </>}>
+    <p>Save your current progress before leaving this page. Drafts are not sent for approval.</p>
+    {!canSave && <p>Attach a supporting document to save a draft. Approved corrections must be submitted for review.</p>}
+    {error && <p role="alert">{error}</p>}
+  </Modal>;
+}
+
+export function SavedTimesheetDrafts({ drafts, onResume }) {
+  return <section className="timesheets__saved-drafts" aria-label="Saved drafts">
+    <h2>Saved drafts</h2>
+    <p>Continue where you left off. Drafts are not sent for approval.</p>
+    {!drafts.length ? <p>No saved drafts yet.</p> : <ul>{drafts.map(draft => <li key={draft.id}>
+      <div><strong>{formatPeriod(draft.periodStartDate, draft.periodEndDate)}</strong><span>{formatHours(draft.totalHours)} hours · {(draft.supportingDocuments || []).length} document(s)</span></div>
+      <Button variant="secondary" onClick={() => onResume(draft)} aria-label={`Resume draft ${formatPeriod(draft.periodStartDate, draft.periodEndDate)}`}>Resume draft</Button>
+    </li>)}</ul>}
+  </section>;
 }
 
 function HoursWorkspace({ loading, records, today }) {
@@ -2048,13 +2175,19 @@ function PeriodStatusCalendar({ cadence, consolidated, cells, monthLabel, captio
   );
 }
 
-export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step, setStep, today, rangeStart, setRangeStart, rangeEnd, setRangeEnd, rangeDays, rangeHours, setRangeHours, rangeDescriptions, setRangeDescriptions, rangeEntryTypes, setRangeEntryTypes, rangeEntries, reviewTotal, supportingDocuments, supportingDocument, uploadingDocument, ocrProgress, documentError, onImportDocument, dateOrder, setDateOrder, onUploadSupportingDocument, onRemoveSupportingDocument, saving, onBack, onContinue, onReview, onSave, onSubmit, reeditSubmitted, approvedCorrection, requiresChangeReason, changeReason, setChangeReason, submittedRecord, onViewHistory, onDownloadPdf, rejectionFeedback, managerDisplayName }) {
+export function EntryWorkspace({ approvedDayEntries, approvedRecords = [], onRequestCorrection, step, setStep, today, rangeStart, setRangeStart, rangeEnd, setRangeEnd, rangeDays, rangeHours, setRangeHours, rangeDescriptions, setRangeDescriptions, rangeEntryTypes, setRangeEntryTypes, rangeEntries, reviewTotal, supportingDocuments, supportingDocument, uploadingDocument, ocrProgress, documentError, onImportDocument, dateOrder, setDateOrder, onUploadSupportingDocument, onRemoveSupportingDocument, saving, onBack, onContinue, onReview, onSave, onSubmit, reeditSubmitted, approvedCorrection, requiresChangeReason, changeReason, setChangeReason, submittedRecord, onViewHistory, onDownloadPdf, rejectionFeedback, managerDisplayName }) {
+  const hasDocument = (supportingDocuments || []).some(doc => doc?.id) || Boolean(supportingDocument?.id);
+  const [quickFillNotice, setQuickFillNotice] = useState('');
+  useEffect(() => setQuickFillNotice(''), [rangeStart, rangeEnd]);
+  const lockedApprovedEntries = useMemo(() => approvedDayEntries || getApprovedDayEntries(approvedCorrection ? [] : approvedRecords), [approvedDayEntries, approvedCorrection, approvedRecords]);
+  const lockedApprovedCount = (rangeDays || []).filter(date => lockedApprovedEntries[date]).length;
   const currentTotalHours = useMemo(() => {
     return (rangeDays || []).reduce((acc, date) => {
+      if (lockedApprovedEntries[date]) return acc;
       const val = parseFloat(rangeHours[date]);
       return acc + (isNaN(val) ? 0 : val);
     }, 0);
-  }, [rangeDays, rangeHours]);
+  }, [rangeDays, rangeHours, lockedApprovedEntries]);
 
   const standardWeeklyTarget = useMemo(() => {
     const weekdayCount = (rangeDays || []).filter((date) => {
@@ -2070,18 +2203,14 @@ export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step
   const maxScale = Math.max(standardWeeklyTarget * 1.5, currentTotalHours + 10, 60);
 
   const handlePreset = () => {
-    setRangeHours((prev) => {
-      const next = { ...prev };
-      (rangeDays || []).forEach((date) => {
-        if (date > today) return; // Future days stay locked
-        const dayOfWeek = parseDateKey(date).getDay();
-        next[date] = (dayOfWeek === 0 || dayOfWeek === 6) ? '0' : '8';
-      });
-      return next;
-    });
+    const result = fillBlankWeekdays({ dates: rangeDays, today, hours: rangeHours, descriptions: rangeDescriptions,
+      entryTypes: rangeEntryTypes, lockedDates: approvedRecords.flatMap(record => (record.entries || []).map(entry => entry.workDate)) });
+    setRangeHours(result.hours);
+    setQuickFillNotice(result.filledCount ? `Added 8 hours to ${result.filledCount} blank weekday${result.filledCount === 1 ? '' : 's'}. Check these suggestions against your document before submitting.` : 'No eligible blank weekdays to fill. Existing entries were preserved.');
   };
-  const lockedRecord = !approvedCorrection && approvedRecords.find((record) =>
-    (record.entries || []).some((entry) => rangeDays.includes(entry.workDate)));
+  const pastSelectedDays = (rangeDays || []).filter(date => !today || date <= today);
+  const lockedRecord = pastSelectedDays.length > 0 && pastSelectedDays.every(date => lockedApprovedEntries[date])
+    ? lockedApprovedEntries[pastSelectedDays[0]].record : null;
   if (lockedRecord && ['hours', 'review'].includes(step)) return (
     <section className="timesheets__flow-panel" aria-label="Approved timesheet ? read-only">
       <h2>Already approved</h2>
@@ -2091,6 +2220,15 @@ export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step
         <Button variant="secondary" onClick={() => setStep('dates')}>Choose other dates</Button>
         <Button onClick={() => onRequestCorrection(lockedRecord)}>Request correction</Button>
       </div>
+    </section>
+  );
+  if (['hours', 'review'].includes(step) && !hasDocument) return (
+    <section className="timesheets__flow-panel" aria-label="Supporting document required">
+      <h2>Upload your supporting document first</h2>
+      <p>A document is mandatory before entering or saving hours. Your current edits will stay here while you attach it.</p>
+      <FileUpload name="requiredSupportingDocument" label="Supporting document (mandatory)" accept=".pdf,.xlsx,.xls,.docx,.csv,.tsv,.txt,.png,.jpg,.jpeg" disabled={uploadingDocument} onUpload={event => onUploadSupportingDocument(event.target.files)} />
+      {documentError && <p role="alert">{documentError}</p>}
+      <Button variant="secondary" onClick={onBack}>Back to overview</Button>
     </section>
   );
   if (step === 'source') return (
@@ -2145,11 +2283,13 @@ export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step
             <span className="timesheets__entry-card-icon" aria-hidden="true">✏️</span>
             <div>
               <h3>Enter Hours Manually</h3>
-              <p>Pick your custom date range and input daily work hours day-by-day. A supporting document is required before submitting.</p>
+              <p>Attach your supporting document first, then choose dates and enter your hours manually.</p>
             </div>
           </div>
           <div className="timesheets__manual-actions">
-            <Button type="button" variant="primary" disabled={uploadingDocument} onClick={() => setStep('dates')}>
+            <FileUpload name="manualSupportingDocument" label="Supporting document (mandatory)" accept=".pdf,.xlsx,.xls,.docx,.csv,.tsv,.txt,.png,.jpg,.jpeg" disabled={uploadingDocument} onUpload={event => onUploadSupportingDocument(event.target.files)} helperText="Upload a document before entering hours. You can save unfinished work as a draft." />
+            <SupportingDocumentList documents={supportingDocuments} onRemove={onRemoveSupportingDocument} />
+            <Button type="button" variant="primary" disabled={uploadingDocument || !hasDocument} onClick={() => setStep('dates')}>
               Enter manually
             </Button>
           </div>
@@ -2160,8 +2300,8 @@ export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step
           <div className="timesheets__entry-card-title">
             <span className="timesheets__entry-card-icon" aria-hidden="true">⚡</span>
             <div>
-              <h3>Standard Week (40h)</h3>
-              <p>Auto-populate Monday–Friday 8.00h (40.00h total) for the active work week and skip directly to review.</p>
+              <h3>Fill blank weekdays</h3>
+              <p>Choose your dates, including a past period, then add 8 hours to blank weekdays. Existing entries stay unchanged. Review all suggested hours before submitting.</p>
             </div>
           </div>
           <div className="timesheets__manual-actions">
@@ -2171,14 +2311,10 @@ export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step
               disabled={uploadingDocument}
               className="timesheets__btn-express-fill"
               onClick={() => {
-                const wk = currentWeek();
-                setRangeStart(wk.start);
-                setRangeEnd(wk.end);
-                handlePreset();
-                setStep('hours');
+                setStep('dates');
               }}
             >
-              ⚡ 1-Tap Fill (40h)
+              Choose dates for one-tap fill
             </Button>
           </div>
         </div>
@@ -2274,8 +2410,11 @@ export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step
           </div>
           <div className="timesheets__flow-actions">
             <Button type="button" variant="secondary" onClick={onBack}>Cancel</Button>
-            <Button type="button" variant="primary" onClick={onContinue}>Continue to hours</Button>
+            {!approvedCorrection && <Button type="button" variant="secondary" disabled={saving || uploadingDocument || !hasDocument} onClick={onSave}>{saving ? 'Saving...' : 'Save draft'}</Button>}
+            <Button type="button" variant="primary" disabled={!hasDocument || uploadingDocument} onClick={onContinue}>Continue to hours</Button>
           </div>
+          {!hasDocument && <FileUpload name="draftSupportingDocument" label="Supporting document (mandatory before entering hours)" accept=".pdf,.xlsx,.xls,.docx,.csv,.tsv,.txt,.png,.jpg,.jpeg" disabled={uploadingDocument} onUpload={event => onUploadSupportingDocument(event.target.files)} />}
+          {documentError && <p role="alert">{documentError}</p>}
         </div>
       )}
 
@@ -2296,11 +2435,14 @@ export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step
             </div>
 
             <div className="timesheets__sim-presets" role="group" aria-label="Timesheet quick presets">
-              <button type="button" className="timesheets__preset-btn" onClick={handlePreset}>
-                Standard {standardWeeklyTarget}h
+              <button type="button" className="timesheets__preset-btn" disabled={saving || uploadingDocument} onClick={handlePreset}>
+                Fill blank weekdays · 8h
               </button>
             </div>
           </div>
+          <p className="timesheets__quick-fill-help">Uses your selected dates, including backdated periods. Skips weekends, future dates, existing hours, leave, notes, and approved entries. Check holidays against your document.</p>
+          {lockedApprovedCount > 0 && <p className="timesheets__approved-days-notice">{lockedApprovedCount} approved day(s) are shown below as locked. Their hours are excluded from this new submission and its total. To change them, save this draft and request a correction from the approved timesheet.</p>}
+          {quickFillNotice && <p role="status" className="timesheets__quick-fill-help">{quickFillNotice}</p>}
           <div className="timesheets__sim-metrics-bar" aria-label="Timesheet live telemetry">
             <div className="timesheets__sim-metric">
               <span className="timesheets__sim-metric-label">TOTAL HOURS</span>
@@ -2353,10 +2495,10 @@ export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step
               <div>
                 <strong>
                   {supportingDocuments.length > 1
-                    ? `Hours pre-filled from ${supportingDocuments.length} documents`
-                    : `Hours pre-filled from ${supportingDocuments[0].fileName}`}
+                    ? `${supportingDocuments.length} supporting documents attached`
+                    : `Supporting document: ${supportingDocuments[0].fileName}`}
                 </strong>
-                <p>Calculated hours are loaded below. You can edit any day&apos;s hours or description before submitting for manager approval.</p>
+                <p>Check the editable hours against your document before submitting. Approved days remain locked and unchanged.</p>
               </div>
             </div>
           )}
@@ -2389,18 +2531,20 @@ export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step
           <div className="timesheets__daily-hours timesheets__daily-hours--grid">
             {rangeDays.map((date) => {
               const isFuture = date > today;
-              const rawVal = rangeHours[date];
+              const approvedEntry = lockedApprovedEntries[date];
+              const isLocked = isFuture || Boolean(approvedEntry);
+              const rawVal = approvedEntry ? approvedEntry.hoursWorked : rangeHours[date];
               const parsedVal = parseFloat(rawVal);
               const numVal = isNaN(parsedVal) ? 0 : parsedVal;
               return (
                 <div
                   key={date}
-                  className={`timesheets__daily-row timesheets__day-card${isFuture ? ' timesheets__daily-row--locked timesheets__day-card--locked' : ''}${numVal > 8 ? ' timesheets__day-card--ot' : ''}`}
+                  className={`timesheets__daily-row timesheets__day-card${isLocked ? ' timesheets__daily-row--locked timesheets__day-card--locked' : ''}${numVal > 8 ? ' timesheets__day-card--ot' : ''}`}
                 >
                   <div className="timesheets__day-card-header">
                     <div>
                       <strong>{formatDate(date, { weekday: 'short', month: 'short', day: 'numeric' })}</strong>
-                      <small>{isFuture ? 'Future — read-only' : date === today ? 'Today' : ''}</small>
+                      <small>{approvedEntry ? 'Approved · Locked' : isFuture ? 'Future — read-only' : date === today ? 'Today' : ''}</small>
                     </div>
                     <span className="timesheets__day-val">{isFuture ? '—' : `${numVal.toFixed(1)}h`}</span>
                   </div>
@@ -2411,7 +2555,7 @@ export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step
                       min="0"
                       max="16"
                       step="0.5"
-                      disabled={isFuture}
+                      disabled={isLocked}
                       value={isFuture ? 0 : Math.min(16, Math.max(0, numVal))}
                       onChange={(e) => setRangeHours((current) => ({ ...current, [date]: e.target.value }))}
                       className="timesheets__day-slider"
@@ -2421,7 +2565,7 @@ export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step
 
                   <div className="timesheets__day-card-tag-row">
                     <span className={`timesheets__day-tag timesheets__day-tag--${isFuture ? 'future' : numVal === 0 ? 'off' : numVal <= 8 ? 'standard' : 'extended'}`}>
-                      {isFuture ? 'Future' : numVal === 0 ? 'Off' : numVal <= 8 ? 'Standard' : 'Extended (+OT)'}
+                      {approvedEntry ? 'Approved' : isFuture ? 'Future' : numVal === 0 ? 'Off' : numVal <= 8 ? 'Standard' : 'Extended (+OT)'}
                     </span>
                   </div>
 
@@ -2433,24 +2577,24 @@ export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step
                       min="0"
                       max="24"
                       step="0.25"
-                      disabled={isFuture}
-                      value={isFuture ? '' : rangeHours[date] ?? ''}
+                      disabled={isLocked}
+                      value={isFuture ? '' : approvedEntry ? approvedEntry.hoursWorked : rangeHours[date] ?? ''}
                       onChange={(event) => setRangeHours((current) => ({ ...current, [date]: event.target.value }))}
                     />
                     <Dropdown
                       name={`entry-type-${date}`}
                       label="Entry type"
                       options={TIMESHEET_ENTRY_TYPE_OPTIONS}
-                      disabled={isFuture}
-                      value={isFuture ? 'WORK' : normalizeEntryType(rangeEntryTypes[date])}
+                      disabled={isLocked}
+                      value={isFuture ? 'WORK' : normalizeEntryType(approvedEntry ? approvedEntry.entryType : rangeEntryTypes[date])}
                       onChange={(event) => setRangeEntryTypes((current) => ({ ...current, [date]: event.target.value }))}
                     />
                     <TextInput
                       name={`description-${date}`}
                       label="Description (optional)"
                       placeholder="Task / project details..."
-                      disabled={isFuture}
-                      value={isFuture ? '' : rangeDescriptions[date] || ''}
+                      disabled={isLocked}
+                      value={isFuture ? '' : approvedEntry ? approvedEntry.description || '' : rangeDescriptions[date] || ''}
                       onChange={(event) => setRangeDescriptions((current) => ({ ...current, [date]: event.target.value }))}
                     />
                   </div>
@@ -2472,6 +2616,11 @@ export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step
             documents={supportingDocuments?.length ? supportingDocuments : supportingDocument ? [supportingDocument] : []}
             onRemove={onRemoveSupportingDocument}
           />
+          {!approvedCorrection && <aside className="timesheets__draft-save" aria-label="Save progress">
+            <div><strong>Finish later?</strong><p>Save your current hours and document without submitting for approval.</p></div>
+            <Button variant="secondary" disabled={saving || uploadingDocument || !hasDocument} onClick={onSave}>{saving ? 'Saving...' : 'Save draft'}</Button>
+            <Button variant="secondary" disabled={saving || uploadingDocument} onClick={onBack}>Back to overview</Button>
+          </aside>}
           {documentError && <p role="alert">{documentError}</p>}
           <div className="timesheets__flow-actions">
             <Button type="button" variant="secondary" onClick={() => setStep('dates')}>Back</Button>
@@ -2482,6 +2631,7 @@ export function EntryWorkspace({ approvedRecords = [], onRequestCorrection, step
 
       {step === 'review' && (
         <div className="timesheets__flow-content">
+          {lockedApprovedCount > 0 && <p className="timesheets__approved-days-notice">Approved days remain unchanged and are excluded from the entries and total below. Only newly entered days will be sent for approval.</p>}
           <div className="timesheets__review-summary">
             <article>
               <span>Date range</span>
@@ -3411,12 +3561,8 @@ function TeamWorkspace({
 
   const handleStatCardClick = (status) => {
     setSelectedEmployee(null);
-    setSubTab('submissions');
-    if (status === 'ALL') {
-      setStatusFilter('ALL');
-    } else {
-      setStatusFilter((current) => current === status ? 'ALL' : status);
-    }
+    const nextStatus = status === 'ALL' || statusFilter === status ? 'ALL' : status;
+    setSubTab(nextStatus === 'SUBMITTED' ? 'actions' : 'submissions', nextStatus);
   };
 
   return (
@@ -3431,6 +3577,7 @@ function TeamWorkspace({
           <button
             type="button"
             aria-label={`Filter by total: ${teamStats.total}`}
+            aria-pressed={subTab === 'submissions' && statusFilter === 'ALL'}
             className={`timesheets__stat-card${subTab === 'submissions' && statusFilter === 'ALL' ? ' is-active' : ''}`}
             onClick={() => handleStatCardClick('ALL')}
           >
@@ -3439,6 +3586,7 @@ function TeamWorkspace({
           <button
             type="button"
             aria-label={`Filter by submitted: ${teamStats.submitted}`}
+            aria-pressed={subTab === 'actions'}
             className={`timesheets__stat-card${subTab === 'actions' ? ' is-active' : ''}`}
             onClick={() => handleStatCardClick('SUBMITTED')}
           >
@@ -3447,6 +3595,7 @@ function TeamWorkspace({
           <button
             type="button"
             aria-label={`Filter by approved: ${teamStats.approved}`}
+            aria-pressed={subTab === 'submissions' && statusFilter === 'APPROVED'}
             className={`timesheets__stat-card${subTab === 'submissions' && statusFilter === 'APPROVED' ? ' is-active' : ''}`}
             onClick={() => handleStatCardClick('APPROVED')}
           >
@@ -3455,6 +3604,7 @@ function TeamWorkspace({
           <button
             type="button"
             aria-label={`Filter by rejected: ${teamStats.rejected}`}
+            aria-pressed={subTab === 'submissions' && statusFilter === 'REJECTED'}
             className={`timesheets__stat-card${subTab === 'submissions' && statusFilter === 'REJECTED' ? ' is-active' : ''}`}
             onClick={() => handleStatCardClick('REJECTED')}
           >
@@ -3599,6 +3749,7 @@ function RequiredActionsWorkspace({
   const [actionsPage, setActionsPage] = useState(1);
   const [isExpressClearing, setIsExpressClearing] = useState(false);
   const [expressProgress, setExpressProgress] = useState({ done: 0, total: 0 });
+  const [expressResult, setExpressResult] = useState('');
   const [appleBloom, setAppleBloom] = useState(null);
 
   const submittedRecords = useMemo(() => {
@@ -3612,20 +3763,12 @@ function RequiredActionsWorkspace({
   const handleExpressApproveClean = async () => {
     if (cleanRecords.length === 0 || isExpressClearing) return;
     setIsExpressClearing(true);
+    setExpressResult('');
     setExpressProgress({ done: 0, total: cleanRecords.length });
 
     const startTime = performance.now();
-    let approvedCount = 0;
-    for (let i = 0; i < cleanRecords.length; i++) {
-      const rec = cleanRecords[i];
-      try {
-        await onReview(rec, 'APPROVED');
-        approvedCount++;
-        setExpressProgress({ done: approvedCount, total: cleanRecords.length });
-      } catch (err) {
-        console.error('Express clearance error for item', rec.id, err);
-      }
-    }
+    const { approved: approvedCount } = await approveTimesheetBatch(cleanRecords, onReview, setExpressProgress);
+    setExpressResult(`${approvedCount} approved. ${cleanRecords.length - approvedCount} not approved. Review any remaining submissions individually.`);
     const elapsedSec = ((performance.now() - startTime) / 1000).toFixed(2);
     setIsExpressClearing(false);
 
@@ -3634,7 +3777,7 @@ function RequiredActionsWorkspace({
         visible: true,
         title: `${approvedCount} Timesheet${approvedCount === 1 ? '' : 's'} Approved`,
         subtitle: `Cleared in ${elapsedSec}s`,
-        detail: `All ${approvedCount} standard submissions verified compliant and approved with immutable audit timestamps.`,
+        detail: `${approvedCount} approvals confirmed by the server.${approvedCount < cleanRecords.length ? ` ${cleanRecords.length - approvedCount} were not approved; review them individually.` : ''}`,
       });
     }
   };
@@ -3743,6 +3886,7 @@ function RequiredActionsWorkspace({
         </div>
       )}
 
+      {expressResult && <p role="status">{expressResult}</p>}
       {submittedRecords.length > 0 && (
         <div className="timesheets__apple-express-bar" role="region" aria-label="1-Tap Express Approval">
           <div className="timesheets__apple-express-left">
@@ -3752,12 +3896,12 @@ function RequiredActionsWorkspace({
             </div>
             <div className="timesheets__apple-express-title">
               {cleanRecords.length > 0
-                ? `${cleanRecords.length} Clean Submission${cleanRecords.length === 1 ? '' : 's'} Verified & Audit-Ready`
+                ? `${cleanRecords.length} Standard Submission${cleanRecords.length === 1 ? '' : 's'} with Name-Matched Documents`
                 : 'All pending submissions require custom inspection'}
             </div>
             <div className="timesheets__apple-express-subtitle">
               {cleanRecords.length > 0
-                ? 'Standard hours (≤8h/day, ≤40h/wk baseline), verified attachments, and zero policy anomalies. Approve with 1 tap.'
+                ? 'Standard-hour submissions with name-matched attachments. Review the documents before approving; a name match does not prove authenticity.'
                 : 'Pending items have overtime or special conditions that require individual manager review.'}
             </div>
           </div>
@@ -3775,7 +3919,7 @@ function RequiredActionsWorkspace({
             ) : (
               <>
                 <span className="timesheets__apple-bolt" aria-hidden="true">⚡</span>
-                <span>Express Approve Clean ({cleanRecords.length})</span>
+                <span>Express Approve ({cleanRecords.length})</span>
               </>
             )}
           </button>
@@ -3904,7 +4048,7 @@ function RequiredActionsWorkspace({
                     type="button"
                     variant="primary"
                     disabled={reviewingId === row.id}
-                    onClick={() => onReview(row, 'APPROVED')}
+                    onClick={() => row.supportingDocuments?.length && row.supportingDocuments.every(doc => doc.identityValidationStatus === 'MATCHED') ? onReview(row, 'APPROVED') : onView(row)}
                   >
                     {reviewingId === row.id ? 'Approving...' : 'Approve'}
                   </Button>
@@ -4780,12 +4924,17 @@ function EntryList({ entries, periodDetails = false }) {
   );
 }
 
-function TimesheetDetails({ record, canReview, reviewingId, onReview, onReject, onClose, onDownload, onDownloadPeriodPdf, onResubmit }) {
+export function TimesheetDetails({ record, canReview, reviewingId, onReview, onReject, onClose, onDownload, onDownloadPeriodPdf, onResubmit, onRequestCorrection }) {
   const [comment, setComment] = useState('');
+  const [documentReviewConfirmed, setDocumentReviewConfirmed] = useState(false);
+  const documents = record?.supportingDocuments || [];
+  const missingDocument = documents.length === 0;
+  const mismatchedDocument = documents.some(doc => doc.identityValidationStatus === 'MISMATCH');
+  const needsManualReview = documents.some(doc => doc.identityValidationStatus !== 'MATCHED');
   const isReviewable = canReview && record?.status === 'SUBMITTED' && Boolean(record?.id) && !record.id.startsWith('period-');
   const isReviewing = reviewingId === record?.id;
 
-  useEffect(() => { setComment(''); }, [record?.id]);
+  useEffect(() => { setComment(''); setDocumentReviewConfirmed(false); }, [record?.id]);
 
   return <Modal
     isOpen={Boolean(record)}
@@ -4795,13 +4944,14 @@ function TimesheetDetails({ record, canReview, reviewingId, onReview, onReject, 
     footer={<div className="timesheets__entry-actions">
       {isReviewable && <>
         <Button type="button" variant="secondary" disabled={isReviewing} onClick={() => onReject(record)}>Reject</Button>
-        <Button type="button" variant="primary" disabled={isReviewing} onClick={() => onReview('APPROVED', comment)}>{isReviewing ? 'Saving...' : 'Approve'}</Button>
+        <Button type="button" variant="primary" disabled={isReviewing || missingDocument || mismatchedDocument || (needsManualReview && (!documentReviewConfirmed || !comment.trim()))} onClick={() => onReview('APPROVED', comment, documentReviewConfirmed)}>{isReviewing ? 'Saving...' : 'Approve'}</Button>
       </>}
       {record?.status === 'REJECTED' && onResubmit && (
         <Button type="button" variant="primary" onClick={() => onResubmit(record)}>
           Resubmit timesheet
         </Button>
       )}
+      {record?.status === 'APPROVED' && onRequestCorrection && <Button type="button" variant="primary" onClick={() => onRequestCorrection(record)}>Request correction</Button>}
       {record?.id?.startsWith('period-') && (
         <Button
           type="button"
@@ -4846,9 +4996,19 @@ function TimesheetDetails({ record, canReview, reviewingId, onReview, onReject, 
       {record.reviewedAt && <div><dt>Reviewed</dt><dd>{formatDateTime(record.reviewedAt)}</dd></div>}
       {record.reviewComment && <div><dt>Review note</dt><dd>{record.reviewComment}</dd></div>}
     </dl>
-    {isReviewable && <div className="timesheets__review-note"><TextInput name="review-comment" label="Review note (optional)" value={comment} onChange={(event) => setComment(event.target.value)} /></div>}
+    {isReviewable && <div className="timesheets__review-note"><TextInput name="review-comment" label={needsManualReview ? 'Review note (required for manual document review)' : 'Review note (optional)'} required={needsManualReview} maxLength={500} value={comment} onChange={(event) => setComment(event.target.value)} /></div>}
     <EntryList entries={record.entries || []} periodDetails />
     <SupportingDocumentList documents={record.supportingDocuments} />
+    {isReviewable && <section className="timesheets__document-review" aria-label="Document review">
+      <h3>Check supporting documents</h3>
+      <p>A matching name does not prove authenticity. Check the document's employee name, dates, hours, and client or manager approval.</p>
+      {missingDocument && <p role="alert">Approval is blocked: no supporting document is attached. Ask the employee to attach one and resubmit.</p>}
+      {mismatchedDocument && <p role="alert">Approval is blocked: a document name does not match. Ask the employee to correct the document or contact HR to correct the profile.</p>}
+      {!missingDocument && !mismatchedDocument && needsManualReview && <>
+        <p>The employee name could not be verified automatically. Open the document and record how you checked it in the review note.</p>
+        <label><input type="checkbox" checked={documentReviewConfirmed} onChange={event => setDocumentReviewConfirmed(event.target.checked)} /> I reviewed the supporting document and confirmed it belongs to this employee.</label>
+      </>}
+    </section>}
   </div>}</Modal>;
 }
 
@@ -5357,14 +5517,20 @@ export function DocumentViewerModal({ doc, onClose, onError }) {
   );
 }
 
-function SupportingDocumentList({ documents, onRemove }) {
+export function SupportingDocumentList({ documents, onRemove }) {
   const list = (documents || []).filter((doc) => doc?.id);
   if (!list.length) return null;
   return (
     <div className="timesheets__supporting-documents">
       {list.map((doc) => (
         <div className="timesheets__supporting-document-row" key={doc.id}>
-          <SupportingDocument document={doc} />
+          <div className="timesheets__supporting-document-info">
+            <SupportingDocument document={doc} />
+            <p className="timesheets__document-identity" data-status={doc.identityValidationStatus || 'UNVERIFIED'}>
+              {doc.identityValidationStatus === 'MATCHED' ? 'Employee name matches' : doc.identityValidationStatus === 'MISMATCH' ? 'Employee name does not match' : 'Employee name not verified — HR review needed'}
+              {doc.identityValidationMessage && <span>{doc.identityValidationMessage}</span>}
+            </p>
+          </div>
           {onRemove && (
             <button type="button" className="timesheets__supporting-document-remove" aria-label={`Remove ${doc.fileName || 'document'}`} onClick={() => onRemove(doc)}>
               Remove

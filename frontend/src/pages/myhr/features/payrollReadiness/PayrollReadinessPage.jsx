@@ -10,6 +10,7 @@ import useIsMobileViewport from '../documentRequests/useIsMobileViewport';
 import MyHrFeaturePage from '../MyHrFeaturePage';
 import MyHrPagination from '../MyHrPagination';
 import './payrollReadiness.css';
+import '../timeAndPaySpacing.css';
 import Table from '../../components/WorkspaceDataTable';
 
 const EXPORT_COLUMNS = [
@@ -381,8 +382,8 @@ export function PayrollReadinessWorkspace() {
     { key: 'employee', header: 'Employee Name', width: '14%' },
     { key: 'manager', header: 'Reporting Manager', width: '14%' },
     { key: 'coverage', header: 'Coverage', width: '11%' },
-    { key: 'approvedHours', header: 'Approved Hours', width: '9%' },
-    { key: 'totalHours', header: 'Total Hours (Incl. OT)', width: '10%' },
+    { key: 'approvedHours', header: <span className="payroll-readiness__column-heading">Approved <span>Hours</span></span>, label: 'Approved Hours', width: '11%' },
+    { key: 'totalHours', header: <span className="payroll-readiness__column-heading">Total Hours <small>(Incl. OT)</small></span>, label: 'Total Hours (Incl. OT)', width: '11%' },
     { key: 'readiness', header: 'Readiness', width: '15%' },
     { key: 'actions', header: 'Actions', width: '16%' },
   ];
@@ -623,7 +624,7 @@ export function PayrollReadinessWorkspace() {
 // shell). Rendered by the /myhr/{hr,admin}/payroll-readiness routes, which
 // reminder notifications also link to.
 export default function PayrollReadinessPage({ role }) {
-  return <MyHrFeaturePage hideBack className="phase-six" title="Payroll Readiness" fullWidth>
+  return <MyHrFeaturePage hideBack className="phase-six time-pay-page" title="Payroll Readiness" fullWidth>
     <PayrollReadinessWorkspace role={role} />
   </MyHrFeaturePage>;
 }

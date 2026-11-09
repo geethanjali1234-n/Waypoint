@@ -7814,3 +7814,40 @@ button.timesheets__history-cell:focus-visible {
   .timesheets--admin-review .myhr-feature__heading .wp-page-header__action { width:100%; margin:4px 0 0; }
   .timesheets--admin-review .timesheets__submission-toolbar > .wp-field { flex:1 1 160px; }
 }
+
+/* The review introduction owns a row; status cards must never squeeze it. */
+.timesheets__supporting-document-info { flex:1; min-width:0; }
+.timesheets__quick-fill-help { margin:8px 0 12px; color:var(--wp-color-text-muted); font-size:.8125rem; line-height:1.5; }
+.timesheets__approved-days-notice { padding:12px 16px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-primary-soft); color:var(--wp-color-text); font-size:.8125rem; line-height:1.5; }
+.timesheets__document-review { padding:16px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card); background:var(--wp-color-primary-soft); }
+.timesheets__document-review h3 { margin:0 0 8px; }
+.timesheets__document-review p { margin:8px 0; line-height:1.5; font-size:.8125rem; }
+.timesheets__document-review label { display:flex; align-items:flex-start; gap:10px; font-size:.875rem; line-height:1.5; }
+.timesheets__document-review input { flex-shrink:0; margin-top:4px; }
+.timesheets__saved-drafts { margin-top:20px; padding:20px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-card); background:var(--wp-color-surface); }
+.timesheets__saved-drafts h2 { margin:0 0 8px; font-size:1.15rem; }
+.timesheets__saved-drafts p { color:var(--wp-color-text-muted); margin:0 0 12px; }
+.timesheets__saved-drafts ul { list-style:none; padding:0; margin:0; }
+.timesheets__saved-drafts li,.timesheets__draft-save { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:16px 0; border-top:1px solid var(--wp-color-border); }
+.timesheets__saved-drafts li > div,.timesheets__draft-save > div { flex:1 1 220px; min-width:0; }
+.timesheets__saved-drafts li span { display:block; margin-top:4px; color:var(--wp-color-text-muted); font-size:.8125rem; }
+.timesheets__draft-save p { margin:4px 0 0; color:var(--wp-color-text-muted); font-size:.8125rem; line-height:1.5; }
+@media(max-width:600px) { .timesheets__saved-drafts { padding:16px; } .timesheets__draft-save .wp-button { flex:1 1 140px; } }
+.timesheets__document-identity { margin:6px 0 0; font-size:.75rem; line-height:1.5; color:var(--wp-color-text-muted); }
+.timesheets__document-identity span { display:block; }
+.timesheets__document-identity[data-status='MISMATCH'] { color:var(--wp-color-danger); }
+.myhr-feature.timesheets-mobile .timesheets__team-heading { display:grid!important; grid-template-columns:minmax(0,1fr); align-items:start; gap:16px; }
+.myhr-feature.timesheets-mobile .timesheets__team-heading > div:first-child { width:100%; min-width:0; }
+.myhr-feature.timesheets-mobile .timesheets__team-heading .timesheets__stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); width:100%; min-width:0; margin:0; }
+@media(max-width:1100px) {
+  .myhr-feature.timesheets-mobile .timesheets__team-heading .timesheets__stats { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
+}
+
+#workspace-content .myhr-feature.timesheets-mobile .timesheets__team-workspace { padding:20px; }
+#workspace-content .timesheets-mobile .timesheets__team-heading .timesheets__stats > .timesheets__stat-card { display:flex!important; flex-direction:row!important; align-items:center!important; justify-content:space-between!important; gap:12px!important; min-width:0; min-height:60px; padding:12px 16px; transform:none; }
+#workspace-content .timesheets-mobile .timesheets__stats > .timesheets__stat-card > span { min-width:0; font-size:.8125rem; line-height:1.4; letter-spacing:0; text-transform:none; white-space:normal; }
+#workspace-content .timesheets-mobile .timesheets__stats > .timesheets__stat-card > strong { flex:0 0 auto; font-size:1.5rem; line-height:1; margin:0; font-variant-numeric:tabular-nums; }
+#workspace-content .timesheets-mobile .timesheets__stats > .timesheets__stat-card[aria-pressed='true'] { border-color:var(--wp-color-primary)!important; background:var(--wp-color-primary-soft)!important; box-shadow:inset 0 0 0 1px var(--wp-color-primary); }
+@media(max-width:768px) {
+  #workspace-content .myhr-feature.timesheets-mobile .timesheets__team-workspace { padding:16px!important; }
+}

@@ -2,7 +2,6 @@ package com.waypoint.dto.myhr;
 
 import com.waypoint.enums.TimesheetStatus;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -16,7 +15,7 @@ public record TimesheetUpsertRequest(
         @NotNull(message = "Period end date is required")
         LocalDate periodEndDate,
 
-        @NotEmpty(message = "At least one timesheet entry is required")
+        @NotNull(message = "Timesheet entries are required")
         @Size(max = 31, message = "A timesheet period cannot contain more than 31 entries")
         List<@Valid TimesheetEntryRequest> entries,
 

@@ -39,8 +39,10 @@ export function getPeriodStandardHours(startDate, endDate) {
 
 export function isRecordCleanAndAuditReady(rec) {
   if (!rec || rec.status !== 'SUBMITTED') return false;
+  if (!rec.supportingDocuments?.length || rec.supportingDocuments.some(doc => !doc?.id || doc.identityValidationStatus !== 'MATCHED')) return false;
+  if (!Array.isArray(rec.entries) || !rec.entries.length) return false;
   const hours = Number(rec.totalHours || 0);
-  if (hours <= 0) return false;
+  if (!Number.isFinite(hours) || hours <= 0) return false;
 
   const standardMaxHours = getPeriodStandardHours(rec.periodStartDate, rec.periodEndDate);
   if (hours > standardMaxHours) return false;

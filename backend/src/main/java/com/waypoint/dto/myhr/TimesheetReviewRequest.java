@@ -9,5 +9,9 @@ public record TimesheetReviewRequest(
         TimesheetStatus status,
 
         @Size(max = 500, message = "Review comment cannot exceed 500 characters")
-        String comment) {
+        String comment,
+        Boolean documentReviewConfirmed) {
+    public TimesheetReviewRequest(TimesheetStatus status, String comment) {
+        this(status, comment, false);
+    }
 }

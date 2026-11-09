@@ -1,7 +1,7 @@
 .reports__catalog {
   display: grid;
   gap: 18px;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
 }
 
 .reports__card {
@@ -1019,7 +1019,7 @@
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  min-width: 320px;
+  min-width: 0;
   max-height: 320px;
   background:var(--wp-color-surface);
   border:1px solid var(--border-subtle, var(--wp-color-border));

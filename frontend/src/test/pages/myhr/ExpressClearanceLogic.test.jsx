@@ -69,6 +69,7 @@ describe('Express Clearance Calculation & Redirection Logic', () => {
       const rec = {
         id: 'rec-1',
         status: 'SUBMITTED',
+        supportingDocuments: [{ id: 'doc-1', identityValidationStatus: 'MATCHED' }],
         periodStartDate: '2026-09-07',
         periodEndDate: '2026-09-13',
         totalHours: 40,
@@ -87,6 +88,7 @@ describe('Express Clearance Calculation & Redirection Logic', () => {
       const rec = {
         id: 'rec-2',
         status: 'SUBMITTED',
+        supportingDocuments: [{ id: 'doc-1', identityValidationStatus: 'MATCHED' }],
         periodStartDate: '2026-09-07',
         periodEndDate: '2026-09-13',
         totalHours: 48,
@@ -105,6 +107,7 @@ describe('Express Clearance Calculation & Redirection Logic', () => {
       const rec = {
         id: 'rec-3',
         status: 'SUBMITTED',
+        supportingDocuments: [{ id: 'doc-1', identityValidationStatus: 'MATCHED' }],
         periodStartDate: '2026-09-07',
         periodEndDate: '2026-09-13',
         totalHours: 40,
@@ -123,6 +126,7 @@ describe('Express Clearance Calculation & Redirection Logic', () => {
       const rec = {
         id: 'rec-monthly-clean',
         status: 'SUBMITTED',
+        supportingDocuments: [{ id: 'doc-1', identityValidationStatus: 'MATCHED' }],
         periodStartDate: '2026-09-01',
         periodEndDate: '2026-09-30',
         totalHours: 160,
@@ -138,6 +142,7 @@ describe('Express Clearance Calculation & Redirection Logic', () => {
       const rec = {
         id: 'rec-reedit',
         status: 'SUBMITTED',
+        supportingDocuments: [{ id: 'doc-1', identityValidationStatus: 'MATCHED' }],
         periodStartDate: '2026-09-07',
         periodEndDate: '2026-09-13',
         totalHours: 40,
@@ -169,6 +174,7 @@ describe('Express Clearance Calculation & Redirection Logic', () => {
         reportingManagerUserId: 'hr-user-1',
         reportingManagerName: 'Alex HR',
         status: 'SUBMITTED',
+        supportingDocuments: [{ id: 'doc-1', identityValidationStatus: 'MATCHED' }],
         totalHours: 40,
         periodStartDate: '2026-09-07',
         periodEndDate: '2026-09-13',
@@ -199,8 +205,8 @@ describe('Express Clearance Calculation & Redirection Logic', () => {
 
       // Verify that the 1-Tap Express bar is rendered
       expect(await screen.findByRole('region', { name: /1-Tap Express Approval/i })).toBeInTheDocument();
-      expect(screen.getByText('1 Clean Submission Verified & Audit-Ready')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Express Approve Clean \(1\)/i })).toBeInTheDocument();
+      expect(screen.getByText('1 Standard Submission with Name-Matched Documents')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Express Approve \(1\)/i })).toBeInTheDocument();
     });
   });
 });

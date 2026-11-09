@@ -46,6 +46,7 @@ public class MyHrDocumentController {
                 || content.metadata().getDocumentType() != DocumentType.TIMESHEET_SUPPORTING_DOCUMENT) {
             throw new ForbiddenException("Only your own timesheet documents can be imported");
         }
+        myHrDocumentService.verifyTimesheetIdentity(content);
         return new ApiResponse<>(true, "Document extraction completed",
                 timesheetDocumentParserService.parse(content.content(), content.metadata().getFileName(), documentId, dateOrder, ocrText));
     }

@@ -1,0 +1,104 @@
+/* One spacing rhythm for Time & Pay. Only content surfaces supply an inset;
+   layout wrappers and tables must not add a second padded border. */
+:root #workspace-content .myhr-feature.time-pay-page {
+  --time-pay-inset: 24px;
+  --time-pay-gap: 20px;
+  gap: var(--time-pay-gap);
+}
+
+:root #workspace-content .myhr-feature.time-pay-page > .myhr-feature__heading {
+  padding: 0 !important;
+  margin: 0;
+}
+
+:root #workspace-content .myhr-feature.time-pay-page .myhr-feature__body {
+  padding: 0;
+}
+
+:root #workspace-content .myhr-feature.time-pay-page :is(.reports__workspace, .payroll-readiness__workspace) {
+  padding: 0 !important;
+  margin: 0 !important;
+  gap: var(--time-pay-gap);
+  min-width: 0;
+}
+
+/* Keep review controls grouped in one comfortable surface. Its table keeps
+   its existing inset rather than removing the hierarchy of the workspace. */
+:root #workspace-content .myhr-feature.time-pay-page .timesheets__team-workspace {
+  padding: var(--time-pay-inset) !important;
+  margin: 0;
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-card);
+  box-shadow: none;
+  background: var(--wp-color-surface);
+}
+
+:root #workspace-content .myhr-feature.time-pay-page .timesheets__team-heading {
+  padding: 0;
+  margin: 0 0 var(--time-pay-gap);
+  gap: var(--time-pay-gap);
+}
+
+:root #workspace-content .myhr-feature.time-pay-page :is(.timesheets__workspace-tabs, .timesheets__subtabs-bar) {
+  margin: 0 0 var(--time-pay-gap) !important;
+}
+
+:root #workspace-content .myhr-feature.time-pay-page :is(.timesheets__all-submissions, .timesheets__hours-workspace) {
+  padding: 0;
+  gap: var(--time-pay-gap);
+}
+
+:root #workspace-content .myhr-feature.time-pay-page :is(.timesheets__overview-panel, .timesheets__flow-panel,
+  .reports__card, .reports__hero, .reports__enterprise-filters, .reports__panels > section,
+  .payroll-readiness__hero, .payroll-readiness__bulk-bar) {
+  padding: var(--time-pay-inset) !important;
+}
+
+:root #workspace-content .myhr-feature.time-pay-page :is(.reports__catalog, .reports__detail, .reports__panels) {
+  gap: var(--time-pay-gap);
+}
+
+:root #workspace-content .myhr-feature.time-pay-page .payroll-readiness__workspace > .wp-filter-pills {
+  margin: 0;
+}
+
+:root #workspace-content .myhr-feature.time-pay-page :is(.payroll-readiness__table, .reports__results) {
+  padding: 0;
+  margin: 0;
+}
+
+:root #workspace-content .myhr-feature.time-pay-page :is(.payroll-readiness__table, .reports__results, .reports__panels) .wp-data-table {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:root #workspace-content .myhr-feature.time-pay-page :is(.payroll-readiness__table, .reports__results) > header {
+  padding: var(--time-pay-inset);
+  margin: 0;
+}
+
+:root #workspace-content .myhr-feature.time-pay-page .payroll-readiness__hero > dl {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+:root #workspace-content .myhr-feature.time-pay-page .reports__kpis {
+  gap: var(--time-pay-gap);
+  padding-block: var(--time-pay-inset);
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  :root #workspace-content .myhr-feature.time-pay-page {
+    --time-pay-inset: 16px;
+    --time-pay-gap: 16px;
+  }
+  :root #workspace-content .myhr-feature.time-pay-page .payroll-readiness__cards-grid {
+    padding: 0 var(--time-pay-inset) var(--time-pay-inset);
+    gap: var(--time-pay-gap);
+  }
+}

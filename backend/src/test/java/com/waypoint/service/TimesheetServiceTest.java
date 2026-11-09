@@ -28,6 +28,7 @@ import com.waypoint.repository.OrganizationSettingsRepository;
 import com.waypoint.repository.UserRepository;
 import com.waypoint.security.MyHrAuthenticatedUserService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -54,6 +55,19 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TimesheetServiceTest {
+    @BeforeEach
+    void supportingDocumentFixture() {
+        org.mockito.Mockito.lenient().when(identityService.validateStored(any()))
+                .thenReturn(new TimesheetDocumentIdentityService.Result("MATCHED", "Employee name matches"));
+        org.mockito.Mockito.lenient().when(storedDocumentRepository.findById(org.mockito.ArgumentMatchers.startsWith("review-doc-")))
+                .thenAnswer(call -> Optional.of(com.waypoint.entity.StoredDocument.builder().id(call.getArgument(0))
+                        .organizationId("org-1").ownerUserId(((String) call.getArgument(0)).substring("review-doc-".length()))
+                        .documentType(com.waypoint.enums.DocumentType.TIMESHEET_SUPPORTING_DOCUMENT).build()));
+        org.mockito.Mockito.lenient().when(storedDocumentRepository.findById("supporting-doc"))
+                .thenReturn(Optional.of(com.waypoint.entity.StoredDocument.builder().id("supporting-doc")
+                        .organizationId("org-1").ownerUserId("employee-1")
+                        .documentType(com.waypoint.enums.DocumentType.TIMESHEET_SUPPORTING_DOCUMENT).build()));
+    }
 
     @Mock
     private TimesheetRepository timesheetRepository;
@@ -69,6 +83,8 @@ class TimesheetServiceTest {
 
     @Mock
     private StoredDocumentRepository storedDocumentRepository;
+    @Mock
+    private TimesheetDocumentIdentityService identityService;
 
     @Mock
     private AuditLogRepository auditLogRepository;
@@ -103,6 +119,40 @@ class TimesheetServiceTest {
             assertThatThrownBy(() -> service.create(actor.userId(), payload))
                     .isInstanceOf(com.waypoint.exception.ForbiddenException.class);
         }
+        verify(timesheetRepository, never()).save(any());
+    }
+
+    @Test
+    void storedIdentityMismatchCannotBypassValidationWithADirectApiCall() {
+        var actor = actor("employee-1", UserRole.EMPLOYEE);
+        when(authenticatedUserService.require(eq(actor.userId()), anySet(), eq(false))).thenReturn(actor);
+        var base = request(TimesheetStatus.SUBMITTED, new BigDecimal("8"));
+        var payload = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(),
+                base.entries(), List.of("wrong-person"), base.status(), null, null);
+        var document = com.waypoint.entity.StoredDocument.builder().id("wrong-person")
+                .organizationId(actor.organizationId()).ownerUserId(actor.userId())
+                .documentType(com.waypoint.enums.DocumentType.TIMESHEET_SUPPORTING_DOCUMENT).build();
+        when(storedDocumentRepository.findById("wrong-person")).thenReturn(Optional.of(document));
+        when(identityService.validateStored(document)).thenThrow(new BusinessException("Employee details do not match"));
+        assertThatThrownBy(() -> service.create(actor.userId(), payload))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("do not match");
+        verify(timesheetRepository, never()).save(any());
+    }
+
+    @Test
+    void approvalRechecksLegacyAttachmentsBeforeChangingStatus() {
+        var actor = actor("admin-1", UserRole.COMPANY_ADMIN);
+        when(authenticatedUserService.require(eq(actor.userId()), anySet(), eq(false))).thenReturn(actor);
+        var timesheet = Timesheet.builder().id("sheet").organizationId(actor.organizationId())
+                .userId("employee-1").status(TimesheetStatus.SUBMITTED).supportingDocumentIds(List.of("doc")).build();
+        when(timesheetRepository.findById("sheet")).thenReturn(Optional.of(timesheet));
+        var document = com.waypoint.entity.StoredDocument.builder().id("doc").organizationId(actor.organizationId())
+                .ownerUserId("employee-1").documentType(com.waypoint.enums.DocumentType.TIMESHEET_SUPPORTING_DOCUMENT).build();
+        when(storedDocumentRepository.findById("doc")).thenReturn(Optional.of(document));
+        when(identityService.validateStored(document)).thenThrow(new BusinessException("Employee details do not match"));
+        assertThatThrownBy(() -> service.review(actor.userId(), "sheet", new TimesheetReviewRequest(TimesheetStatus.APPROVED, null)))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("do not match");
+        assertThat(timesheet.getStatus()).isEqualTo(TimesheetStatus.SUBMITTED);
         verify(timesheetRepository, never()).save(any());
     }
 
@@ -230,7 +280,7 @@ class TimesheetServiceTest {
                 LocalDate.of(2026, 9, 1),
                 List.of(new TimesheetEntryRequest(
                         LocalDate.of(2026, 9, 1), BigDecimal.ZERO, TimesheetEntryType.SICK_LEAVE, "Sick leave")),
-                null,
+                List.of("supporting-doc"),
                 TimesheetStatus.SUBMITTED,
                 null,
                 null);
@@ -255,7 +305,7 @@ class TimesheetServiceTest {
                 LocalDate.now().minusDays(1),
                 future,
                 List.of(new TimesheetEntryRequest(future, new BigDecimal("8.00"), "Future work")),
-                null,
+                List.of("supporting-doc"),
                 TimesheetStatus.SUBMITTED,
                 null,
                 null);
@@ -386,7 +436,7 @@ class TimesheetServiceTest {
                 LocalDate.of(2026, 9, 6),
                 List.of(new TimesheetEntryRequest(
                         LocalDate.of(2026, 8, 31), new BigDecimal("7.50"), "Corrected hours")),
-                null,
+                List.of("supporting-doc"),
                 TimesheetStatus.DRAFT,
                 "Manager approved correction of 30 min",
                 true);
@@ -535,7 +585,7 @@ class TimesheetServiceTest {
                 LocalDate.of(2026, 9, 10),
                 List.of(new TimesheetEntryRequest(
                         LocalDate.of(2026, 9, 7), new BigDecimal("8.00"), "Dev")),
-                null,
+                List.of("supporting-doc"),
                 TimesheetStatus.SUBMITTED,
                 null,
                 null);
@@ -816,7 +866,7 @@ class TimesheetServiceTest {
     void approvedDatesCannotBeOverwrittenByANewSubmissionEvenWithAReason() {
         var approved = setupApprovedHours();
         var base = request(TimesheetStatus.SUBMITTED, new BigDecimal("6"));
-        var input = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(), base.entries(), null,
+        var input = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(), base.entries(), List.of("supporting-doc"),
                 base.status(), "Correction", true);
         assertThatThrownBy(() -> service.create("employee-1", input)).isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Approved hours are read-only");
@@ -837,7 +887,7 @@ class TimesheetServiceTest {
         var approved = setupApprovedHours();
         when(timesheetRepository.findById(approved.getId())).thenReturn(Optional.of(approved));
         var base = request(TimesheetStatus.DRAFT, BigDecimal.ONE);
-        var input = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(), base.entries(), null,
+        var input = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(), base.entries(), List.of("supporting-doc"),
                 base.status(), "Correction", true);
         assertThatThrownBy(() -> service.update("employee-1", approved.getId(), input)).isInstanceOf(BusinessException.class)
                 .hasMessageContaining("submitted for HR review");
@@ -850,9 +900,9 @@ class TimesheetServiceTest {
         var approved = setupApprovedHours();
         when(timesheetRepository.findById(approved.getId())).thenReturn(Optional.of(approved));
         var base = request(TimesheetStatus.SUBMITTED, BigDecimal.ONE);
-        var unconfirmed = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(), base.entries(), null,
+        var unconfirmed = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(), base.entries(), List.of("supporting-doc"),
                 base.status(), "Correction", false);
-        var noReason = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(), base.entries(), null,
+        var noReason = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(), base.entries(), List.of("supporting-doc"),
                 base.status(), "  ", true);
         assertThatThrownBy(() -> service.update("employee-1", approved.getId(), unconfirmed)).isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Confirm re-editing");
@@ -873,7 +923,7 @@ class TimesheetServiceTest {
         when(timesheetRepository.save(any())).thenAnswer(call -> call.getArgument(0));
         var input = new TimesheetUpsertRequest(LocalDate.of(2026, 8, 31), LocalDate.of(2026, 8, 31),
                 List.of(new TimesheetEntryRequest(LocalDate.of(2026, 8, 31), new BigDecimal("6"), "Corrected shift")),
-                null, TimesheetStatus.SUBMITTED, "Corrected shift after manager review", true);
+                List.of("supporting-doc"), TimesheetStatus.SUBMITTED, "Corrected shift after manager review", true);
         var result = service.update("employee-1", approved.getId(), input);
         assertThat(result.status()).isEqualTo(TimesheetStatus.SUBMITTED);
         assertThat(result.totalHours()).isEqualByComparingTo("14");
@@ -881,6 +931,116 @@ class TimesheetServiceTest {
         assertThat(approved.getReviewedAt()).isNull();
         assertThat(approved.getReviewedByUserId()).isNull();
         verify(auditLogRepository).save(any(AuditLog.class));
+    }
+
+    @Test
+    void documentIsMandatoryForBothDraftsAndSubmissions() {
+        var actor = actor("employee-1", UserRole.EMPLOYEE);
+        when(authenticatedUserService.require(eq(actor.userId()), anySet(), eq(false))).thenReturn(actor);
+        for (var status : List.of(TimesheetStatus.DRAFT, TimesheetStatus.SUBMITTED)) {
+            var base = request(status, BigDecimal.ONE);
+            var input = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(), base.entries(),
+                    List.of(" "), status, null, null);
+            assertThatThrownBy(() -> service.create(actor.userId(), input)).isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("Upload a supporting timesheet document");
+        }
+        verify(timesheetRepository, never()).save(any());
+    }
+
+    @Test
+    void draftCanPreserveDocumentAndDatesBeforeAnyHoursAreEntered() {
+        var actor = actor("employee-1", UserRole.EMPLOYEE);
+        when(authenticatedUserService.require(eq(actor.userId()), anySet(), eq(false))).thenReturn(actor);
+        when(reportingAssignmentRepository.findByEmployeeUserIdAndRelationshipTypeAndIsActiveTrue(
+                actor.userId(), RelationshipType.PRIMARY_REPORTING_MANAGER)).thenReturn(Optional.of(assignment(actor.userId(), "hr-1")));
+        when(timesheetRepository.save(any())).thenAnswer(call -> {
+            Timesheet saved = call.getArgument(0);
+            saved.setId("empty-draft");
+            return saved;
+        });
+        var input = new TimesheetUpsertRequest(LocalDate.of(2026, 8, 31), LocalDate.of(2026, 9, 6),
+                List.of(), List.of("supporting-doc"), TimesheetStatus.DRAFT, null, null);
+        var result = service.create(actor.userId(), input);
+        assertThat(result.status()).isEqualTo(TimesheetStatus.DRAFT);
+        assertThat(result.entries()).isEmpty();
+        assertThat(result.totalHours()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(result.supportingDocuments()).hasSize(1);
+    }
+
+    @Test
+    void approvalRequiresAttachmentEvenForLegacySubmissions() {
+        var submitted = setupDocumentApproval("MATCHED");
+        submitted.setSupportingDocumentIds(List.of());
+        assertThatThrownBy(() -> service.review("admin-1", submitted.getId(), new TimesheetReviewRequest(TimesheetStatus.APPROVED, "Checked", true)))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("supporting document is required");
+        verify(timesheetRepository, never()).save(any());
+    }
+
+    @Test
+    void unverifiedNameRequiresBothConfirmationAndNote() {
+        var submitted = setupDocumentApproval("UNVERIFIED");
+        for (var request : List.of(new TimesheetReviewRequest(TimesheetStatus.APPROVED, "Checked", false),
+                new TimesheetReviewRequest(TimesheetStatus.APPROVED, " ", true))) {
+            assertThatThrownBy(() -> service.review("admin-1", submitted.getId(), request))
+                    .isInstanceOf(BusinessException.class).hasMessageContaining("confirm manual review");
+        }
+        assertThat(submitted.getStatus()).isEqualTo(TimesheetStatus.SUBMITTED);
+        verify(timesheetRepository, never()).save(any());
+    }
+
+    @Test
+    void manualReviewAllowsValidUnverifiedDocumentsAndRecordsTheDecision() {
+        var submitted = setupDocumentApproval("UNVERIFIED");
+        when(timesheetRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+        var reviewed = service.review("admin-1", submitted.getId(), new TimesheetReviewRequest(TimesheetStatus.APPROVED,
+                "Checked name, dates and hours against manager confirmation", true));
+        assertThat(reviewed.status()).isEqualTo(TimesheetStatus.APPROVED);
+        assertThat(reviewed.reviewComment()).contains("Manual document review confirmed", "manager confirmation");
+        var audit = org.mockito.ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogRepository).save(audit.capture());
+        assertThat(audit.getValue().getDescription()).contains("Manual document review confirmed");
+    }
+
+    @Test
+    void manualConfirmationCannotOverrideClearNameMismatch() {
+        var submitted = setupDocumentApproval("MATCHED");
+        when(identityService.validateStored(any())).thenThrow(new BusinessException("Employee name does not match"));
+        assertThatThrownBy(() -> service.review("admin-1", submitted.getId(), new TimesheetReviewRequest(TimesheetStatus.APPROVED, "Checked", true)))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("does not match");
+        verify(timesheetRepository, never()).save(any());
+    }
+
+    @Test
+    void missingDaysCanBeSubmittedInsideAWiderRangeWithoutTouchingApprovedDays() {
+        var approved = setupApprovedHours();
+        approved.setEntries(List.of(TimesheetEntry.builder().workDate(LocalDate.of(2026,9,1)).hoursWorked(BigDecimal.valueOf(7)).build(),
+                TimesheetEntry.builder().workDate(LocalDate.of(2026,9,2)).hoursWorked(BigDecimal.valueOf(9)).build()));
+        when(timesheetRepository.save(any())).thenAnswer(call -> {
+            Timesheet saved = call.getArgument(0);
+            saved.setId("new-days");
+            return saved;
+        });
+        var input = new TimesheetUpsertRequest(LocalDate.of(2026,8,31),LocalDate.of(2026,9,13),
+                List.of(new TimesheetEntryRequest(LocalDate.of(2026,8,31),BigDecimal.valueOf(6),"Missed Monday"),
+                        new TimesheetEntryRequest(LocalDate.of(2026,9,7),BigDecimal.valueOf(8),"Next Monday")),
+                List.of("supporting-doc"),TimesheetStatus.SUBMITTED,null,null);
+        var result = service.create("employee-1", input);
+        assertThat(result.id()).isEqualTo("new-days");
+        assertThat(result.status()).isEqualTo(TimesheetStatus.SUBMITTED);
+        assertThat(result.totalHours()).isEqualByComparingTo("14");
+        assertThat(result.entries()).extracting(entry -> entry.workDate()).containsExactly(LocalDate.of(2026,8,31),LocalDate.of(2026,9,7));
+        assertThat(approved.getStatus()).isEqualTo(TimesheetStatus.APPROVED);
+        assertThat(approved.getEntries()).extracting(entry -> entry.getHoursWorked()).containsExactly(BigDecimal.valueOf(7),BigDecimal.valueOf(9));
+    }
+
+    private Timesheet setupDocumentApproval(String validationStatus) {
+        var actor = actor("admin-1", UserRole.COMPANY_ADMIN);
+        when(authenticatedUserService.require(eq(actor.userId()), anySet(), eq(false))).thenReturn(actor);
+        var submitted = timesheet("approval-sheet", actor.organizationId(), "employee-1", TimesheetStatus.SUBMITTED);
+        when(timesheetRepository.findById(submitted.getId())).thenReturn(Optional.of(submitted));
+        org.mockito.Mockito.lenient().when(identityService.validateStored(any()))
+                .thenReturn(new TimesheetDocumentIdentityService.Result(validationStatus, "Name screening result"));
+        return submitted;
     }
 
     private Timesheet setupApprovedHours() {
@@ -902,7 +1062,7 @@ class TimesheetServiceTest {
                 LocalDate.of(2026, 9, 6),
                 List.of(new TimesheetEntryRequest(
                         LocalDate.of(2026, 8, 31), hours, "Foundation work")),
-                null,
+                List.of("supporting-doc"),
                 status,
                 null,
                 null);
@@ -918,6 +1078,7 @@ class TimesheetServiceTest {
                 .totalHours(new BigDecimal("8.00"))
                 .status(status)
                 .submittedAt(status == TimesheetStatus.SUBMITTED ? LocalDateTime.now() : null)
+                .supportingDocumentIds(List.of("review-doc-" + userId))
                 .entries(List.of())
                 .build();
     }
