@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createMemoryRouter, MemoryRouter, RouterProvider } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import TimesheetsPage from '../../../pages/myhr/features/timesheets/TimesheetsPage';
 import timesheetApi from '../../../api/timesheetApi';
@@ -156,8 +157,8 @@ it.each([false,true])('tests the Nov 3–16 screenshots with other submitted day
   expect(document.getElementById('hours-2026-11-10')).toBeDisabled();
   expect(document.getElementById('hours-2026-11-02')).not.toBeInTheDocument();
   expect(within(screen.getByText('TOTAL HOURS').parentElement).getByText('24.0')).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button',{name:'Fill blank weekdays · 8h'}));
-  expect(screen.getByText(/^No eligible blank weekdays/)).toBeInTheDocument();
+  await userEvent.setup().click(screen.getByRole('button',{name:'Fill blank weekdays · 8h'}));
+  expect(await screen.findByText(/^No eligible blank weekdays/)).toBeInTheDocument();
   expect(document.getElementById('hours-2026-11-03')).toHaveValue(8);
   expect(document.getElementById('hours-2026-11-04')).toHaveValue(8);
   fireEvent.click(screen.getByRole('button',{name:'Review timesheet'}));
