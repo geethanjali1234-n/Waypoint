@@ -894,6 +894,7 @@ public class TimesheetService {
             boolean isResubmission) {
 
         String periodLabel = timesheet.getPeriodStartDate() + " to " + timesheet.getPeriodEndDate();
+        String actorLabel = actorLabel(actor);
 
         if (StringUtils.hasText(reportingManagerUserId)) {
             inAppNotificationService.createNotification(
@@ -901,7 +902,7 @@ public class TimesheetService {
                     reportingManagerUserId,
                     NotificationType.TIMESHEET_SUBMITTED,
                     isResubmission ? "Timesheet resubmitted" : "New timesheet submitted",
-                    actor.loginId() + (isResubmission ? " resubmitted a timesheet for " : " submitted a timesheet for ")
+                    actorLabel + (isResubmission ? " resubmitted a timesheet for " : " submitted a timesheet for ")
                             + periodLabel + " (" + timesheet.getTotalHours() + "h) for your review.",
                     timesheet.getId(),
                     "/myhr/hr/timesheets?view=team&timesheetId=" + timesheet.getId());
@@ -916,7 +917,7 @@ public class TimesheetService {
                         admin.getId(),
                         NotificationType.TIMESHEET_SUBMITTED,
                         isResubmission ? "Timesheet resubmitted" : "New timesheet submitted",
-                        actor.loginId() + (isResubmission ? " resubmitted a timesheet for " : " submitted a timesheet for ")
+                        actorLabel + (isResubmission ? " resubmitted a timesheet for " : " submitted a timesheet for ")
                                 + periodLabel + " (" + timesheet.getTotalHours() + "h) for organization review.",
                         timesheet.getId(),
                         "/myhr/admin/timesheets?timesheetId=" + timesheet.getId()));
@@ -944,6 +945,11 @@ public class TimesheetService {
         return base + (rejected ? "&rejected=true" : "") + "&timesheetId=" + timesheetId;
     }
 
+    /** "Full Name (Designation)" for the person acting, read from their profile and account; never the login ID. */
+    private String actorLabel(MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor) {
+        return new NotificationActorFormatter(userRepository, employeeProfileRepository, null).describe(actor.userId());
+    }
+
     private UserRole roleOf(String userId) {
         return userRepository.findById(userId).map(User::getRole).orElse(UserRole.EMPLOYEE);
     }
@@ -955,13 +961,14 @@ public class TimesheetService {
             String comment) {
 
         String periodLabel = timesheet.getPeriodStartDate() + " to " + timesheet.getPeriodEndDate();
+        String actorLabel = actorLabel(actor);
         if (status == TimesheetStatus.APPROVED) {
             notifyQuietly("employee", () -> inAppNotificationService.createNotification(
                     timesheet.getOrganizationId(),
                     timesheet.getUserId(),
                     NotificationType.TIMESHEET_APPROVED,
                     "Timesheet approved",
-                    "Your timesheet for " + periodLabel + " (" + timesheet.getTotalHours() + "h) has been approved by " + actor.loginId() + ".",
+                    "Your timesheet for " + periodLabel + " (" + timesheet.getTotalHours() + "h) has been approved by " + actorLabel + ".",
                     timesheet.getId(),
                     ownTimesheetHistoryUrl(roleOf(timesheet.getUserId()), timesheet.getId(), false)));
 
@@ -970,8 +977,8 @@ public class TimesheetService {
                         timesheet.getOrganizationId(),
                         timesheet.getReportingManagerUserId(),
                         NotificationType.TIMESHEET_APPROVED,
-                        "Timesheet approved by " + actor.loginId(),
-                        "Timesheet for " + resolveEmployeeName(timesheet) + " (" + periodLabel + ") was approved by " + actor.loginId() + ".",
+                        "Timesheet approved by " + actorLabel,
+                        "Timesheet for " + resolveEmployeeName(timesheet) + " (" + periodLabel + ") was approved by " + actorLabel + ".",
                         timesheet.getId(),
                         "/myhr/hr/timesheets?view=team&timesheetId=" + timesheet.getId()));
             }
@@ -982,7 +989,7 @@ public class TimesheetService {
                     timesheet.getUserId(),
                     NotificationType.TIMESHEET_REJECTED,
                     "Timesheet rejected",
-                    "Your timesheet for " + periodLabel + " was rejected by " + actor.loginId() + ". Reason: " + note + ". Please revise and resubmit.",
+                    "Your timesheet for " + periodLabel + " was rejected by " + actorLabel + ". Reason: " + note + ". Please revise and resubmit.",
                     timesheet.getId(),
                     ownTimesheetHistoryUrl(roleOf(timesheet.getUserId()), timesheet.getId(), true)));
 
@@ -991,8 +998,8 @@ public class TimesheetService {
                         timesheet.getOrganizationId(),
                         timesheet.getReportingManagerUserId(),
                         NotificationType.TIMESHEET_REJECTED,
-                        "Timesheet rejected by " + actor.loginId(),
-                        "Timesheet for " + resolveEmployeeName(timesheet) + " (" + periodLabel + ") was rejected by " + actor.loginId() + ". Reason: " + note,
+                        "Timesheet rejected by " + actorLabel,
+                        "Timesheet for " + resolveEmployeeName(timesheet) + " (" + periodLabel + ") was rejected by " + actorLabel + ". Reason: " + note,
                         timesheet.getId(),
                         "/myhr/hr/timesheets?view=team&timesheetId=" + timesheet.getId()));
             }

@@ -109,7 +109,12 @@ class OfferLetterApprovalServiceTest {
         lenient().when(users.findById("hr-1")).thenReturn(Optional.of(user("hr-1", UserRole.HR, "hr@tardus.example")));
         lenient().when(users.findById("admin")).thenReturn(Optional.of(user("admin", UserRole.COMPANY_ADMIN, "admin@tardus.example")));
         lenient().when(profiles.findByUserId(anyString())).thenReturn(Optional.empty());
-        // HR sees the approver as "<Organization> Admin".
+        lenient().when(profiles.findByUserId("admin")).thenReturn(Optional.of(
+                com.waypoint.entity.EmployeeProfile.builder().userId("admin").organizationId("org-1").employeeId("TARDU001")
+                        .firstName("Alex").lastName("Admin").build()));
+        lenient().when(profiles.findByUserId("hr-1")).thenReturn(Optional.of(
+                com.waypoint.entity.EmployeeProfile.builder().userId("hr-1").organizationId("org-1").employeeId("TARDU002")
+                        .firstName("Harper").lastName("Hall").build()));
         lenient().when(organizations.findById("org-1")).thenReturn(Optional.of(Organization.builder().id("org-1").organizationName("Tardus").build()));
     }
 
@@ -135,7 +140,7 @@ class OfferLetterApprovalServiceTest {
 
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("admin"), eq(NotificationType.OFFER_LETTER_APPROVAL_REQUESTED),
                 eq("Offer Letter Approval Required"),
-                eq("HR has submitted an offer letter for Jane Doe for the position of Software Developer. Please review and approve or reject the offer letter."),
+                eq("Harper Hall (HR) has submitted an offer letter for Jane Doe for the position of Software Developer. Please review and approve or reject the offer letter."),
                 eq("request-1"), eq("/myhr/admin/offer-letter-approvals/request-1"));
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
         verify(emailService).sendHtmlEmail(eq("admin@tardus.example"), eq("Offer Letter Approval Required – Jane Doe"), html.capture(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
@@ -215,7 +220,7 @@ class OfferLetterApprovalServiceTest {
         verify(audit).record(any(AuthenticatedMyHrUser.class), eq(AuditActionType.OFFER_APPROVED), eq("DOCUMENT_REQUEST"), eq("request-1"),
                 anyString(), anyString(), any(), any());
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("hr-1"), eq(NotificationType.OFFER_LETTER_APPROVED), eq("Offer Letter Approved"),
-                eq("The offer letter for Jane Doe has been approved by the Tardus Admin. You can now send it to the employee."),
+                eq("The offer letter for Jane Doe has been approved by Alex Admin (Company Admin). You can now send it to the employee."),
                 eq("request-1"), eq("/myhr/hr/document-requests/request-1/offer-letter"));
         verify(emailService).sendHtmlEmail(eq("hr@tardus.example"), eq("Offer Letter Approved – Jane Doe"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
     }
@@ -293,7 +298,7 @@ class OfferLetterApprovalServiceTest {
         verify(audit).record(any(AuthenticatedMyHrUser.class), eq(AuditActionType.OFFER_REJECTED), eq("DOCUMENT_REQUEST"), eq("request-1"),
                 anyString(), anyString(), any(), any());
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("hr-1"), eq(NotificationType.OFFER_LETTER_REJECTED), eq("Offer Letter Rejected"),
-                eq("The offer letter for Jane Doe was rejected by the Tardus Admin.\n\nReason:\nWrong salary"),
+                eq("The offer letter for Jane Doe was rejected by Alex Admin (Company Admin).\n\nReason:\nWrong salary"),
                 eq("request-1"), eq("/myhr/hr/document-requests/request-1/offer-letter"));
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
         verify(emailService).sendHtmlEmail(eq("hr@tardus.example"), eq("Offer Letter Rejected – Jane Doe"), html.capture(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
@@ -412,7 +417,7 @@ class OfferLetterApprovalServiceTest {
         // The Admin is asked in-app and by email, using the document's own name - never the employee.
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("admin"), eq(NotificationType.OFFER_LETTER_APPROVAL_REQUESTED),
                 eq("Document Approval Required"),
-                eq("HR has submitted the Employment Verification for Jane Doe. Please review and approve or reject the document."),
+                eq("Harper Hall (HR) has submitted the Employment Verification for Jane Doe. Please review and approve or reject the document."),
                 eq("request-1"), eq("/myhr/admin/offer-letter-approvals/request-1"));
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
         verify(emailService).sendHtmlEmail(eq("admin@tardus.example"), eq("Document Approval Required – Jane Doe – Employment Verification"), html.capture(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
@@ -429,7 +434,7 @@ class OfferLetterApprovalServiceTest {
         service.reject("admin", "request-1", "Wrong amount");
 
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("hr-1"), eq(NotificationType.OFFER_LETTER_REJECTED), eq("Document Rejected"),
-                eq("The Salary Verification Letter for Jane Doe was rejected by the Tardus Admin.\n\nReason:\nWrong amount"),
+                eq("The Salary Verification Letter for Jane Doe was rejected by Alex Admin (Company Admin).\n\nReason:\nWrong amount"),
                 eq("request-1"), eq("/myhr/hr/document-requests/request-1"));
         verify(emailService).sendHtmlEmail(eq("hr@tardus.example"), eq("Document Rejected – Jane Doe"), anyString(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.<EmailSenderIdentity>any());
 
@@ -437,7 +442,7 @@ class OfferLetterApprovalServiceTest {
         org.mockito.Mockito.clearInvocations(notifications, emailService);
         service.approve("admin", "request-1");
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("hr-1"), eq(NotificationType.OFFER_LETTER_APPROVED), eq("Document Approved"),
-                eq("The Salary Verification Letter for Jane Doe has been approved by the Tardus Admin. You can now send it to the employee."),
+                eq("The Salary Verification Letter for Jane Doe has been approved by Alex Admin (Company Admin). You can now send it to the employee."),
                 eq("request-1"), eq("/myhr/hr/document-requests/request-1"));
     }
 

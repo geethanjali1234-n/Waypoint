@@ -532,17 +532,18 @@ public class OfferLetterApprovalService {
         boolean offer = isOfferLetter(request);
         String link = "/myhr/admin/offer-letter-approvals/" + request.getId();
         String title = offer ? "Offer Letter Approval Required" : "Document Approval Required";
+        String submitter = actorLabel(actor);
         String message = offer
-                ? "HR has submitted an offer letter for " + details.getEmployeeName() + " for the position of "
+                ? submitter + " has submitted an offer letter for " + details.getEmployeeName() + " for the position of "
                         + details.getDesignation() + ". Please review and approve or reject the offer letter."
-                : "HR has submitted the " + label(request, false) + " for " + details.getEmployeeName()
+                : submitter + " has submitted the " + label(request, false) + " for " + details.getEmployeeName()
                         + ". Please review and approve or reject the document.";
         String subject = offer ? title + " – " + oneLine(details.getEmployeeName())
                 : title + " – " + oneLine(details.getEmployeeName()) + " – " + oneLine(label(request, false));
         String emailMessage = offer
-                ? "HR has submitted an offer letter. Admin approval is required before it can be sent to the employee. "
+                ? submitter + " has submitted an offer letter. Admin approval is required before it can be sent to the employee. "
                         + "Please review the offer letter in WayPoint and approve or reject it."
-                : "HR has submitted a document. Admin approval is required before it can be sent to the employee. "
+                : submitter + " has submitted a document. Admin approval is required before it can be sent to the employee. "
                         + "Please review the document in WayPoint and approve or reject it.";
         // A document signed on approval goes to the company admin account only - no other Admin can approve it.
         String signatoryId = details.getAuthorizedSignature() == null ? null
@@ -569,12 +570,12 @@ public class OfferLetterApprovalService {
                 : "/myhr/hr/document-requests/" + request.getId();
         String title = offer ? (approved ? "Offer Letter Approved" : "Offer Letter Rejected") : (approved ? "Document Approved" : "Document Rejected");
         String what = offer ? "offer letter" : "document (" + label(request, false) + ")";
-        String approver = approverName(actor.organizationId());
+        String approver = actorLabel(actor);
         String message = approved
                 ? "The " + (offer ? "offer letter" : label(request, false)) + " for " + details.getEmployeeName()
-                        + " has been approved by the " + approver + ". You can now send it to the employee."
+                        + " has been approved by " + approver + ". You can now send it to the employee."
                 : "The " + (offer ? "offer letter" : label(request, false)) + " for " + details.getEmployeeName()
-                        + " was rejected by the " + approver + ".\n\nReason:\n" + reason;
+                        + " was rejected by " + approver + ".\n\nReason:\n" + reason;
         List<EmailDetailRow> rows = new ArrayList<>(approvalRows(request, details));
         if (!approved) rows.add(new EmailDetailRow("Reason", reason));
         notifySafely(() -> notifications.notify(NotificationEvent.builder()
@@ -583,8 +584,8 @@ public class OfferLetterApprovalService {
                 .title(title).message(message).relatedEntityId(request.getId()).actionPath(link)
                 .email(true).emailSubject(title + " – " + oneLine(details.getEmployeeName()))
                 .emailMessage(approved
-                        ? "The " + what + " has been approved by the " + approver + ". You can now send it to the employee."
-                        : "The " + what + " was rejected by the " + approver + ". Please correct it and submit it for approval again.")
+                        ? "The " + what + " has been approved by " + approver + ". You can now send it to the employee."
+                        : "The " + what + " was rejected by " + approver + ". Please correct it and submit it for approval again.")
                 .detailRows(rows)
                 .actionLabel(approved ? (offer ? "Send Offer Letter" : "Open Document Request") : (offer ? "Review Offer Letter" : "Open Document Request"))
                 .build()));
@@ -643,11 +644,9 @@ public class OfferLetterApprovalService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    /** The approver as HR sees it: "<Organization> Admin", or "Company Admin" when the organization has no name. */
-    private String approverName(String organizationId) {
-        String name = organizationId == null ? null
-                : organizations.findById(organizationId).map(Organization::getOrganizationName).orElse(null);
-        return hasText(name) ? name.trim() + " Admin" : "Company Admin";
+    /** "Full Name (Designation)" for the person acting, read from their profile and account; never a login ID. */
+    private String actorLabel(AuthenticatedMyHrUser actor) {
+        return new NotificationActorFormatter(users, profiles, organizations).describe(actor.userId());
     }
 
     private static boolean hasText(String value) {

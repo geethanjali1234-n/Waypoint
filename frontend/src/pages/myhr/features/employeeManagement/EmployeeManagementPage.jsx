@@ -1,3 +1,4 @@
+import { formatReportingManager } from '../../../../utils/reportingManagerLabel';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, DataTable, DetailPanel, FilterPills, RouteLine, StatusBadge, DatePicker, Dropdown, EmailInput, EmptyState, Loader, Modal, PhoneInput, SearchInput, TextArea, TextInput, ValidationMessage } from '../../../../components';
 import StrokeIcon from '../../../../components/global/StrokeIcon';
@@ -675,10 +676,10 @@ export default function EmployeeManagementPage({ role }) {
               <h3>Reports to</h3>
               {detail.reportingManager && <RouteLine orientation="vertical" label="Reporting relationship" steps={[
                 ...(detail.reportingHistory || []).filter((assignment) => assignment.effectiveTo).map((assignment) => ({ label: assignment.managerName || 'Previous manager', sublabel: `${formatDate(assignment.effectiveFrom)} to ${formatDate(assignment.effectiveTo)}`, state: 'done' })),
-                { label: detail.reportingManager.name, sublabel: 'Current reporting manager', state: 'current' },
+                { label: formatReportingManager(detail.reportingManager), sublabel: 'Current reporting manager', state: 'current' },
               ]} />}
               {detail.reportingManager ? <>
-                <strong>{detail.reportingManager.name}</strong>
+                <strong>{formatReportingManager(detail.reportingManager)}</strong>
                 <p>Primary Reporting Manager</p>
                 <dl>
                   <div><dt>Effective From</dt><dd>{formatDate(detail.reportingManager.effectiveFrom)}</dd></div>

@@ -39,7 +39,7 @@ class ProfileChangeRequestControllerTest {
     @Test
     void returnsOrganizationRequestsWithRealEmployeeAndManagerDisplayInformation() throws Exception {
         when(currentUserResolver.resolveUserId(any())).thenReturn("admin-1");
-        ReportingManagerSummary manager = new ReportingManagerSummary("hr-1", "TD001", "Alex Morgan", null, null);
+        ReportingManagerSummary manager = new ReportingManagerSummary("hr-1", "TD001", "Alex Morgan", null, null, "HR");
         ProfileChangeRequestResponse response = new ProfileChangeRequestResponse(
                 "request-1", "employee-1", "profile-1", "hr-1",
                 ProfileChangeField.PHONE_NUMBER, "(555) 010-1000", "(555) 010-9999",
@@ -73,7 +73,7 @@ class ProfileChangeRequestControllerTest {
         when(currentUserResolver.resolveUserId(any())).thenReturn("admin-1");
         ProfileChangeRequestDetailResponse.RequesterSummary requester = new ProfileChangeRequestDetailResponse.RequesterSummary(
                 "employee-1", "TD002", "Jordan Lee", "EMPLOYEE");
-        ReportingManagerSummary manager = new ReportingManagerSummary("hr-1", "TD001", "Alex Morgan", null, null);
+        ReportingManagerSummary manager = new ReportingManagerSummary("hr-1", "TD001", "Alex Morgan", null, null, "HR");
         ProfileChangeRequestDetailResponse detail = new ProfileChangeRequestDetailResponse(
                 "request-1", ProfileChangeField.PHONE_NUMBER, "(555) 010-1000", "(555) 010-9999",
                 "Number changed", ProfileChangeStatus.PENDING, null, null,

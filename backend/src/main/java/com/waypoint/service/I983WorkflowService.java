@@ -133,7 +133,7 @@ public class I983WorkflowService {
         audit(actor, AuditActionType.I983_SUBMITTED, saved, "Signed I-983 submitted for HR/Admin review",
                 null, auditValues(saved, "fileName", stored.getFileName(), "uploadedAt", now.toString()));
         notifySafely(() -> notifyReviewers(actor, saved, "New Signed I-983 for review",
-                label(actor) + " submitted a Signed I-983 for review." ));
+                notificationLabel(actor) + " submitted a Signed I-983 for review." ));
         return detail(actor, saved);
     }
 
@@ -189,7 +189,7 @@ public class I983WorkflowService {
         audit(actor, AuditActionType.I983_RESUBMITTED, saved, detail,
                 Map.of("status", DocumentRequestStatus.RETURNED_FOR_CORRECTION.name()), auditValues(saved));
         notifySafely(() -> notifyReviewers(actor, saved, "Signed I-983 resubmitted",
-                label(actor) + " resubmitted their Signed I-983 for review."));
+                notificationLabel(actor) + " resubmitted their Signed I-983 for review."));
         return detail(actor, saved);
     }
 
@@ -773,6 +773,11 @@ public class I983WorkflowService {
                 .collect(Collectors.toMap(EmployeeProfile::getUserId, Function.identity(), (left, right) -> left));
         return userRepository.findByIdIn(userIds).stream()
                 .collect(Collectors.toMap(User::getId, user -> displayName(user, profiles.get(user.getId())), (left, right) -> left));
+    }
+
+    /** "Full Name (Designation)" for notification text. {@link #label} stays name-only for signatures and history. */
+    private String notificationLabel(AuthenticatedMyHrUser actor) {
+        return new NotificationActorFormatter(userRepository, employeeProfileRepository, null).describe(actor.userId());
     }
 
     private String label(AuthenticatedMyHrUser actor) {

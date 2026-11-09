@@ -487,7 +487,7 @@ public class DocumentRequestService {
         notifySafely(() -> {
             User recipient = requireUserInOrganization(request.getRequestedForUserId(), actor.organizationId());
 notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor.organizationId()).recipientUserId(recipient.getId())
-                .type(NotificationType.DOCUMENT_REQUEST_FULFILLED).title("Signed document returned").message("The requester signed \"" + request.getRequestTitle() + "\". The complete signed document is available.")
+                .type(NotificationType.DOCUMENT_REQUEST_FULFILLED).title("Signed document returned").message(actorLabel(actor.userId()) + " signed \"" + request.getRequestTitle() + "\". The complete signed document is available.")
                 .relatedEntityId(requestId).actionPath("/myhr/" + personaSegment(recipient.getRole()) + "/document-requests/" + requestId).email(true).actionLabel("View Document").build());
         });
         return responses(List.of(request), actor.organizationId()).getFirst();
@@ -699,6 +699,11 @@ notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor
     }
 
     /** "Full Name (EMPLOYEE-ID)", falling back to just the identity when no employee id exists (e.g. Company Admin). */
+    /** "Full Name (Designation)" for the person who triggered a notification; never a login or employee ID. */
+    private String actorLabel(String userId) {
+        return new NotificationActorFormatter(userRepository, employeeProfileRepository, null).describe(userId);
+    }
+
     static String participantLabel(User user, EmployeeProfile profile) {
         String employeeId = profile == null ? null : profile.getEmployeeId();
         String identity = displayName(user, profile);
@@ -740,9 +745,7 @@ notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor
     private void notifyDocumentRequested(MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor,
                                          DocumentRequest saved, User target) {
         if (actor.userId().equals(target.getId())) return;
-        EmployeeProfile actorProfile = employeeProfileRepository.findByUserId(actor.userId()).orElse(null);
-        User actorUser = User.builder().id(actor.userId()).loginId(actor.loginId()).build();
-        String actorLabel = participantLabel(actorUser, actorProfile);
+        String actorLabel = actorLabel(actor.userId());
         notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor.organizationId()).recipientUserId(target.getId())
                 .type(NotificationType.DOCUMENT_REQUEST_CREATED).title("New document request").message(actorLabel + " requested \"" + saved.getRequestTitle() + "\" from you." + requiredBySuffix(saved.getRequiredBy()))
                 .relatedEntityId(saved.getId()).actionPath("/myhr/" + personaSegment(target.getRole()) + "/document-requests/" + saved.getId()).email(true).actionLabel("Open Request").build());
@@ -752,9 +755,7 @@ notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor
     private void notifyEmployeeDocumentRequested(MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor,
                                                  DocumentRequest saved, User recipient) {
         if (actor.userId().equals(recipient.getId())) return;
-        EmployeeProfile actorProfile = employeeProfileRepository.findByUserId(actor.userId()).orElse(null);
-        User actorUser = User.builder().id(actor.userId()).loginId(actor.loginId()).build();
-        String actorLabel = participantLabel(actorUser, actorProfile);
+        String actorLabel = actorLabel(actor.userId());
         notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor.organizationId()).recipientUserId(recipient.getId())
                 .type(NotificationType.DOCUMENT_REQUEST_CREATED).title("New employee document request").message(actorLabel + " requested \"" + saved.getRequestTitle() + "\"." + requiredBySuffix(saved.getRequiredBy()))
                 .relatedEntityId(saved.getId()).actionPath("/myhr/" + personaSegment(recipient.getRole()) + "/document-requests/" + saved.getId()).email(true).actionLabel("Open Request").build());
@@ -765,9 +766,7 @@ notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor
         String recipientId = saved.getRequestedByUserId();
         if (actor.userId().equals(recipientId)) return;
         User recipient = userRepository.findById(recipientId).orElse(null);
-        EmployeeProfile actorProfile = employeeProfileRepository.findByUserId(actor.userId()).orElse(null);
-        User actorUser = User.builder().id(actor.userId()).loginId(actor.loginId()).build();
-        String actorLabel = participantLabel(actorUser, actorProfile);
+        String actorLabel = actorLabel(actor.userId());
         String persona = recipient == null ? "employee" : personaSegment(recipient.getRole());
         // The employee-to-manager fulfillment already has its own dedicated document email.
         notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor.organizationId()).recipientUserId(recipientId)

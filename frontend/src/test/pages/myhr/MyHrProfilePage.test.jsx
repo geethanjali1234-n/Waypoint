@@ -94,10 +94,21 @@ describe('MyHrProfilePage', () => {
     expect(await screen.findByText("Couldn't load your profile")).toBeInTheDocument();
   });
 
-  it('shows the reporting manager employee ID when available', async () => {
-    renderPage('EMPLOYEE', { ...employeeProfile, reportingManager: { userId: 'hr-1', employeeId: 'TD001', name: 'Riley Chen' } });
-    expect(await screen.findByText('My Profile')).toBeInTheDocument();
-    expect(screen.getByText('TD001 · Riley Chen')).toBeInTheDocument();
+  it.each([
+    ['EMPLOYEE', 'HR', 'Riley Chen (HR)'],
+    ['HR', 'COMPANY_ADMIN', 'Vasavi Anna (Company Admin)'],
+  ])('shows the %s profile reporting manager as Full Name (Designation) with no IDs', async (role, managerRole, expected) => {
+    renderPage(role, { ...employeeProfile, reportingManager: {
+      userId: 'selfreg-admin-3b33275aa0aa902ddf894fe9', employeeId: 'TARDU002', name: expected.split(' (')[0].toLowerCase(), roleLabel: managerRole,
+    } });
+    expect(await screen.findByText(expected)).toBeInTheDocument();
+    expect(screen.queryByText(/selfreg|TARDU/)).not.toBeInTheDocument();
+  });
+
+  it('shows Not assigned when there is no reporting manager, never an ID', async () => {
+    renderPage('EMPLOYEE', { ...employeeProfile, reportingManager: { userId: 'mgr-user-77', employeeId: 'MGRID77', loginId: 'MGRLOGIN77' } });
+    expect(await screen.findByText('Not assigned')).toBeInTheDocument();
+    expect(screen.queryByText(/mgr-user-77|MGRID77|MGRLOGIN77/)).not.toBeInTheDocument();
   });
 
   it('uses a safe fallback for missing values', async () => {

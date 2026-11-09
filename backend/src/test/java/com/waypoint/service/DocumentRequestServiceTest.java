@@ -651,12 +651,16 @@ class DocumentRequestServiceTest {
         DocumentRequest request = pending("employee", "hr");
         when(requests.findByIdAndOrganizationId("request-1", "org-1")).thenReturn(Optional.of(request));
         when(users.findById("employee")).thenReturn(Optional.of(user("employee", UserRole.EMPLOYEE)));
+        when(users.findById("admin")).thenReturn(Optional.of(user("admin", UserRole.COMPANY_ADMIN)));
+        when(profiles.findByUserId("admin")).thenReturn(Optional.of(EmployeeProfile.builder().userId("admin")
+                .employeeId("TARDU001").firstName("Alex").lastName("Admin").build()));
         when(documents.store(any())).thenReturn(StoredDocument.builder().id("doc-1").build());
 
         service.fulfill("admin", "request-1", "letter.pdf", "application/pdf", new byte[]{1});
 
         verify(notifications).createInAppOnlyNotification(eq("org-1"), eq("employee"),
-                eq(NotificationType.DOCUMENT_REQUEST_FULFILLED), any(), contains("admin"), eq("request-1"), anyString());
+                eq(NotificationType.DOCUMENT_REQUEST_FULFILLED), any(),
+                eq("Your \"Letter\" request has been fulfilled by Alex Admin (Company Admin)."), eq("request-1"), anyString());
         verify(notifications, never()).createInAppOnlyNotification(any(), eq("admin"), any(), any(), any(), any(), any());
     }
 

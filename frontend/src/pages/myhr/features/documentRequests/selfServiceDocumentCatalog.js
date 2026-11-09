@@ -67,7 +67,7 @@ export const MANDATORY_ONBOARDING_DOCUMENTS = [
   { id: 'WORK_AUTHORIZATION_COPY', label: 'Work Authorization Copy' },
   { id: 'PASSPORT_COPY', label: 'Passport Copy (Complete Pages)' },
   { id: 'I94', label: 'I-94' },
-  { id: 'DRIVERS_LICENSE_COPY', label: "Driver's License (DL) Copy" },
+  { id: 'DRIVERS_LICENSE_COPY', label: "Driver's License or State ID Copy" },
   { id: 'SSN_COPY', label: 'SSN Copy' },
 ];
 

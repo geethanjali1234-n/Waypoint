@@ -57,4 +57,20 @@ describe('NotificationMenu', () => {
     await user.click(screen.getByRole('button', { name: /Timesheet approved/ }));
     expect(onNotificationClick).toHaveBeenCalledWith(expect.objectContaining({ id: 'saved' }));
   });
+
+  it('shows the actor as "Full Name (Designation)" exactly as the server sent it, for every role, never an ID', async () => {
+    const user = userEvent.setup();
+    const messages = [
+      'Vasavi Anna (Company Admin) has submitted an offer letter for Jane Doe.',
+      'Your timesheet for 2026-08-31 to 2026-09-06 was rejected by Vasavi Anna (HR). Reason: Invalid hours.',
+      'Mani Kumar Chinthakuntula (Employee) requested "Employment letter".',
+      'Sent by WayPoint System.',
+    ];
+    render(<NotificationMenu notifications={messages.map((message, index) => (
+      { id: `n${index}`, title: 'Update', subtitle: message, read: false }))} />);
+    await user.click(screen.getByRole('button', { name: 'Notifications' }));
+    messages.forEach((message) => expect(screen.getByText(message)).toBeInTheDocument());
+    expect(screen.queryByText(/TARDU\d+/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/null|undefined/)).not.toBeInTheDocument();
+  });
 });

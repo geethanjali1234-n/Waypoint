@@ -28,6 +28,11 @@ import './documentRequestsMobile.css';
 // Formats the Preview button can show in the browser (or via docx-preview).
 const UPLOAD_ONLY_ACCEPT = '.pdf,.docx,.png,.jpg,.jpeg';
 
+/** The request as the details view shows it (FULFILLED is displayed as Completed). */
+function detailRequest(data, role, userId) {
+  return { ...data, viewerRole: role, viewerUserId: userId, status: data.status === 'FULFILLED' ? 'Completed' : data.status };
+}
+
 const documentTitle = (title) => title === 'Separation acknowledgement' ? 'Separation' : title;
 
 // Adds the red Overdue badge next to a request's status. Only the backend decides overdue
@@ -100,7 +105,7 @@ export default function DocumentRequestsPage({ role }) {
       query: debouncedQuery || undefined, workspace: listWorkspace || undefined,
     });
     request.then((response) => {
-      if (requestId) { setSelected({ ...response.data.data, viewerRole: role, viewerUserId: session?.userId, status: response.data.data.status === 'FULFILLED' ? 'Completed' : response.data.data.status }); setWorkflowStateValue(getWorkflowState(requestId)); }
+      if (requestId) { setSelected(detailRequest(response.data.data, role, session?.userId)); setWorkflowStateValue(getWorkflowState(requestId)); }
       else {
         // Keep array support while older servers are rolling out; the current
         // API returns a bounded page so the request table never downloads the
@@ -122,6 +127,20 @@ export default function DocumentRequestsPage({ role }) {
       .finally(() => setLoading(false));
   };
   useEffect(load, [requestId, role, session?.userId, page, status, priorityFilter, categoryFilter, debouncedQuery, listWorkspace]);
+  // When HR comes back to this tab (e.g. after the Admin approved in another window),
+  // quietly re-read the request so its status is current without a full reload.
+  useEffect(() => {
+    if (!requestId) return undefined;
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      myHrDocumentRequestApi.get(requestId).then((response) => {
+        setSelected(detailRequest(response.data.data, role, session?.userId));
+        setWorkflowStateValue(getWorkflowState(requestId));
+      }).catch(() => { /* keep what is shown */ });
+    };
+    document.addEventListener('visibilitychange', refresh);
+    return () => document.removeEventListener('visibilitychange', refresh);
+  }, [requestId, role, session?.userId]);
   const markCompleted = () => setWorkflowStateValue(setWorkflowState(selected.id, { stage: 'COMPLETED', completedAt: new Date().toISOString(), completedByUserId: session?.userId || null }));
   const visible = items;
   const pageItems = items;
@@ -219,10 +238,21 @@ export default function DocumentRequestsPage({ role }) {
   // Resend" only makes sense for the other sign-required types, which are
   // still frontend-only prototypes with the backend status left at PENDING.
   const reallyFulfilled = Boolean(selected?.fulfilledDocumentId);
+  // The Admin approval stage for the progress tracker, read from the request's saved status
+  // (the backend sets it on submit/approve/reject). The employee requester never sees this
+  // internal step - their tracker stays the general one. "Sent" still comes only from fulfilledDocumentId.
+  const trackerApprovalStatus = approvalState && requiresAdminApproval(selected) && !isI983 && !isRequester
+    ? { SUBMITTED: 'PENDING_APPROVAL', APPROVED: 'APPROVED', RETURNED_FOR_CORRECTION: 'REJECTED' }[selected.status]
+    : undefined;
+  const approvalPanelMessage = !workflowType ? '' : {
+    SUBMITTED: `This ${workflowType.label.toLowerCase()} for ${selected.requestedByName} is waiting on Company Admin approval. Open it to see its approval status.`,
+    APPROVED: `This ${workflowType.label.toLowerCase()} for ${selected.requestedByName} was approved by the Company Admin and has not been sent yet. Open it to send it to ${selected.requestedByName}.`,
+    RETURNED_FOR_CORRECTION: `The Company Admin returned this ${workflowType.label.toLowerCase()} for ${selected.requestedByName} for correction. Open it to review the feedback, correct it, and resubmit.`,
+  }[selected?.status] || '';
   if (requestId) return <MyHrFeaturePage className="phase-six document-request-detail-page" title="Document Request Details" description="Review the request and available actions." backTo={`${base}/document-requests`}>
     {error && <p role="alert" className="document-requests__error">{error} <button type="button" onClick={load}>Retry</button></p>}
     {loading ? <p role="status">Loading document request…</p> : selected && <div className={isI983 ? undefined : 'document-workflow-layout'}>
-      {!isI983 && <DocumentRoute request={{ ...selected, status: selected.status === 'Completed' ? 'FULFILLED' : selected.status }} nextAction={adminReview ? 'Review for approval' : canFulfill ? workflowType?.prepareLabel || 'Submit completed document' : undefined} />}
+      {!isI983 && <DocumentRoute request={{ ...selected, status: selected.status === 'Completed' ? 'FULFILLED' : selected.status }} approvalStatus={trackerApprovalStatus} nextAction={adminReview ? 'Review for approval' : canFulfill ? workflowType?.prepareLabel || 'Submit completed document' : undefined} />}
       <section className="document-requests__detail" tabIndex={0} aria-label="Document request details"><header><h2>{documentTitle(selected.requestTitle)}</h2></header><p>{selected.requestDescription}</p><dl><div><dt>Requested by</dt><dd>{selected.requestedByName}</dd></div><div><dt>Assigned to</dt><dd>{selected.requestedForName}</dd></div><div><dt>Status</dt><dd>{withOverdue(selected, formatDisplayLabel(documentRequestStatus(selected)))}</dd></div><div><dt>Priority</dt><dd>{formatDisplayLabel(selected.priority || 'NORMAL')}</dd></div><div><dt>Category</dt><dd>{documentCategoryLabel(selected.category) || formatDisplayLabel(selected.category) || '—'}</dd></div><div><dt>Required by</dt><dd>{selected.requiredBy ? formatDateOnly(selected.requiredBy) : '—'}</dd></div><div><dt>Direction</dt><dd>{formatDisplayLabel(selected.requestDirection) || '—'}</dd></div></dl>{selected.rejectionReason && <p className="document-requests__rejection"><strong>Rejection reason:</strong> {selected.rejectionReason}</p>}
       <div className="document-requests__attachments">{(selected.attachmentDocumentIds || []).map((id, index) => <div key={id}><span className="document-requests__attachment-name">{selected.attachmentFileNames?.[index] || `Supporting attachment ${index + 1}`}</span> <Button variant="secondary" onClick={() => fetchDocument(id, false)}>Preview</Button> <Button variant="secondary" onClick={() => fetchDocument(id, true)}>Download</Button></div>)}{selected.fulfilledDocumentId && !isI983 && <div><span className="document-requests__attachment-name">{selected.signedResponseDocumentId ? (isOffer ? 'Complete offer letter with both signatures' : 'Signed document') : (isOffer ? (isRequester ? 'Offer letter awaiting your signature' : 'Offer letter awaiting requester signature') : (uploadOnly ? `${workflowType.label} document` : 'Completed document'))}</span> <Button variant="secondary" onClick={() => fetchDocument(selected.signedResponseDocumentId || selected.fulfilledDocumentId, false)}>Preview</Button> <Button variant="secondary" onClick={() => fetchDocument(selected.signedResponseDocumentId || selected.fulfilledDocumentId, true)}>Download</Button></div>}</div>
       {hrApproval && (!workflowType || uploadOnly) && <HrDocumentApproval request={selected} label={workflowType?.label || selected.requestTitle}
@@ -236,7 +266,7 @@ export default function DocumentRequestsPage({ role }) {
       {canFulfill && !workflowType && !hrApproval && <div className="document-requests__fulfill"><label>Completed document<input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>{file && (role === 'EMPLOYEE' ? <Button loading={working} onClick={() => fulfill(null)}>Send</Button> : <DocumentFulfillmentEmailComposer requestId={selected.id} attachmentFileName={file.name} sendLabel="Send to Employee" onSend={fulfill} />)}</div>}
       {canFulfill && uploadOnly && !hrApproval && <div className="document-requests__fulfill"><div><h3>{workflowType.prepareLabel}</h3><p>Upload the {workflowType.label} for {selected.requestedByName}. Once uploaded, they can view and download it, and this request is completed.</p></div><label>{workflowType.label} document<input type="file" accept={UPLOAD_ONLY_ACCEPT} onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>{file && <DocumentFulfillmentEmailComposer requestId={selected.id} attachmentFileName={file.name} sendLabel="Upload & Share" onSend={fulfill} />}</div>}
       {uploadOnly && isRequester && !canFulfill && selected.status === 'PENDING' && <div className="document-requests__fulfill"><StatusTag status="Pending" tone="info" /><p>Your HR or company admin will upload your {workflowType.label} here. You'll be able to view and download it once it's available.</p></div>}
-      {(canFulfill || inOfferApproval) && workflowType && !uploadOnly && !stage && <div className="document-requests__fulfill document-requests__fulfill--offer-letter"><div><h3>{workflowType.prepareLabel}</h3><p>{inOfferApproval ? `This ${workflowType.label.toLowerCase()} for ${selected.requestedByName} is waiting on Company Admin approval. Open it to see its approval status or send it once approved.` : `Build the ${workflowType.label.toLowerCase()} for ${selected.requestedByName} using a saved template, then submit it for Company Admin approval.`}</p></div><Button onClick={() => navigate(`${base}/document-requests/${selected.id}/${workflowType.routeSegment}`)}>{inOfferApproval ? `Open ${workflowType.label}` : workflowType.prepareLabel}</Button></div>}
+      {(canFulfill || inOfferApproval) && workflowType && !uploadOnly && !stage && <div className="document-requests__fulfill document-requests__fulfill--offer-letter"><div><h3>{workflowType.prepareLabel}</h3><p>{inOfferApproval ? approvalPanelMessage : `Build the ${workflowType.label.toLowerCase()} for ${selected.requestedByName} using a saved template, then submit it for Company Admin approval.`}</p></div><Button onClick={() => navigate(`${base}/document-requests/${selected.id}/${workflowType.routeSegment}`)}>{inOfferApproval ? `Open ${workflowType.label}` : workflowType.prepareLabel}</Button></div>}
       {canManage && workflowType && stage === 'SENT_TO_EMPLOYEE' && <div className="document-requests__fulfill document-requests__fulfill--offer-letter"><div><h3>{workflowType.label} sent</h3><p>{(isOffer || workflowState?.requiresEmployeeSignature) ? `Sent to ${selected.requestedByName} - awaiting their signature and signed return.` : `Sent to ${selected.requestedByName}.`}</p></div>{!reallyFulfilled && <Button variant="secondary" onClick={() => navigate(`${base}/document-requests/${selected.id}/${workflowType.routeSegment}`)}>Revise &amp; Resend</Button>}</div>}
       {!isOffer && canManage && workflowType && stage !== 'COMPLETED' && (stage === 'SIGNED_RETURNED' || responseSubmitted) && <SignedDocumentReviewPanel request={selected} workflowType={workflowType} workflowState={workflowState || {}} onComplete={markCompleted} onViewOriginal={selected.signedResponseDocumentId ? () => fetchDocument(selected.signedResponseDocumentId, false) : null} />}
       {canManage && workflowType && stage === 'COMPLETED' && <div className="document-requests__fulfill"><h3>{workflowType.label} completed</h3><p>The complete signed document is available above to both HR and the employee.</p></div>}

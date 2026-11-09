@@ -56,7 +56,7 @@ describe('selfServiceDocumentCatalog', () => {
   it('Offer Letter requires exactly the six approved onboarding documents as prerequisites, in order', () => {
     const config = SELF_SERVICE_TYPE_CONFIG.OFFER_LETTER;
     expect(config.requiredDocuments).toEqual([
-      'Resume', 'Work Authorization Copy', 'Passport Copy (Complete Pages)', 'I-94', "Driver's License (DL) Copy", 'SSN Copy',
+      'Resume', 'Work Authorization Copy', 'Passport Copy (Complete Pages)', 'I-94', "Driver's License or State ID Copy", 'SSN Copy',
     ]);
     expect(config.optionalDocuments).toEqual([]);
     expect(config.requiresAttachment).toBe(true);

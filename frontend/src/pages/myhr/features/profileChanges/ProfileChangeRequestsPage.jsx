@@ -1,3 +1,4 @@
+import { formatReportingManager } from '../../../../utils/reportingManagerLabel';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ActionCard, Button, Card, Dropdown, EmailInput, EmptyState, Loader, Modal, PhoneInput, SearchInput, StatusTag, TextArea, TextInput } from '../../../../components';
@@ -41,12 +42,7 @@ function formatFieldValue(value) {
 // fabricated name. COMPANY_ADMIN reviewers have no EmployeeProfile, so
 // employeeId/name are commonly absent and loginId/email are shown instead.
 function managerDisplayLabel(reportingManager) {
-  if (!reportingManager) return 'Unassigned';
-  const identifier = reportingManager.employeeId || reportingManager.loginId;
-  if (reportingManager.name && identifier) return `${identifier} · ${reportingManager.name}`;
-  if (reportingManager.name) return reportingManager.name;
-  if (identifier) return identifier;
-  return reportingManager.email || 'Unassigned';
+  return formatReportingManager(reportingManager);
 }
 
 // Maps a ProfileChangeRequestResponse (from GET /api/myhr/profile-change-requests)

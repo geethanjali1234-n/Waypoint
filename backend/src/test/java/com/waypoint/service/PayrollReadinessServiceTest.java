@@ -502,6 +502,8 @@ class PayrollReadinessServiceTest {
         assertThat(selfResult.sent()).isZero();
         assertThat(selfResult.results()).singleElement().satisfies(item -> assertThat(item.reason()).isEqualTo("SELF_REMINDER_NOT_ALLOWED"));
         verify(notificationService, never()).createNotification(any(), eq("hr-1"), any(), any(), any(), any(), any());
+        when(userRepository.findById("hr-1")).thenReturn(Optional.of(User.builder().id("hr-1").organizationId(ORG_ID)
+                .role(UserRole.HR).build()));
         when(notificationService.createNotification(eq(ORG_ID), eq("employee-1"), any(), any(), any(), any(), any()))
                 .thenReturn(Notification.builder().id("hr-notification").build());
         var bulkResult = service.sendBulkReminders("hr-1", LocalDate.of(2026, 7, 1), new PayrollReadinessBulkReminderRequest(List.of()));
@@ -595,6 +597,8 @@ class PayrollReadinessServiceTest {
         EmployeeProfile missing = profile("missing", "TD002", "Missing Employee");
         EmployeeProfile submitted = profile("submitted", "TD004", "Submitted Employee");
         seedAdminScope(List.of(missing, submitted));
+        when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(User.builder().id(ADMIN_ID).organizationId(ORG_ID)
+                .role(UserRole.COMPANY_ADMIN).build()));
         when(employeeProfileRepository.findByUserId(ADMIN_ID)).thenReturn(Optional.of(profile(ADMIN_ID, "ADMIN", "Alex Admin")));
         when(timesheetRepository.findByOrganizationIdAndUserIdInAndPeriodStartDateLessThanEqualAndPeriodEndDateGreaterThanEqual(
                 eq(ORG_ID), anyCollection(), any(), any()))

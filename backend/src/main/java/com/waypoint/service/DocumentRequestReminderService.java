@@ -221,7 +221,7 @@ public class DocumentRequestReminderService {
         String who = null;
         if (otherPersonId != null) {
             User other = userRepository.findById(otherPersonId).orElse(null);
-            who = other == null ? null : DocumentRequestService.participantLabel(
+            who = other == null ? null : new NotificationActorFormatter(userRepository, employeeProfileRepository, null).describe(
                     other, employeeProfileRepository.findByUserId(other.getId()).orElse(null));
         }
         DocumentRequestReminderRules.Text text = rule.wording().text(stage, request, who, when, due);

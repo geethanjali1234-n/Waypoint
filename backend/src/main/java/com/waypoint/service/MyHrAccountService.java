@@ -216,9 +216,8 @@ public class MyHrAccountService {
         if (manager == null) {
             return;
         }
-        String employeeId = profile.getEmployeeId();
-        String employeeLabel = employeeId == null || employeeId.isBlank()
-                ? profile.getName() : profile.getName() + " (" + employeeId + ")";
+        String employeeLabel = new NotificationActorFormatter(userRepository, employeeProfileRepository, organizationRepository)
+                .describe(user, profile);
         notifySafely(() -> inAppNotificationService.createNotification(actor.organizationId(), manager.getId(),
                 NotificationType.EMPLOYEE_ASSIGNED, "New employee assigned",
                 employeeLabel + " has been assigned to you as a direct report.",
