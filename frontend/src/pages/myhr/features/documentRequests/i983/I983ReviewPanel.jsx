@@ -143,8 +143,13 @@ export default function I983ReviewPanel({ requestId, base, onChanged }) {
           <h4>Request progress</h4>
           <RouteLine orientation="vertical" label="I-983 workflow" steps={[
             { label: 'Employee submitted', sublabel: workflow.submittedAt ? dateTime(workflow.submittedAt) : 'Document received', state: 'done' },
-            ...(status === 'RETURNED_FOR_CORRECTION' || status === 'REJECTED'
-              ? [{ label: status === 'REJECTED' ? 'Review rejection' : 'Correct and resubmit', state: 'current' }]
+            // Rejected is final (red X). Returned keeps the red X on review and adds resubmitting as the next step.
+            ...(status === 'REJECTED'
+              ? [{ label: 'Rejected', state: 'rejected' }]
+              : status === 'CANCELLED'
+              ? [{ label: 'Cancelled', state: 'cancelled' }]
+              : status === 'RETURNED_FOR_CORRECTION'
+              ? [{ label: 'Returned for correction', state: 'rejected', stateLabel: 'Returned' }, { label: 'Correct and resubmit', state: 'current' }]
               : [...(hasSigned && workflow.signedIsCurrent ? [{ label: 'Organization signed', state: 'done' }] : status === 'APPROVED' ? [] : [{ label: 'Review and sign', state: 'current' }]),
                  { label: status === 'APPROVED' ? 'Approved' : 'Review for approval', state: status === 'APPROVED' ? 'done' : hasSigned && workflow.signedIsCurrent ? 'current' : 'upcoming' }]),
           ]} />

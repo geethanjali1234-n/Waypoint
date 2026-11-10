@@ -15,3 +15,10 @@
 .wp-route-line--vertical .wp-route-line__stop:not(:last-child)::after { left:17px; top:36px; bottom:0; right:auto; border-top:0; border-left:2px dashed var(--wp-color-future-stop); }
 .wp-route-line--vertical .wp-route-line__stop--done:not(:last-child)::after { border-left-style:solid; border-left-color:var(--wp-color-primary-deep); }
 @media(max-width:480px) { .wp-route-line__copy strong { font-size:.8rem; } .wp-route-line__copy { padding-right:4px; } .wp-route-line__stop { padding-right:6px; } }
+/* Rejected (red X), cancelled (gray X) and overdue (orange warning) stops. */
+.wp-route-line { --wp-route-line-overdue:#C8590F; }
+.wp-route-line__stop--rejected .wp-route-line__marker { border:2px solid var(--wp-color-error); background:var(--wp-color-error); color:var(--wp-color-surface); }
+.wp-route-line__stop--cancelled .wp-route-line__marker { border:2px solid var(--wp-color-text-muted); background:var(--wp-color-text-muted); color:var(--wp-color-surface); }
+.wp-route-line__stop--overdue .wp-route-line__marker { border:2px solid var(--wp-route-line-overdue); background:var(--wp-route-line-overdue); color:#FFFFFF; }
+.wp-route-line__stop--rejected .wp-route-line__state { color:var(--wp-color-error); font-weight:600; }
+.wp-route-line__stop--overdue .wp-route-line__state { color:var(--wp-route-line-overdue); font-weight:600; }

@@ -1,11 +1,12 @@
 import { RouteLine } from '../../../components';
-import dashboardDocumentProgress from './dashboardDocumentProgress';
+import dashboardDocumentProgress, { markOverdue } from './dashboardDocumentProgress';
 
 export default function DocumentRoute({ request, approvalStatus, preparationStep, needsApproval = false, sent = false, nextAction, label = 'Document workflow' }) {
   let steps;
   if (approvalStatus && ['PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'SENT'].includes(approvalStatus)) {
     steps = approvalStatus === 'REJECTED'
-      ? [{ label: 'Prepared', state: 'done' }, { label: 'Correct and resubmit', state: 'current' }]
+      // The Admin's rejection stays visible as a red X; correcting and resubmitting is the separate next step.
+      ? [{ label: 'Prepared', state: 'done' }, { label: 'Admin approval', state: 'rejected' }, { label: 'Correct and resubmit', state: 'current' }]
       : [
         { label: 'Prepared', state: 'done' },
         { label: approvalStatus === 'PENDING_APPROVAL' ? 'Review and approve' : 'Approved', state: approvalStatus === 'PENDING_APPROVAL' ? 'current' : 'done' },
@@ -18,6 +19,7 @@ export default function DocumentRoute({ request, approvalStatus, preparationStep
   } else {
     steps = dashboardDocumentProgress(request)?.steps || [];
   }
-  if (nextAction) steps = steps.map((step) => step.state === 'current' ? { ...step, label: nextAction } : step);
+  if (nextAction) steps = steps.map((step) => step.state === 'current' || step.state === 'overdue' ? { ...step, label: nextAction } : step);
+  steps = markOverdue(steps, request);
   return steps.length ? <aside className="document-route"><p className="document-route__eyebrow">Next stop</p><RouteLine steps={steps} orientation="vertical" label={label} /></aside> : null;
 }
