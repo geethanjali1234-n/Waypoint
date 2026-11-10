@@ -45,20 +45,27 @@ export default function EmployeeTodayPanel({ name, basePath }) {
   [...(data.timesheets?.value || [])].sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || ''))).forEach((record) => {
     const recordedDays = new Map();
     (record.entries || []).forEach((entry) => recordedDays.set(entry.workDate, recordedDays.get(entry.workDate) || Number(entry.hoursWorked) > 0));
-    recordedDays.forEach((recorded, day) => { if (!days.has(day)) days.set(day, recorded); });
+    recordedDays.forEach((recorded, day) => { if (!days.has(day)) days.set(day, { recorded, status: record.status }); });
   });
-  const logged = weekdays.filter((day) => days.get(day.key)).length;
+  const logged = weekdays.filter((day) => days.get(day.key)?.recorded).length;
   const profile = data.profiles?.value?.find((request) => request.status === 'PENDING') || data.profiles?.value?.[0];
   const document = data.documents?.value?.find((request) => dashboardDocumentProgress(request)?.needsAction) || data.documents?.value?.[0];
   const progress = dashboardDocumentProgress(document);
   const processedDate = shortDate(profile?.processedAt);
   const isOldApproval = profile?.status === 'APPROVED' && processedDate && today.getTime() - new Date(profile.processedAt).getTime() > 3 * 86400000;
   const message = (key, empty) => !data[key] ? 'Loading...' : data[key].error ? 'Unable to load. Try Refresh.' : empty;
-  const weekSteps = weekdays.map((day) => ({
-    label: day.label,
-    state: day.key === dateKey(today) ? 'current' : days.get(day.key) ? 'done' : 'upcoming',
-    sublabel: days.get(day.key) ? 'Hours recorded' : day.key === dateKey(today) ? 'Not logged' : '-',
-  }));
+  // Rejected timesheet days show a red X; a past day without hours says "Not logged" rather than "Upcoming".
+  const weekSteps = weekdays.map((day) => {
+    const entry = days.get(day.key);
+    const isToday = day.key === dateKey(today);
+    if (entry?.recorded && entry.status === 'REJECTED') return { label: day.label, state: 'rejected', sublabel: 'Timesheet rejected' };
+    return {
+      label: day.label,
+      state: isToday ? 'current' : entry?.recorded ? 'done' : 'upcoming',
+      stateLabel: !isToday && !entry?.recorded && day.key < dateKey(today) ? 'Not logged' : undefined,
+      sublabel: entry?.recorded ? 'Hours recorded' : isToday ? 'Not logged' : '-',
+    };
+  });
   return <div className="employee-today">
     <PageHeader eyebrow={'Your week / ' + shortDate(weekdays[0].key)} title={'Welcome' + (name ? ', ' + name : '')}
       summary="Your hours and the requests that need your attention." primaryAction={<Button variant="secondary" onClick={() => setRefresh((value) => value + 1)}>Refresh</Button>} />

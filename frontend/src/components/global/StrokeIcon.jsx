@@ -6,6 +6,7 @@ const paths = {
   filter: ['M4 7h16M4 12h16M4 17h16M8 5v4M16 10v4M10 15v4'],
   check: ['m5 12 4 4L19 6'],
   close: ['m6 6 12 12M18 6 6 18'],
+  alert: ['M12 3 2 20h20L12 3Z', 'M12 10v4M12 17h.01'],
   trash: ['M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7'],
   send: ['m3 3 18 9-18 9 4-9-4-9ZM7 12h14'],
   search: ['M19 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Zm-3 6 5 5'],

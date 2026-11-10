@@ -1,8 +1,22 @@
 import { getDocumentWorkflowType } from '../features/documentRequests/documentWorkflowTypes';
 import { getWorkflowState } from '../features/documentRequests/documentPreparation/documentWorkflowState';
 
+/**
+ * A request the backend flags as overdue shows its current stop as an orange warning.
+ * Shared by every document tracker so the dashboard and the detail page agree.
+ */
+export function markOverdue(steps, request) {
+  if (request?.overdue !== true) return steps;
+  return steps.map((step) => (step.state === 'current' ? { ...step, state: 'overdue' } : step));
+}
+
 /** Presentation from existing request facts; never advance a stop from a title alone. */
 export default function dashboardDocumentProgress(request) {
+  const progress = requestProgress(request);
+  return progress ? { ...progress, steps: markOverdue(progress.steps, request) } : progress;
+}
+
+function requestProgress(request) {
   if (!request) return null;
   const status = request.status;
   const requested = { label: 'Requested', state: 'done' };
@@ -11,7 +25,10 @@ export default function dashboardDocumentProgress(request) {
   const uploadI983 = request.documentType === 'I983' && Boolean(request.originalDocumentId);
   const requiresSignature = !uploadI983 && (request.documentType === 'OFFER_LETTER' || request.documentType === 'I983' || type?.requiresEmployeeSignature || workflow?.requiresEmployeeSignature);
   if (['REJECTED', 'CANCELLED'].includes(status)) return {
-    steps: [requested, { label: status === 'REJECTED' ? 'Review rejection' : 'Request cancelled', sublabel: request.rejectionReason, state: 'current' }],
+    // Final outcomes: shown as a red X (rejected) or gray X (cancelled), never as pending.
+    steps: [requested, status === 'REJECTED'
+      ? { label: 'Rejected', sublabel: request.rejectionReason, state: 'rejected' }
+      : { label: 'Cancelled', state: 'cancelled' }],
     actionLabel: 'View request details', context: status === 'REJECTED' ? 'Open the request to review the decision.' : 'This request has been cancelled.', needsAction: false,
   };
   if (workflow?.stage === 'SIGNED_RETURNED' || request.employeeSignatureDocumentId) return {
@@ -27,7 +44,8 @@ export default function dashboardDocumentProgress(request) {
   if (uploadI983) {
     if (status === 'APPROVED') return { steps: [requested, { label: 'Submitted', state: 'done' }, { label: 'Approved', state: 'done' }], actionLabel: 'View request details', context: 'The request is approved. Open it to see available documents.', needsAction: false };
     return {
-      steps: [requested, { label: 'Submitted', state: 'done' }, ...(status === 'RETURNED_FOR_CORRECTION' ? [{ label: 'Correct and resubmit', state: 'current' }, { label: 'Review', state: 'upcoming' }] : [{ label: 'Review', state: 'current', sublabel: 'With HR/Admin for review and signature.' }]), { label: 'Filed', state: 'upcoming' }],
+      // Returned for correction: the review stop shows the rejection, and resubmitting is its own next step.
+      steps: [requested, { label: 'Submitted', state: 'done' }, ...(status === 'RETURNED_FOR_CORRECTION' ? [{ label: 'Returned for correction', sublabel: request.rejectionReason, state: 'rejected', stateLabel: 'Returned' }, { label: 'Correct and resubmit', state: 'current' }] : [{ label: 'Review', state: 'current', sublabel: 'With HR/Admin for review and signature.' }]), { label: 'Filed', state: 'upcoming' }],
       actionLabel: status === 'RETURNED_FOR_CORRECTION' ? 'Correct and resubmit' : 'View signing progress',
       context: status === 'RETURNED_FOR_CORRECTION' ? 'Review the feedback and upload the corrected document.' : 'Your submitted document is with HR/Admin.',
       needsAction: status === 'RETURNED_FOR_CORRECTION',

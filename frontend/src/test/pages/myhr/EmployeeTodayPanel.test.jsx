@@ -31,14 +31,37 @@ describe('Employee daily overview', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Log standard week' }));
     expect(screen.getByTestId('entry-state')).toHaveTextContent('"timesheetEntryMethod":"standard"');
   });
-  it('does not invent a weekday today marker on weekends', async () => {
+  it('does not invent a weekday today marker on weekends and marks the past weekdays without hours as not logged', async () => {
     vi.setSystemTime(new Date('2026-10-17T12:00:00'));
     timesheetApi.list.mockResolvedValue({ data: { data: [] } });
     render(<MemoryRouter><EmployeeTodayPanel basePath="/myhr/employee" /></MemoryRouter>);
     await screen.findByText(/0 of 5 days in/);
     const week = screen.getByRole('list', { name: 'Monday to Friday progress' });
     expect(week.querySelector('[aria-current="step"]')).toBeNull();
-    expect(within(week).queryByText('Not logged')).not.toBeInTheDocument();
+    // Saturday: Monday to Friday are all in the past with no hours.
+    expect(within(week).getAllByText('Not logged')).toHaveLength(5);
+    expect(within(week).queryByText('Upcoming')).not.toBeInTheDocument();
+  });
+  it('shows completed, not logged, today and upcoming weekdays mid-week', async () => {
+    vi.setSystemTime(new Date('2026-10-14T12:00:00'));
+    timesheetApi.list.mockResolvedValue({ data: { data: [
+      { updatedAt: '2026-10-13', status: 'APPROVED', entries: [{ workDate: '2026-10-12', hoursWorked: 8 }] },
+    ] } });
+    render(<MemoryRouter><EmployeeTodayPanel basePath="/myhr/employee" /></MemoryRouter>);
+    await screen.findByText(/1 of 5 days in/);
+    const week = screen.getByRole('list', { name: 'Monday to Friday progress' });
+    const day = (label) => within(within(week).getByText(label).closest('li'));
+    // Monday has hours: completed.
+    expect(day('Mon, Oct 12').getByText('Completed')).toBeInTheDocument();
+    expect(day('Mon, Oct 12').getByText('Hours recorded')).toBeInTheDocument();
+    // Tuesday is past with no hours: not logged, never "Upcoming".
+    expect(day('Tue, Oct 13').getByText('Not logged')).toBeInTheDocument();
+    expect(day('Tue, Oct 13').queryByText('Upcoming')).not.toBeInTheDocument();
+    // Wednesday is today.
+    expect(within(week).getByText('Wed, Oct 14').closest('li')).toHaveAttribute('aria-current', 'step');
+    // Thursday and Friday are still ahead.
+    expect(day('Thu, Oct 15').getByText('Upcoming')).toBeInTheDocument();
+    expect(day('Fri, Oct 16').getByText('Upcoming')).toBeInTheDocument();
   });
   it('counts unique weekdays from real entries and links to the employee’s own requests', async () => {
     const monday = new Date();
