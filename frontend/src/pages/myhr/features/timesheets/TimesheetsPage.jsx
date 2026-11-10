@@ -756,6 +756,7 @@ export default function TimesheetsPage({ role }) {
   const wasEditingEntry = useRef(false);
   const [viewedRecord, setViewedRecord] = useState(null);
   const [entryStep, setEntryStep] = useState('source');
+  const [quickFillRequested, setQuickFillRequested] = useState(false);
   const [importedEntries, setImportedEntries] = useState(null);
   const [dateOrder, setDateOrder] = useState('MDY');
   const [rangeStart, setRangeStart] = useState(period.start);
@@ -1064,6 +1065,7 @@ export default function TimesheetsPage({ role }) {
   }
 
   function beginEntryFlow() {
+    setQuickFillRequested(false);
     setSelectedDraftId(null);
     setImportedEntries(null);
     setRangeStart(draftRecord?.periodStartDate || period.start);
@@ -1088,6 +1090,7 @@ export default function TimesheetsPage({ role }) {
   }
 
   function resumeDraft(record) {
+    setQuickFillRequested(false);
     setSelectedDraftId(record.id);
     setRangeStart(record.periodStartDate);
     setRangeEnd(record.periodEndDate);
@@ -1110,6 +1113,7 @@ export default function TimesheetsPage({ role }) {
   }
 
   function beginResubmitRejected(record) {
+    setQuickFillRequested(false);
     setSelectedDraftId(null);
     if (!record) return;
     setApprovedCorrectionId(null);
@@ -1294,7 +1298,7 @@ export default function TimesheetsPage({ role }) {
       setOperationMessage(messages.length
         ? messages.join(' ')
         : 'Check the attached document and enter hours manually.');
-      continueToHours(combinedStart, combinedEnd, entries, [...supportingDocuments, ...uploadedDocs]);
+      continueToHours(combinedStart, combinedEnd, entries, [...supportingDocuments, ...uploadedDocs], false);
     } else if (uploadedDocs.length) {
       const notices = [...errors, ...unreadableFiles.map((notice) => `Could not read ${notice}`)];
       const suffix = unreadableFiles.length
@@ -1366,7 +1370,7 @@ export default function TimesheetsPage({ role }) {
     navigate(dashboardRoute);
   }
 
-  function proceedToHours(targetRecord, dates, isReedit = false, imported = importedEntries, uploaded = supportingDocuments) {
+  function proceedToHours(targetRecord, dates, isReedit = false, imported = importedEntries, uploaded = supportingDocuments, applyQuickFill = quickFillRequested) {
     const existingEntriesMap = {};
     ownRecords.forEach((rec) => {
       (rec.entries || []).forEach((entry) => {
@@ -1387,22 +1391,29 @@ export default function TimesheetsPage({ role }) {
       existingEntriesMap[entry.workDate] = entry;
       importedMap[entry.workDate] = entry;
     });
-    setRangeHours(Object.fromEntries(dates.map((date) => [
+    const nextHours = Object.fromEntries(dates.map((date) => [
       date,
       approvedDayEntries[date] ? String(approvedDayEntries[date].hoursWorked ?? 0) : importedMap[date]?.hoursWorked != null
         ? String(importedMap[date].hoursWorked)
         : ((isReedit ? existingEntriesMap[date]?.hoursWorked : rangeHours[date] ?? existingEntriesMap[date]?.hoursWorked) ?? '')
-    ])));
-    setRangeDescriptions(Object.fromEntries(dates.map((date) => [
+    ]));
+    const nextDescriptions = Object.fromEntries(dates.map((date) => [
       date,
       approvedDayEntries[date] ? approvedDayEntries[date].description || '' : importedMap[date]?.description != null && importedMap[date]?.description !== ''
         ? importedMap[date].description
         : ((isReedit ? existingEntriesMap[date]?.description : rangeDescriptions[date] ?? existingEntriesMap[date]?.description) ?? '')
-    ])));
-    setRangeEntryTypes(Object.fromEntries(dates.map((date) => [
+    ]));
+    const nextEntryTypes = Object.fromEntries(dates.map((date) => [
       date,
       normalizeEntryType(approvedDayEntries[date]?.entryType || (isReedit ? existingEntriesMap[date]?.entryType : importedMap[date]?.entryType || rangeEntryTypes[date] || existingEntriesMap[date]?.entryType))
-    ])));
+    ]));
+    if (applyQuickFill && !isReedit) {
+      const result = fillBlankWeekdays({dates,today,hours:nextHours,descriptions:nextDescriptions,entryTypes:nextEntryTypes,lockedDates:Object.keys(approvedDayEntries)});
+      setRangeHours(result.hours);
+      setOperationMessage(result.filledCount ? `Added 8 hours to ${result.filledCount} blank weekday${result.filledCount === 1 ? '' : 's'} in your selected dates. Review the suggestions before submitting.` : 'No eligible blank weekdays to fill. Existing entries were preserved.');
+    } else setRangeHours(nextHours);
+    setRangeDescriptions(nextDescriptions);
+    setRangeEntryTypes(nextEntryTypes);
     if (!uploaded?.length && targetRecord?.supportingDocuments?.length) {
       setSupportingDocuments(targetRecord.supportingDocuments);
     }
@@ -1422,7 +1433,7 @@ export default function TimesheetsPage({ role }) {
     setEntryStep('hours');
   }
 
-  function continueToHours(start, end, imported = importedEntries, uploaded = supportingDocuments) {
+  function continueToHours(start, end, imported = importedEntries, uploaded = supportingDocuments, applyQuickFill = quickFillRequested) {
     const s = start || rangeStart || draftRecord?.periodStartDate || period.start;
     const e = end || rangeEnd || draftRecord?.periodEndDate || period.end;
     if (s !== rangeStart) setRangeStart(s);
@@ -1474,7 +1485,7 @@ export default function TimesheetsPage({ role }) {
       return;
     }
 
-    proceedToHours(targetRecord, dates, false, imported, uploaded);
+    proceedToHours(targetRecord, dates, false, imported, uploaded, applyQuickFill);
   }
 
   function handleConfirmReedit() {
@@ -1497,6 +1508,7 @@ export default function TimesheetsPage({ role }) {
   }
 
   function beginReeditSubmitted(record) {
+    setQuickFillRequested(false);
     setSelectedDraftId(null);
     setImportedEntries(null);
     setRangeHours({});
@@ -1709,7 +1721,7 @@ entries: entriesToSave.map((entry) => ({ workDate: entry.workDate, hoursWorked: 
       setSelectedEmployee={setSelectedEmployee}
     />
   ) : (
-    <EmployeeWorkspace approvedDayEntries={approvedDayEntries}
+    <EmployeeWorkspace quickFillRequested={quickFillRequested} onQuickFillChoice={setQuickFillRequested} approvedDayEntries={approvedDayEntries}
       loading={loading}
       mode={ownMode}
       setMode={goToMode}
@@ -1804,7 +1816,7 @@ entries: entriesToSave.map((entry) => ({ workDate: entry.workDate, hoursWorked: 
   </MyHrFeaturePage>;
 }
 
-function EmployeeWorkspace({ approvedDayEntries, loading, mode, setMode, today, records, draftRecord, history, entryStep, setEntryStep, rangeStart, setRangeStart, rangeEnd, setRangeEnd, rangeHours, setRangeHours, rangeDescriptions, setRangeDescriptions, rangeEntryTypes, setRangeEntryTypes, rangeEntries, supportingDocuments, uploadingDocument, ocrProgress, documentError, onImportDocument, dateOrder, setDateOrder, onUploadSupportingDocument, onRemoveSupportingDocument, saving, role, onBegin, onBack, onViewHours, onContinue, onReview, onSave, onSubmit, onView, onDownloadPdf, onDownloadPeriodPdf, onReeditSubmitted, reeditSubmitted, approvedCorrection, requiresChangeReason, changeReason, setChangeReason, payrollPeriod, submittedRecord, onViewHistory, rejectionFeedback, onResubmit, managerDisplayName }) {
+function EmployeeWorkspace({ quickFillRequested, onQuickFillChoice, approvedDayEntries, loading, mode, setMode, today, records, draftRecord, history, entryStep, setEntryStep, rangeStart, setRangeStart, rangeEnd, setRangeEnd, rangeHours, setRangeHours, rangeDescriptions, setRangeDescriptions, rangeEntryTypes, setRangeEntryTypes, rangeEntries, supportingDocuments, uploadingDocument, ocrProgress, documentError, onImportDocument, dateOrder, setDateOrder, onUploadSupportingDocument, onRemoveSupportingDocument, saving, role, onBegin, onBack, onViewHours, onContinue, onReview, onSave, onSubmit, onView, onDownloadPdf, onDownloadPeriodPdf, onReeditSubmitted, reeditSubmitted, approvedCorrection, requiresChangeReason, changeReason, setChangeReason, payrollPeriod, submittedRecord, onViewHistory, rejectionFeedback, onResubmit, managerDisplayName }) {
   const reviewTotal = rangeEntries.reduce((sum, entry) => sum + Number(entry.hoursWorked || 0), 0);
   if (mode === 'landing') {
     const recentHours = (history || []).length > 0 ? (history[0].totalHours || 0) : 0;
@@ -1833,7 +1845,7 @@ function EmployeeWorkspace({ approvedDayEntries, loading, mode, setMode, today, 
     );
   }
   if (mode === 'history') return <HistoryWorkspace history={history} draftRecord={draftRecord} payrollPeriod={payrollPeriod} onView={onView} onDownloadPdf={onDownloadPdf} onDownloadPeriodPdf={onDownloadPeriodPdf} onResubmit={onResubmit} />;
-  if (mode === 'enter' || mode === 'entry') return <EntryWorkspace approvedDayEntries={approvedDayEntries} approvedRecords={records.filter((record) => record.status === 'APPROVED')} onRequestCorrection={onReeditSubmitted} step={entryStep} setStep={setEntryStep} today={today} rangeStart={rangeStart} setRangeStart={setRangeStart} rangeEnd={rangeEnd} setRangeEnd={setRangeEnd} rangeDays={daysBetween(rangeStart, rangeEnd)} rangeHours={rangeHours} setRangeHours={setRangeHours} rangeDescriptions={rangeDescriptions} setRangeDescriptions={setRangeDescriptions} rangeEntryTypes={rangeEntryTypes} setRangeEntryTypes={setRangeEntryTypes} rangeEntries={rangeEntries} reviewTotal={reviewTotal} supportingDocuments={supportingDocuments} supportingDocument={supportingDocuments?.[0]} uploadingDocument={uploadingDocument} ocrProgress={ocrProgress} documentError={documentError} onImportDocument={onImportDocument} dateOrder={dateOrder} setDateOrder={setDateOrder} onUploadSupportingDocument={onUploadSupportingDocument} onRemoveSupportingDocument={onRemoveSupportingDocument} saving={saving} role={role} onBack={onBack} onContinue={onContinue} onReview={onReview} onSave={onSave} onSubmit={onSubmit} reeditSubmitted={reeditSubmitted} approvedCorrection={approvedCorrection} requiresChangeReason={requiresChangeReason} changeReason={changeReason} setChangeReason={setChangeReason} submittedRecord={submittedRecord} onViewHistory={onViewHistory} onDownloadPdf={onDownloadPdf} rejectionFeedback={rejectionFeedback} managerDisplayName={managerDisplayName} />;
+  if (mode === 'enter' || mode === 'entry') return <EntryWorkspace quickFillRequested={quickFillRequested} onQuickFillChoice={onQuickFillChoice} approvedDayEntries={approvedDayEntries} approvedRecords={records.filter((record) => record.status === 'APPROVED')} onRequestCorrection={onReeditSubmitted} step={entryStep} setStep={setEntryStep} today={today} rangeStart={rangeStart} setRangeStart={setRangeStart} rangeEnd={rangeEnd} setRangeEnd={setRangeEnd} rangeDays={daysBetween(rangeStart, rangeEnd)} rangeHours={rangeHours} setRangeHours={setRangeHours} rangeDescriptions={rangeDescriptions} setRangeDescriptions={setRangeDescriptions} rangeEntryTypes={rangeEntryTypes} setRangeEntryTypes={setRangeEntryTypes} rangeEntries={rangeEntries} reviewTotal={reviewTotal} supportingDocuments={supportingDocuments} supportingDocument={supportingDocuments?.[0]} uploadingDocument={uploadingDocument} ocrProgress={ocrProgress} documentError={documentError} onImportDocument={onImportDocument} dateOrder={dateOrder} setDateOrder={setDateOrder} onUploadSupportingDocument={onUploadSupportingDocument} onRemoveSupportingDocument={onRemoveSupportingDocument} saving={saving} role={role} onBack={onBack} onContinue={onContinue} onReview={onReview} onSave={onSave} onSubmit={onSubmit} reeditSubmitted={reeditSubmitted} approvedCorrection={approvedCorrection} requiresChangeReason={requiresChangeReason} changeReason={changeReason} setChangeReason={setChangeReason} submittedRecord={submittedRecord} onViewHistory={onViewHistory} onDownloadPdf={onDownloadPdf} rejectionFeedback={rejectionFeedback} managerDisplayName={managerDisplayName} />;
   return <HoursWorkspace loading={loading} records={records} today={today} />;
 }
 
@@ -2171,7 +2183,7 @@ function PeriodStatusCalendar({ cadence, consolidated, cells, monthLabel, captio
   );
 }
 
-export function EntryWorkspace({ approvedDayEntries, approvedRecords = [], onRequestCorrection, step, setStep, today, rangeStart, setRangeStart, rangeEnd, setRangeEnd, rangeDays, rangeHours, setRangeHours, rangeDescriptions, setRangeDescriptions, rangeEntryTypes, setRangeEntryTypes, rangeEntries, reviewTotal, supportingDocuments, supportingDocument, uploadingDocument, ocrProgress, documentError, onImportDocument, dateOrder, setDateOrder, onUploadSupportingDocument, onRemoveSupportingDocument, saving, onBack, onContinue, onReview, onSave, onSubmit, reeditSubmitted, approvedCorrection, requiresChangeReason, changeReason, setChangeReason, submittedRecord, onViewHistory, onDownloadPdf, rejectionFeedback, managerDisplayName }) {
+export function EntryWorkspace({ quickFillRequested = false, onQuickFillChoice, approvedDayEntries, approvedRecords = [], onRequestCorrection, step, setStep, today, rangeStart, setRangeStart, rangeEnd, setRangeEnd, rangeDays, rangeHours, setRangeHours, rangeDescriptions, setRangeDescriptions, rangeEntryTypes, setRangeEntryTypes, rangeEntries, reviewTotal, supportingDocuments, supportingDocument, uploadingDocument, ocrProgress, documentError, onImportDocument, dateOrder, setDateOrder, onUploadSupportingDocument, onRemoveSupportingDocument, saving, onBack, onContinue, onReview, onSave, onSubmit, reeditSubmitted, approvedCorrection, requiresChangeReason, changeReason, setChangeReason, submittedRecord, onViewHistory, onDownloadPdf, rejectionFeedback, managerDisplayName }) {
   const hasDocument = (supportingDocuments || []).some(doc => doc?.id) || Boolean(supportingDocument?.id);
   const [quickFillNotice, setQuickFillNotice] = useState('');
   useEffect(() => setQuickFillNotice(''), [rangeStart, rangeEnd]);
@@ -2276,7 +2288,7 @@ export function EntryWorkspace({ approvedDayEntries, approvedRecords = [], onReq
           <div className="timesheets__manual-actions">
             <FileUpload name="manualSupportingDocument" label="Supporting document (optional for drafts)" accept=".pdf,.xlsx,.xls,.docx,.csv,.tsv,.txt,.png,.jpg,.jpeg" disabled={uploadingDocument} onUpload={event => onUploadSupportingDocument(event.target.files)} helperText="You can enter hours and save drafts now. A document is required before submission." />
             <SupportingDocumentList documents={supportingDocuments} onRemove={onRemoveSupportingDocument} />
-            <Button type="button" variant="primary" disabled={uploadingDocument} onClick={() => setStep('dates')}>
+            <Button type="button" variant="primary" disabled={uploadingDocument} onClick={() => { onQuickFillChoice?.(false); setStep('dates'); }}>
               Enter manually
             </Button>
           </div>
@@ -2288,7 +2300,7 @@ export function EntryWorkspace({ approvedDayEntries, approvedRecords = [], onReq
             <span className="timesheets__entry-card-icon" aria-hidden="true">⚡</span>
             <div>
               <h3>Fill blank weekdays</h3>
-              <p>Choose your dates, including a past period, then add 8 hours to blank weekdays. Existing entries stay unchanged. Review all suggested hours before submitting.</p>
+              <p>Choose your dates, including a past period, and continue to automatically add 8 hours to blank weekdays. Existing entries stay unchanged. Review all suggestions before submitting.</p>
             </div>
           </div>
           <div className="timesheets__manual-actions">
@@ -2298,6 +2310,7 @@ export function EntryWorkspace({ approvedDayEntries, approvedRecords = [], onReq
               disabled={uploadingDocument}
               className="timesheets__btn-express-fill"
               onClick={() => {
+                onQuickFillChoice?.(true);
                 setStep('dates');
               }}
             >
@@ -2309,7 +2322,7 @@ export function EntryWorkspace({ approvedDayEntries, approvedRecords = [], onReq
 
       <div className="timesheets__flow-actions">
         <Button type="button" variant="secondary" disabled={uploadingDocument} onClick={onBack}>Cancel</Button>
-        <Button type="button" variant="primary" disabled={uploadingDocument} onClick={() => setStep('dates')}>Skip to manual entry</Button>
+        <Button type="button" variant="primary" disabled={uploadingDocument} onClick={() => { onQuickFillChoice?.(false); setStep('dates'); }}>Skip to manual entry</Button>
       </div>
     </section>
   );
@@ -2398,7 +2411,7 @@ export function EntryWorkspace({ approvedDayEntries, approvedRecords = [], onReq
           <div className="timesheets__flow-actions">
             <Button type="button" variant="secondary" onClick={onBack}>Cancel</Button>
             {!approvedCorrection && <Button type="button" variant="secondary" disabled={saving || uploadingDocument} onClick={onSave}>{saving ? 'Saving...' : 'Save draft'}</Button>}
-            <Button type="button" variant="primary" disabled={uploadingDocument} onClick={onContinue}>Continue to hours</Button>
+            <Button type="button" variant="primary" disabled={uploadingDocument} onClick={onContinue}>{quickFillRequested ? 'Fill selected dates and continue' : 'Continue to hours'}</Button>
           </div>
           {!hasDocument && <FileUpload name="draftSupportingDocument" label="Supporting document (optional for drafts)" helperText="Attach now or add it before submitting." accept=".pdf,.xlsx,.xls,.docx,.csv,.tsv,.txt,.png,.jpg,.jpeg" disabled={uploadingDocument} onUpload={event => onUploadSupportingDocument(event.target.files)} />}
           {documentError && <p role="alert">{documentError}</p>}

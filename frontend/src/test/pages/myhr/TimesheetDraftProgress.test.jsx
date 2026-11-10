@@ -51,6 +51,48 @@ it('allows manual hours entry before attaching a document', async () => {
   expect(documentApi.upload).not.toHaveBeenCalled();
 });
 
+it.each(['quick-fill','manual'])('uses the selected historical March 1–11 range for %s entry',async mode=>{
+  const user=userEvent.setup();
+  storedDraft={...storedDraft,periodStartDate:'2026-03-01',periodEndDate:'2026-03-11',entries:[],totalHours:0,supportingDocuments:[]};
+  showPage();
+  await screen.findByRole('button',{name:/Resume draft/});
+  await user.click(screen.getByRole('button',{name:/Start entry/}));
+  await user.click(screen.getByRole('button',{name:mode==='quick-fill'?'Choose dates for one-tap fill':'Enter manually'}));
+  await user.click(screen.getByRole('button',{name:mode==='quick-fill'?'Fill selected dates and continue':'Continue to hours'}));
+  await screen.findAllByRole('spinbutton',{name:'Hours'});
+  for(const day of ['02','03','04','05','06','09','10','11']) {
+    expect(document.getElementById(`hours-2026-03-${day}`)).toHaveValue(mode==='quick-fill'?8:null);
+  }
+  for(const day of ['01','07','08']) expect(document.getElementById(`hours-2026-03-${day}`)).toHaveValue(null);
+  expect(within(screen.getByText('TOTAL HOURS').parentElement).getByText(mode==='quick-fill'?'64.0':'0.0')).toBeInTheDocument();
+  expect(timesheetApi.create).not.toHaveBeenCalled();
+  expect(timesheetApi.update).not.toHaveBeenCalled();
+});
+
+it('historical automatic fill preserves existing hours, leave and approved days',async()=>{
+  const user=userEvent.setup();
+  storedDraft={...storedDraft,periodStartDate:'2026-03-01',periodEndDate:'2026-03-11',supportingDocuments:[],totalHours:4,
+    entries:[{workDate:'2026-03-05',hoursWorked:0,entryType:'SICK_LEAVE',description:'Recorded leave'},
+      {workDate:'2026-03-06',hoursWorked:4,entryType:'WORK'}]};
+  const approved={...storedDraft,id:'approved-march',status:'APPROVED',totalHours:16,
+    entries:[{workDate:'2026-03-03',hoursWorked:7,entryType:'WORK'},{workDate:'2026-03-04',hoursWorked:9,entryType:'WORK'}]};
+  timesheetApi.list.mockResolvedValue({data:{data:[storedDraft,approved]}});
+  showPage();
+  await screen.findByRole('button',{name:/Resume draft/});
+  await user.click(screen.getByRole('button',{name:/Start entry/}));
+  await user.click(screen.getByRole('button',{name:'Choose dates for one-tap fill'}));
+  await user.click(screen.getByRole('button',{name:'Fill selected dates and continue'}));
+  await screen.findAllByRole('spinbutton',{name:'Hours'});
+  expect(document.getElementById('hours-2026-03-03')).toBeDisabled();
+  expect(document.getElementById('hours-2026-03-03')).toHaveValue(7);
+  expect(document.getElementById('hours-2026-03-04')).toBeDisabled();
+  expect(document.getElementById('hours-2026-03-04')).toHaveValue(9);
+  expect(document.getElementById('hours-2026-03-05')).toHaveValue(0);
+  expect(document.getElementById('hours-2026-03-06')).toHaveValue(4);
+  for(const day of ['02','09','10','11']) expect(document.getElementById(`hours-2026-03-${day}`)).toHaveValue(8);
+  expect(within(screen.getByText('TOTAL HOURS').parentElement).getByText('36.0')).toBeInTheDocument();
+});
+
 it('saves current hours without requiring Review and resumes the saved values', async () => {
   const hours = await resume();
   expect(hours).toHaveValue(4);
