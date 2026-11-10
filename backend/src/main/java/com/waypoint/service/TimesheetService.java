@@ -241,8 +241,8 @@ public class TimesheetService {
 
         validateRequest(request);
         List<String> supportingDocumentIds = sanitizedDocumentIds(request.supportingDocumentIds());
-        if (supportingDocumentIds.isEmpty()) {
-            throw new BusinessException("Upload a supporting timesheet document before saving hours or submitting a timesheet");
+        if (request.status() == TimesheetStatus.SUBMITTED && supportingDocumentIds.isEmpty()) {
+            throw new BusinessException("Upload a supporting timesheet document before submitting a timesheet");
         }
         for (String documentId : supportingDocumentIds) {
             StoredDocument document = storedDocumentRepository.findById(documentId)

@@ -940,13 +940,13 @@ class TimesheetServiceTest {
     }
 
     @Test
-    void documentIsMandatoryForBothDraftsAndSubmissions() {
+    void documentRemainsMandatoryForSubmissions() {
         var actor = actor("employee-1", UserRole.EMPLOYEE);
         when(authenticatedUserService.require(eq(actor.userId()), anySet(), eq(false))).thenReturn(actor);
-        for (var status : List.of(TimesheetStatus.DRAFT, TimesheetStatus.SUBMITTED)) {
-            var base = request(status, BigDecimal.ONE);
+        for (var documents : java.util.Arrays.<List<String>>asList(null, List.of(), List.of(" "))) {
+            var base = request(TimesheetStatus.SUBMITTED, BigDecimal.ONE);
             var input = new TimesheetUpsertRequest(base.periodStartDate(), base.periodEndDate(), base.entries(),
-                    List.of(" "), status, null, null);
+                    documents, TimesheetStatus.SUBMITTED, null, null);
             assertThatThrownBy(() -> service.create(actor.userId(), input)).isInstanceOf(BusinessException.class)
                     .hasMessageContaining("Upload a supporting timesheet document");
         }
@@ -971,6 +971,28 @@ class TimesheetServiceTest {
         assertThat(result.entries()).isEmpty();
         assertThat(result.totalHours()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(result.supportingDocuments()).hasSize(1);
+    }
+
+    @Test
+    void dailyDraftsCanSaveDatesAndHoursWithoutDocuments() {
+        var actor = actor("employee-1", UserRole.EMPLOYEE);
+        when(authenticatedUserService.require(eq(actor.userId()), anySet(), eq(false))).thenReturn(actor);
+        when(reportingAssignmentRepository.findByEmployeeUserIdAndRelationshipTypeAndIsActiveTrue(
+                actor.userId(), RelationshipType.PRIMARY_REPORTING_MANAGER)).thenReturn(Optional.of(assignment(actor.userId(), "hr-1")));
+        when(timesheetRepository.save(any())).thenAnswer(call -> {
+            Timesheet saved = call.getArgument(0);
+            saved.setId("daily-draft");
+            return saved;
+        });
+        for (var entries : List.<List<TimesheetEntryRequest>>of(List.of(),
+                List.of(new TimesheetEntryRequest(LocalDate.of(2026,8,31),BigDecimal.valueOf(6),"Daily progress")))) {
+            var input = new TimesheetUpsertRequest(LocalDate.of(2026,8,31),LocalDate.of(2026,9,6),entries,List.of(),TimesheetStatus.DRAFT,null,null);
+            var result = service.create(actor.userId(),input);
+            assertThat(result.status()).isEqualTo(TimesheetStatus.DRAFT);
+            assertThat(result.entries()).hasSize(entries.size());
+            assertThat(result.supportingDocuments()).isEmpty();
+        }
+        verify(identityService, never()).validateStored(any());
     }
 
     @Test

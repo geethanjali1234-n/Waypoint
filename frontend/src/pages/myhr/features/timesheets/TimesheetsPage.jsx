@@ -1105,7 +1105,7 @@ export default function TimesheetsPage({ role }) {
     setOperationError('');
     setOperationMessage('');
     setDocumentError('');
-    setEntryStep(record.supportingDocuments?.length ? 'hours' : 'dates');
+    setEntryStep(record.entries?.length ? 'hours' : 'dates');
     goToMode('enter');
   }
 
@@ -1423,10 +1423,6 @@ export default function TimesheetsPage({ role }) {
   }
 
   function continueToHours(start, end, imported = importedEntries, uploaded = supportingDocuments) {
-    if (!uploaded.some(doc => doc?.id)) {
-      setDocumentError('Upload a supporting document before entering hours.');
-      return;
-    }
     const s = start || rangeStart || draftRecord?.periodStartDate || period.start;
     const e = end || rangeEnd || draftRecord?.periodEndDate || period.end;
     if (s !== rangeStart) setRangeStart(s);
@@ -1581,9 +1577,9 @@ setRangeEntryTypes({});
     }
 
     const resolvedDocuments = supportingDocuments.filter(doc => doc?.id);
-    if (!resolvedDocuments.length) {
-      setDocumentError('A supporting document is mandatory before entering or saving hours.');
-      setOperationError('Please upload a supporting timesheet document before saving or submitting.');
+    if (status === 'SUBMITTED' && !resolvedDocuments.length) {
+      setDocumentError('A supporting document is mandatory before submitting your timesheet.');
+      setOperationError('Please upload a supporting timesheet document before submitting.');
       return;
     }
 
@@ -1789,17 +1785,17 @@ entries: entriesToSave.map((entry) => ({ workDate: entry.workDate, hoursWorked: 
     </div>}
     {workspaceContent}
     {dataRouter && <DraftNavigationGuard shouldBlock={() => editingEntry && entryFingerprint !== entryBaseline && !allowEntryNavigation.current}
-      saving={saving} canSave={!approvedCorrectionId && !uploadingDocument && supportingDocuments.some(doc => doc?.id)}
+      saving={saving} canSave={!approvedCorrectionId && !uploadingDocument}
       error={operationError} onSave={() => persistRange('DRAFT', { navigateAfterSave: false })} />}
     {activeView === 'mine' && ownMode === 'landing' && <SavedTimesheetDrafts drafts={ownRecords.filter(record => record.status === 'DRAFT')} onResume={resumeDraft} />}
     <Modal isOpen={leaveEntryOpen} title="Save your timesheet progress?" onClose={() => !saving && setLeaveEntryOpen(false)} footer={<>
       <Button variant="secondary" disabled={saving} onClick={() => setLeaveEntryOpen(false)}>Keep editing</Button>
       <Button variant="secondary" disabled={saving} onClick={leaveEntry}>Leave without saving</Button>
-      {!approvedCorrectionId && <Button disabled={saving || uploadingDocument || !supportingDocuments.some(doc => doc?.id)} onClick={() => persistRange('DRAFT')}>{saving ? 'Saving...' : 'Save draft and leave'}</Button>}
+      {!approvedCorrectionId && <Button disabled={saving || uploadingDocument} onClick={() => persistRange('DRAFT')}>{saving ? 'Saving...' : 'Save draft and leave'}</Button>}
     </>}>
-      <p>{approvedCorrectionId ? 'Approved corrections must be submitted for review. Keep editing to finish your correction, or leave without saving these changes.' : 'Save your document, selected dates, and entered hours as a draft. It will not be sent for approval.'}</p>
+      <p>{approvedCorrectionId ? 'Approved corrections must be submitted for review. Keep editing to finish your correction, or leave without saving these changes.' : 'Save your selected dates, daily hours, and any attached documents as a draft. It will not be sent for approval.'}</p>
       {operationError && <p role="alert">{operationError}</p>}
-      {!supportingDocuments.some(doc => doc?.id) && <p>Upload a supporting document before saving a draft.</p>}
+      {!supportingDocuments.some(doc => doc?.id) && <p>You can save this draft without a document. Attach one before submitting for approval.</p>}
     </Modal>
     <TimesheetDetails record={viewedRecord} canReview={canReview} reviewingId={reviewingId} onReview={(status, comment, confirmed) => reviewTimesheet(viewedRecord, status, comment, confirmed)} onReject={(record) => setRejectingRecord(record)} onClose={closeRecord} onDownload={(id, name) => downloadSupportingDocument(id, name, setOperationError)} onDownloadPdf={(record) => downloadTimesheetPdf(record, setOperationError)} onDownloadPeriodPdf={(start, end) => downloadPeriodPdf(start, end, setOperationError)} onResubmit={(record) => beginResubmitRejected(record)} onRequestCorrection={canEditOwn && viewedRecord?.employeeUserId === session?.userId ? (record) => { closeRecord(); beginReeditSubmitted(record); } : undefined} onViewDoc={(doc) => setViewingDoc(doc)} />
     <RejectTimesheetModal record={rejectingRecord} isSubmitting={Boolean(reviewingId)} onConfirm={handleConfirmReject} onClose={() => setRejectingRecord(null)} />
@@ -1849,7 +1845,7 @@ export function DraftNavigationGuard({ shouldBlock, saving, canSave, error, onSa
     <Button disabled={saving || !canSave} onClick={async () => { if (await onSave()) blocker.proceed(); }}>{saving ? 'Saving...' : 'Save draft and leave'}</Button>
   </>}>
     <p>Save your current progress before leaving this page. Drafts are not sent for approval.</p>
-    {!canSave && <p>Attach a supporting document to save a draft. Approved corrections must be submitted for review.</p>}
+    {!canSave && <p>Finish any upload before saving. Approved corrections must be submitted for review.</p>}
     {error && <p role="alert">{error}</p>}
   </Modal>;
 }
@@ -2222,15 +2218,6 @@ export function EntryWorkspace({ approvedDayEntries, approvedRecords = [], onReq
       </div>
     </section>
   );
-  if (['hours', 'review'].includes(step) && !hasDocument) return (
-    <section className="timesheets__flow-panel" aria-label="Supporting document required">
-      <h2>Upload your supporting document first</h2>
-      <p>A document is mandatory before entering or saving hours. Your current edits will stay here while you attach it.</p>
-      <FileUpload name="requiredSupportingDocument" label="Supporting document (mandatory)" accept=".pdf,.xlsx,.xls,.docx,.csv,.tsv,.txt,.png,.jpg,.jpeg" disabled={uploadingDocument} onUpload={event => onUploadSupportingDocument(event.target.files)} />
-      {documentError && <p role="alert">{documentError}</p>}
-      <Button variant="secondary" onClick={onBack}>Back to overview</Button>
-    </section>
-  );
   if (step === 'source') return (
     <section className="timesheets__flow-panel timesheets__source" aria-label="Choose timesheet entry method">
       <div className="timesheets__flow-header">
@@ -2283,13 +2270,13 @@ export function EntryWorkspace({ approvedDayEntries, approvedRecords = [], onReq
             <span className="timesheets__entry-card-icon" aria-hidden="true">✏️</span>
             <div>
               <h3>Enter Hours Manually</h3>
-              <p>Attach your supporting document first, then choose dates and enter your hours manually.</p>
+              <p>Log your hours daily and save a draft. Attach your supporting document when you are ready to submit for approval.</p>
             </div>
           </div>
           <div className="timesheets__manual-actions">
-            <FileUpload name="manualSupportingDocument" label="Supporting document (mandatory)" accept=".pdf,.xlsx,.xls,.docx,.csv,.tsv,.txt,.png,.jpg,.jpeg" disabled={uploadingDocument} onUpload={event => onUploadSupportingDocument(event.target.files)} helperText="Upload a document before entering hours. You can save unfinished work as a draft." />
+            <FileUpload name="manualSupportingDocument" label="Supporting document (optional for drafts)" accept=".pdf,.xlsx,.xls,.docx,.csv,.tsv,.txt,.png,.jpg,.jpeg" disabled={uploadingDocument} onUpload={event => onUploadSupportingDocument(event.target.files)} helperText="You can enter hours and save drafts now. A document is required before submission." />
             <SupportingDocumentList documents={supportingDocuments} onRemove={onRemoveSupportingDocument} />
-            <Button type="button" variant="primary" disabled={uploadingDocument || !hasDocument} onClick={() => setStep('dates')}>
+            <Button type="button" variant="primary" disabled={uploadingDocument} onClick={() => setStep('dates')}>
               Enter manually
             </Button>
           </div>
@@ -2410,10 +2397,10 @@ export function EntryWorkspace({ approvedDayEntries, approvedRecords = [], onReq
           </div>
           <div className="timesheets__flow-actions">
             <Button type="button" variant="secondary" onClick={onBack}>Cancel</Button>
-            {!approvedCorrection && <Button type="button" variant="secondary" disabled={saving || uploadingDocument || !hasDocument} onClick={onSave}>{saving ? 'Saving...' : 'Save draft'}</Button>}
-            <Button type="button" variant="primary" disabled={!hasDocument || uploadingDocument} onClick={onContinue}>Continue to hours</Button>
+            {!approvedCorrection && <Button type="button" variant="secondary" disabled={saving || uploadingDocument} onClick={onSave}>{saving ? 'Saving...' : 'Save draft'}</Button>}
+            <Button type="button" variant="primary" disabled={uploadingDocument} onClick={onContinue}>Continue to hours</Button>
           </div>
-          {!hasDocument && <FileUpload name="draftSupportingDocument" label="Supporting document (mandatory before entering hours)" accept=".pdf,.xlsx,.xls,.docx,.csv,.tsv,.txt,.png,.jpg,.jpeg" disabled={uploadingDocument} onUpload={event => onUploadSupportingDocument(event.target.files)} />}
+          {!hasDocument && <FileUpload name="draftSupportingDocument" label="Supporting document (optional for drafts)" helperText="Attach now or add it before submitting." accept=".pdf,.xlsx,.xls,.docx,.csv,.tsv,.txt,.png,.jpg,.jpeg" disabled={uploadingDocument} onUpload={event => onUploadSupportingDocument(event.target.files)} />}
           {documentError && <p role="alert">{documentError}</p>}
         </div>
       )}
@@ -2617,8 +2604,8 @@ export function EntryWorkspace({ approvedDayEntries, approvedRecords = [], onReq
             onRemove={onRemoveSupportingDocument}
           />
           {!approvedCorrection && <aside className="timesheets__draft-save" aria-label="Save progress">
-            <div><strong>Finish later?</strong><p>Save your current hours and document without submitting for approval.</p></div>
-            <Button variant="secondary" disabled={saving || uploadingDocument || !hasDocument} onClick={onSave}>{saving ? 'Saving...' : 'Save draft'}</Button>
+            <div><strong>Finish later?</strong><p>Save your daily hours now. You can add the required document before submitting.</p></div>
+            <Button variant="secondary" disabled={saving || uploadingDocument} onClick={onSave}>{saving ? 'Saving...' : 'Save draft'}</Button>
             <Button variant="secondary" disabled={saving || uploadingDocument} onClick={onBack}>Back to overview</Button>
           </aside>}
           {documentError && <p role="alert">{documentError}</p>}
@@ -2690,7 +2677,7 @@ export function EntryWorkspace({ approvedDayEntries, approvedRecords = [], onReq
             <SupportingDocumentList documents={supportingDocuments} onRemove={onRemoveSupportingDocument} />
             <FileUpload
               name="supportingDocument"
-              label={reeditSubmitted ? 'Supporting document (Approved changed timesheet mandatory)' : 'Supporting document (mandatory)'}
+              label={reeditSubmitted ? 'Supporting document (required to submit corrections)' : 'Supporting document (required to submit)'}
               helperText={uploadingDocument ? 'Uploading document...' : supportingDocuments.length ? 'Stored securely. It will be attached when you submit. You can add more.' : reeditSubmitted ? 'Mandatory: Upload manager-approved amended timesheet (PDF or image up to 5 MB).' : 'PDF, Excel, Word, CSV, text or image up to 5 MB. A supporting document is mandatory before submitting.'}
               multiple
               accept=".pdf,.xlsx,.xls,.docx,.csv,.tsv,.txt,.png,.jpg,.jpeg"
@@ -2701,7 +2688,7 @@ export function EntryWorkspace({ approvedDayEntries, approvedRecords = [], onReq
             <div className="timesheets__flow-actions">
               <Button type="button" variant="secondary" onClick={() => setStep('hours')}>Back to hours</Button>
               {!approvedCorrection && <Button type="button" variant="secondary" disabled={saving || uploadingDocument} onClick={onSave}>{saving ? 'Saving...' : 'Save draft'}</Button>}
-              <Button type="button" variant="primary" disabled={saving || uploadingDocument} onClick={onSubmit}>{saving ? 'Submitting...' : approvedCorrection ? 'Submit correction for review' : 'Submit timesheet'}</Button>
+              <Button type="button" variant="primary" disabled={saving || uploadingDocument || !hasDocument} onClick={onSubmit}>{saving ? 'Submitting...' : approvedCorrection ? 'Submit correction for review' : 'Submit timesheet'}</Button>
             </div>
           </div>
         </div>

@@ -38,13 +38,17 @@ async function resume() {
   return screen.findByRole('spinbutton', { name: 'Hours' });
 }
 
-it('requires a supporting document before manual hours entry', async () => {
+it('allows manual hours entry before attaching a document', async () => {
   showPage();
   fireEvent.click(await screen.findByRole('button', { name: /Start entry/ }));
   const enter = screen.getByRole('button', { name: 'Enter manually' });
-  expect(enter).toBeDisabled();
-  fireEvent.change(document.getElementById('manualSupportingDocument'), { target: { files: [new File(['Employee Name: John Doe'], 'support.txt', { type: 'text/plain' })] } });
-  await waitFor(() => expect(enter).toBeEnabled());
+  expect(enter).toBeEnabled();
+  fireEvent.click(enter);
+  const continueButton=screen.getByRole('button',{name:'Continue to hours'});
+  expect(continueButton).toBeEnabled();
+  fireEvent.click(continueButton);
+  expect((await screen.findAllByRole('spinbutton',{name:'Hours'})).some(input=>!input.disabled)).toBe(true);
+  expect(documentApi.upload).not.toHaveBeenCalled();
 });
 
 it('saves current hours without requiring Review and resumes the saved values', async () => {
@@ -58,7 +62,28 @@ it('saves current hours without requiring Review and resumes the saved values', 
   expect(await screen.findByRole('spinbutton', { name: 'Hours' })).toHaveValue(6.5);
 });
 
+it('logs and resumes a daily draft without a document, then requires attachment to submit',async()=>{
+  const user=userEvent.setup();
+  storedDraft.supportingDocuments=[];
+  const hours=await resume();
+  fireEvent.change(hours,{target:{value:'6'}});
+  await user.click(screen.getByRole('button',{name:'Save draft'}));
+  await waitFor(()=>expect(timesheetApi.update).toHaveBeenCalledWith('draft-1',expect.objectContaining({status:'DRAFT',supportingDocumentIds:[],entries:[expect.objectContaining({hoursWorked:6})]})));
+  await user.click(await screen.findByRole('button',{name:/Resume draft/}));
+  expect(await screen.findByRole('spinbutton',{name:'Hours'})).toHaveValue(6);
+  await user.click(screen.getByRole('button',{name:'Review timesheet'}));
+  const submit=await screen.findByRole('button',{name:'Submit timesheet'});
+  expect(submit).toBeDisabled();
+  fireEvent.click(submit);
+  expect(timesheetApi.update).toHaveBeenCalledTimes(1);
+  fireEvent.change(document.getElementById('supportingDocument'),{target:{files:[new File(['Employee Name: John Doe'],'support.txt',{type:'text/plain'})]}});
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Submit timesheet'})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button',{name:'Submit timesheet'}));
+  await waitFor(()=>expect(timesheetApi.update).toHaveBeenLastCalledWith('draft-1',expect.objectContaining({status:'SUBMITTED',supportingDocumentIds:['uploaded-doc']})));
+});
+
 it('offers Save draft and leave on Back and keeps edits when cancelled', async () => {
+  storedDraft.supportingDocuments=[];
   const hours = await resume();
   fireEvent.change(hours, { target: { value: '7' } });
   fireEvent.click(screen.getByRole('button', { name: 'Back to overview' }));
@@ -81,6 +106,7 @@ it('preserves edits and stays in the editor if saving fails', async () => {
 });
 
 it('protects browser Back and continues to its destination after saving', async () => {
+  storedDraft.supportingDocuments=[];
   const router = createMemoryRouter([
     { path: '/other', element: <h1>Other page</h1> },
     { path: '/myhr/employee/timesheets', element: <TimesheetsPage role="EMPLOYEE" /> },
