@@ -1,0 +1,65 @@
+/* Laptop density only. Phone, tablet and wide desktop layouts keep their rules. */
+@media (min-width: 1024px) and (max-width: 1600px) {
+  .wp-workspace.myhr-shell {
+    --myhr-page-inline: 20px;
+    --myhr-page-block: 16px;
+    --myhr-page-gap: 12px;
+  }
+
+  .wp-workspace.myhr-shell .wp-workspace__header {
+    min-height: 64px;
+    padding: 10px 20px;
+    gap: 16px;
+  }
+  .myhr-shell .wp-workspace__brand > .wp-waypoint-mark { width: 32px; height: 32px; }
+  .myhr-shell .wp-workspace__brand small { line-height: 1.3; }
+  .myhr-shell .wp-workspace__quick-jump { width: 260px; }
+  .myhr-shell .wp-workspace__account .wp-profile-menu__trigger { min-height: 44px; padding: 4px 8px; }
+  .myhr-shell .wp-workspace__account :is(.wp-profile-menu__name, .wp-profile-menu__secondary) { line-height: 1.3; }
+  .wp-workspace.myhr-shell .wp-workspace__body { padding: 16px 20px; gap: 20px; }
+  .wp-workspace.myhr-shell:has(.wp-floating-assistant, .wp-chatbot-window) .wp-workspace__body {
+    padding-right: max(76px, calc(68px + env(safe-area-inset-right)));
+  }
+  .myhr-shell .myhr-navigation { top: 80px; padding-right: 12px; }
+  .myhr-shell .myhr-navigation:not(.is-collapsed),
+  .myhr-shell .myhr-navigation.is-collapsed.is-peeking { width: 216px; }
+  .myhr-shell .myhr-navigation nav { gap: 2px; }
+  .myhr-shell .myhr-navigation__group { padding-top: 12px; }
+
+  :root .myhr-shell #workspace-content .myhr-feature.time-pay-page {
+    --time-pay-inset: 20px;
+    --time-pay-gap: 16px;
+  }
+  :root .myhr-shell #workspace-content .myhr-feature__heading {
+    padding: 0 !important;
+    border: 0 !important;
+    gap: 8px;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  :root .myhr-shell #workspace-content .myhr-feature .wp-page-header { padding: 0; gap: 12px; }
+  :root .myhr-shell #workspace-content .myhr-feature .wp-page-header__title {
+    font-size: clamp(1.5rem, 2vw, 1.875rem) !important;
+  }
+
+  :root .myhr-shell #workspace-content .timesheets-mobile .timesheets__flow-panel { min-height: 0; }
+  :root .myhr-shell #workspace-content .timesheets-mobile .timesheets__flow-header {
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+  .myhr-shell .timesheets__entry-options-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    align-items: start;
+    gap: 16px;
+    margin: 0 0 16px;
+  }
+  .myhr-shell .timesheets__entry-card { min-width: 0; padding: 16px; gap: 12px; }
+  .myhr-shell .timesheets__entry-card-title { gap: 8px; }
+  .myhr-shell .timesheets__entry-card-title > div { flex: 1; min-width: 0; }
+  .myhr-shell .timesheets__entry-card-title h3 { font-size: 1rem !important; line-height: 1.35; }
+  .myhr-shell .timesheets__entry-card-icon { flex: 0 0 32px; width: 32px; height: 32px; padding: 4px; }
+  .myhr-shell .timesheets__entry-card .wp-button { padding-inline: 12px; font-size: .8125rem; }
+  .myhr-shell .timesheets__upload-zone { margin-top: 0; gap: 8px; }
+  .myhr-shell .timesheets__manual-actions { margin-top: 0; padding-top: 8px; }
+}

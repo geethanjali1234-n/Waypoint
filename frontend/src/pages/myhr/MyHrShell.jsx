@@ -12,6 +12,7 @@ import WaypointChatbot from '../../components/chatbot/WaypointChatbot';
 import './MyHrShell.css';
 import MyHrNavigation from './components/MyHrNavigation';
 import MyHrMobileDrawer from './components/MyHrMobileDrawer';
+import './myHrLaptop.css';
 
 function formatNotificationTimestamp(value) {
   if (!value) return 'Just now';
