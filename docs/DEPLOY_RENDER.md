@@ -57,11 +57,13 @@ The web launch does not require a new APK. If an APK is later needed, build it w
 
 ## Organizations sending email from their own Google account (optional, off by default)
 
-Each organization's Company Admin can connect its own Google account so that the organization's emails are sent through it. The feature is **off** unless `GOOGLE_EMAIL_ENABLED=true`, and SMTP stays the fallback. These variables are **not** in `render.yaml` on purpose (adding secret entries there would make Render prompt for them on the next blueprint sync); add them by hand under **waypoint-backend -> Environment** only when you are ready to pilot. Full setup and test steps: `docs/GOOGLE_OAUTH_PILOT_CHECKLIST.md`.
+Each organization's Company Admin can connect its own authorized Gmail or Google Workspace account so organization notifications are sent through that sender. The feature is **off** unless `GOOGLE_EMAIL_ENABLED=true`. In production platform mode, a missing, revoked, or invalid organization connection causes a safe email-delivery failure while the in-app notification and business operation remain; it does not fall back to SMTP or `waypointmyhr@gmail.com`. These variables are **not** in `render.yaml`; add them by hand under **waypoint-backend -> Environment** only when ready. Full setup and test steps: `docs/GOOGLE_OAUTH_PILOT_CHECKLIST.md`.
 
 | Variable | What it is |
 |---|---|
 | `GOOGLE_EMAIL_ENABLED` | `true` to switch the feature on. Leave unset or `false` otherwise. |
+| `GOOGLE_PLATFORM_SENDER_ENABLED` | `true` to enable global platform transactional mail through Gmail API. |
+| `GOOGLE_PLATFORM_SENDER_ADDRESS` | Must be exactly `waypointmyhr@gmail.com` when enabled. |
 | `GOOGLE_OAUTH_CLIENT_ID` | OAuth client ID (secret store) |
 | `GOOGLE_OAUTH_CLIENT_SECRET` | OAuth client secret (secret store only; never commit or paste it anywhere) |
 | `GOOGLE_OAUTH_REDIRECT_URI` | `<backend URL>/api/oauth/google/callback`, for example `https://waypoint-backend.onrender.com/api/oauth/google/callback`. It must be **exactly** the redirect URI listed on the Google OAuth client. The application refuses to start if the path is not exactly `/api/oauth/google/callback`, or if the address is `http://` on a public host. |
@@ -74,3 +76,9 @@ Also required when the feature is on:
 - `MAIL_ENABLED` must be `true` for organization emails to be tried through Google.
 - The callback is a plain browser redirect to the **backend**, so the backend must be reachable from the admin's browser at the address used in `GOOGLE_OAUTH_REDIRECT_URI`. On the free plan the first request after sleep takes about 30-60 seconds.
 - The MongoDB user must be allowed to create indexes (the connection indexes are created at startup when the feature is on).
+
+Google Cloud: enable Gmail API; create an External OAuth Web application client; configure public home, privacy, and terms URLs; request only `openid`, `email`, and `https://www.googleapis.com/auth/gmail.send`; and add this exact production redirect URI: `https://api.waypoint-hr.com/api/oauth/google/callback`. `gmail.send` is sensitive, so complete Google verification before broad external use.
+
+Organization authorization: a Company Admin opens **Organization Settings -> Email & Sender**, selects **Connect Google Account**, authorizes the organization's sender account, and uses the test-email action. A registered Organization Email alone is not authority to send; non-Google providers need a Gmail/Workspace sender authorized to send as that address. A WayPoint Admin authorizes the separate `waypointmyhr@gmail.com` platform account for global OTPs, password resets, registrations, and invitations only.
+
+Rollback: set `GOOGLE_PLATFORM_SENDER_ENABLED=false` to disable platform transactional Gmail, or `GOOGLE_EMAIL_ENABLED=false` to disable organization Gmail routing, then restart/redeploy. Preserve `GOOGLE_TOKEN_ENCRYPTION_KEY`, `GOOGLE_TOKEN_ENCRYPTION_KEY_ID`, and stored connection records so encrypted authorizations remain recoverable on re-enable.

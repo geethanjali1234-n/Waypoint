@@ -3,6 +3,7 @@ package com.waypoint.entity;
 import com.waypoint.config.GoogleConnectionIndexConfig;
 import com.waypoint.enums.GoogleConnectionStatus;
 import com.waypoint.repository.GoogleOAuthStateRepository;
+import com.waypoint.repository.PlatformGoogleSenderConnectionRepository;
 import com.waypoint.repository.OrganizationGoogleConnectionRepository;
 import org.bson.Document;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class GoogleConnectionModelTest {
+
+    @Test
+    void platformSenderIsAFixedIdSingletonAndDoesNotExposeTokensInToString() {
+        PlatformGoogleSenderConnection connection = PlatformGoogleSenderConnection.builder()
+                .id(PlatformGoogleSenderConnection.ID).refreshTokenCiphertext("CIPHERTEXT-VALUE")
+                .refreshTokenIv("IV-VALUE").build();
+
+        assertThat(PlatformGoogleSenderConnection.ID).isEqualTo("platform-gmail-sender");
+        assertThat(PlatformGoogleSenderConnection.class.getAnnotation(org.springframework.data.mongodb.core.mapping.Document.class).collection())
+                .isEqualTo("platform_google_sender_connection");
+        assertThat(connection.toString()).doesNotContain("CIPHERTEXT-VALUE").doesNotContain("IV-VALUE");
+        assertThat(org.springframework.data.repository.CrudRepository.class
+                .isAssignableFrom(PlatformGoogleSenderConnectionRepository.class)).isTrue();
+    }
 
     @Test
     void connectionUsesItsOwnCollectionAndHoldsOnlyTheRefreshTokenAsCiphertext() {

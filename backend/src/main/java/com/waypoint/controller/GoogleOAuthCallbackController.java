@@ -3,6 +3,7 @@ package com.waypoint.controller;
 import com.waypoint.service.google.GoogleConnectResult;
 import com.waypoint.service.google.GoogleConnectionService;
 import com.waypoint.service.google.GoogleRateLimits;
+import com.waypoint.service.google.PlatformGoogleAuthorizationService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,8 +32,10 @@ public class GoogleOAuthCallbackController {
 
     private static final java.util.regex.Pattern IP_ADDRESS = java.util.regex.Pattern.compile("^[0-9a-fA-F:.]{3,45}$");
     static final String RETURN_PATH = "/myhr/admin/organization";
+    static final String PLATFORM_RETURN_PATH = "/waypoint-admin/dashboard";
 
     private final GoogleConnectionService googleConnectionService;
+    private final PlatformGoogleAuthorizationService platformGoogleAuthorizationService;
     private final GoogleRateLimits rateLimits;
 
     @Value("${waypoint.app.frontend-base-url:http://localhost:5173}")
@@ -45,13 +48,15 @@ public class GoogleOAuthCallbackController {
             @RequestParam(required = false) String error,
             HttpServletRequest request) {
 
-        GoogleConnectionService.CallbackOutcome outcome = outcomeOf(code, state, error, request);
+        RoutedOutcome routed = outcomeOf(code, state, error, request);
+        GoogleConnectionService.CallbackOutcome outcome = routed.outcome();
 
-        UriComponentsBuilder target = UriComponentsBuilder.fromUriString(stripTrailingSlash(frontendBaseUrl) + RETURN_PATH);
+        UriComponentsBuilder target = UriComponentsBuilder.fromUriString(stripTrailingSlash(frontendBaseUrl)
+                + (routed.platform() ? PLATFORM_RETURN_PATH : RETURN_PATH));
         if (outcome.result() == GoogleConnectResult.CONNECTED) {
-            target.queryParam("google", "connected");
+            target.queryParam(routed.platform() ? "platformGoogle" : "google", "connected");
         } else {
-            target.queryParam("google", "error").queryParam("reason", outcome.result().name());
+            target.queryParam(routed.platform() ? "platformGoogle" : "google", "error").queryParam("reason", outcome.result().name());
             if (outcome.accountDomain() != null) target.queryParam("accountDomain", outcome.accountDomain());
         }
         URI location = target.build().encode().toUri();
@@ -67,14 +72,21 @@ public class GoogleOAuthCallbackController {
      * Bounded per client address before anything else happens (no database access when blocked), and never throws: every
      * outcome, including an unexpected failure, becomes a redirect with a generic reason code.
      */
-    private GoogleConnectionService.CallbackOutcome outcomeOf(String code, String state, String error, HttpServletRequest request) {
+    private record RoutedOutcome(boolean platform, GoogleConnectionService.CallbackOutcome outcome) { }
+
+    private RoutedOutcome outcomeOf(String code, String state, String error, HttpServletRequest request) {
         try {
             if (!rateLimits.allowCallback(clientAddress(request))) {
-                return GoogleConnectionService.CallbackOutcome.of(GoogleConnectResult.TOO_MANY_ATTEMPTS);
+                return new RoutedOutcome(false, GoogleConnectionService.CallbackOutcome.of(GoogleConnectResult.TOO_MANY_ATTEMPTS));
             }
-            return googleConnectionService.handleCallback(code, state, error);
+            boolean platform = platformGoogleAuthorizationService.ownsState(state);
+            if (platform) {
+                return new RoutedOutcome(true, GoogleConnectionService.CallbackOutcome.of(
+                        platformGoogleAuthorizationService.handleCallback(code, state, error)));
+            }
+            return new RoutedOutcome(false, googleConnectionService.handleCallback(code, state, error));
         } catch (RuntimeException failure) {
-            return GoogleConnectionService.CallbackOutcome.of(GoogleConnectResult.CONNECT_FAILED);
+            return new RoutedOutcome(false, GoogleConnectionService.CallbackOutcome.of(GoogleConnectResult.CONNECT_FAILED));
         }
     }
 

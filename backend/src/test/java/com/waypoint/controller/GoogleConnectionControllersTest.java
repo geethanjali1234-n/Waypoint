@@ -9,6 +9,7 @@ import com.waypoint.service.google.GoogleConnectResult;
 import com.waypoint.service.google.GoogleConnectionService;
 import com.waypoint.service.google.GoogleRateLimits;
 import com.waypoint.service.google.GoogleTestEmailService;
+import com.waypoint.service.google.PlatformGoogleAuthorizationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -47,6 +48,9 @@ class GoogleConnectionControllersTest {
 
     @MockitoBean
     GoogleConnectionService googleConnectionService;
+
+    @MockitoBean
+    PlatformGoogleAuthorizationService platformGoogleAuthorizationService;
 
     @MockitoBean
     GoogleTestEmailService googleTestEmailService;
@@ -134,6 +138,18 @@ class GoogleConnectionControllersTest {
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(header().string("Referrer-Policy", "no-referrer"));
         verifyNoInteractions(currentUserResolver);
+    }
+
+    @Test
+    void aPlatformStateRoutesToThePlatformCallbackFlowAndNeverToAnOrganization() throws Exception {
+        when(platformGoogleAuthorizationService.ownsState("platform-state")).thenReturn(true);
+        when(platformGoogleAuthorizationService.handleCallback("the-code", "platform-state", null))
+                .thenReturn(GoogleConnectResult.CONNECTED);
+
+        mockMvc.perform(get("/api/oauth/google/callback").param("code", "the-code").param("state", "platform-state"))
+                .andExpect(status().isFound())
+                .andExpect(header().string("Location", "https://app.example.test/waypoint-admin/dashboard?platformGoogle=connected"));
+        verifyNoInteractions(googleConnectionService);
     }
 
     @Test
