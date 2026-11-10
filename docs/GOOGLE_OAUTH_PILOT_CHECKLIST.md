@@ -7,9 +7,11 @@ client secret, token, encryption key or the contents of any secrets file into a 
 
 How it works, in one paragraph: each organization's Company Admin connects its own Google account (OAuth, scopes
 `gmail.send`, `openid`, `email`). WayPoint stores only an encrypted refresh token, per organization. Organization emails
-(document requests, reminders, timesheets, offer letters, credentials, other notifications) are then sent through that
-organization's Gmail account; anything that cannot be sent that way falls back to the existing SMTP sender. Platform
-emails (registration OTP, registration credentials, job portal) never use Google.
+(document requests, reminders, timesheets, offer letters, credentials, other notifications) are sent through that
+organization's authorized Gmail account. In production platform mode, a missing, revoked, or invalid organization
+connection causes a safe email-delivery failure while the in-app notification and business operation remain; it does not
+fall back to SMTP or `waypointmyhr@gmail.com`. Platform transactional emails use the separately authorized
+`waypointmyhr@gmail.com` sender when enabled.
 
 ---
 
@@ -138,7 +140,9 @@ for general use. From Google's sensitive-scope verification guide, plan for:
   check the host is your backend.
 - [ ] `APP_FRONTEND_URL` set to the public https frontend address (see section 3). In Render these variables are added by
   hand; see `docs/DEPLOY_RENDER.md`.
-- [ ] Email delivery itself is on (`MAIL_ENABLED`) and SMTP still works: it is the fallback for everything.
+- [ ] Email delivery itself is on (`MAIL_ENABLED`). `GOOGLE_PLATFORM_SENDER_ENABLED=true` and
+  `GOOGLE_PLATFORM_SENDER_ADDRESS=waypointmyhr@gmail.com` enable only global platform transactional mail; they are never
+  an organization-notification fallback.
 - [ ] On first start with the flag on, the connection indexes are created (one connection per organization; one organization
   per Google account; single-use, expiring OAuth state). Confirm the collections `organization_google_connections` and
   `google_oauth_states` exist.
@@ -213,14 +217,13 @@ Before testing, confirm the addresses in Organization Settings:
 - [ ] Approve one and reject one with a reason: the employee gets both the in-app notification and the email, from the Org
   account, with the reason in the rejection.
 
-### 7.5 SMTP fallback
-- [ ] Org C (no Google account): the same emails still arrive exactly as before (platform sender, organization display name,
-  Reply-To = Organization Email).
-- [ ] Disconnect Org A, then trigger an email: it arrives by SMTP; the in-app notification is unaffected.
-- [ ] Send an email with an attachment larger than about 3.5 MB (the conservative cap): it arrives by SMTP, not Google.
-- [ ] Platform emails (registration OTP, organization registration credentials, password reset) are unaffected for every
-  organization, including connected ones: they come from the platform sender.
-- [ ] Setting `GOOGLE_EMAIL_ENABLED=false` returns every organization to SMTP immediately (rollback test).
+### 7.5 Missing organization authorization and platform mail
+- [ ] Org C (no Google account): trigger a notification. Confirm the in-app notification exists and email fails safely; it
+  must not be sent from another organization, `waypointmyhr@gmail.com`, or SMTP.
+- [ ] Disconnect Org A, then trigger an organization notification: confirm the in-app notification remains and no SMTP or
+  platform-sender fallback occurs.
+- [ ] Platform emails (registration OTP, organization registration credentials, password reset) use the separately
+  authorized `waypointmyhr@gmail.com` sender when `GOOGLE_PLATFORM_SENDER_ENABLED=true`.
 
 ### 7.6 Cross-tenant isolation
 - [ ] Trigger emails in Org A and Org B within the same minute: each arrives from its own account; none from the other's.
@@ -272,9 +275,9 @@ Before testing, confirm the addresses in Organization Settings:
 
 ## 9. Rollback
 
-Set `GOOGLE_EMAIL_ENABLED=false` and restart: all organizations immediately use the existing SMTP path and the Email &
-Sender section disappears. Stored connections remain (encrypted) and can be used again when re-enabled, or removed by each
-organization's admin with Disconnect.
+Set `GOOGLE_EMAIL_ENABLED=false` to disable organization Gmail routing, or `GOOGLE_PLATFORM_SENDER_ENABLED=false` to disable
+the dedicated platform sender, then restart. Preserve `GOOGLE_TOKEN_ENCRYPTION_KEY` and `GOOGLE_TOKEN_ENCRYPTION_KEY_ID`;
+stored encrypted connections remain available when re-enabled, or can be removed by each organization admin with Disconnect.
 
 ## 10. Sign-off
 

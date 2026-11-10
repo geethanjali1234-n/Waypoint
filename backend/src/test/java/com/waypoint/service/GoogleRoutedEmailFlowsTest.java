@@ -25,6 +25,7 @@ import com.waypoint.repository.UserRepository;
 import com.waypoint.security.MyHrAuthenticatedUserService;
 import com.waypoint.security.TokenCipher;
 import com.waypoint.service.google.GmailApiEmailService;
+import com.waypoint.service.google.PlatformGmailApiEmailService;
 import com.waypoint.service.google.GoogleConnectionProblemNotifier;
 import com.waypoint.service.google.GoogleConnectionReauthRequiredEvent;
 import com.waypoint.service.google.GoogleOAuthClient;
@@ -90,6 +91,7 @@ class GoogleRoutedEmailFlowsTest {
     private final MyHrAuthenticatedUserService authenticated = mock(MyHrAuthenticatedUserService.class);
     private final NotificationRepository notificationStore = mock(NotificationRepository.class);
     private final GoogleOAuthClient google = mock(GoogleOAuthClient.class);
+    private final PlatformGmailApiEmailService platformGmail = mock(PlatformGmailApiEmailService.class);
     private final JavaMailSender smtpTransport = mock(JavaMailSender.class);
     private final GoogleOAuthProperties properties = new GoogleOAuthProperties();
     private final TokenCipher cipher = new TokenCipher(randomKey(), "v1");
@@ -125,7 +127,7 @@ class GoogleRoutedEmailFlowsTest {
 
         GmailApiEmailService gmail = new GmailApiEmailService(properties, cipher, google, connections, organizations,
                 mock(org.springframework.context.ApplicationEventPublisher.class));
-        router = new RoutingEmailService(smtp, gmail);
+        router = new RoutingEmailService(smtp, gmail, platformGmail);
         ReflectionTestUtils.setField(router, "mailEnabled", true);
 
         OrganizationEmailIdentityResolver resolver = new OrganizationEmailIdentityResolver(organizations, MailSenderAuthorization.none(),
@@ -407,7 +409,7 @@ class GoogleRoutedEmailFlowsTest {
 
     private void rewire(GmailApiEmailService gmail) {
         JavaMailSenderEmailService smtp = (JavaMailSenderEmailService) ReflectionTestUtils.getField(router, "smtp");
-        router = new RoutingEmailService(smtp, gmail);
+        router = new RoutingEmailService(smtp, gmail, platformGmail);
         ReflectionTestUtils.setField(router, "mailEnabled", true);
         OrganizationEmailIdentityResolver resolver = new OrganizationEmailIdentityResolver(organizations, MailSenderAuthorization.none(),
                 new GoogleSenderEligibility(properties, connections));

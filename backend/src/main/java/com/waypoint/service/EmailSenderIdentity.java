@@ -25,7 +25,7 @@ import org.springframework.util.StringUtils;
 public record EmailSenderIdentity(String displayName, String replyTo, String fromAddress,
                                   String gmailOrganizationId, String gmailSenderAddress) {
 
-    private static final EmailSenderIdentity NONE = new EmailSenderIdentity(null, null, null);
+    private static final EmailSenderIdentity NONE = new EmailSenderIdentity(null, null, null, null, null);
 
     public EmailSenderIdentity(String displayName, String replyTo, String fromAddress) {
         this(displayName, replyTo, fromAddress, null, null);

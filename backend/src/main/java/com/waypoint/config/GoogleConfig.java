@@ -25,7 +25,7 @@ public class GoogleConfig {
                                          @Value("${waypoint.app.frontend-base-url:http://localhost:5173}") String frontendBaseUrl) {
         properties.requireCompleteWhenEnabled();
         properties.validateFrontendBaseUrl(frontendBaseUrl);
-        if (properties.isEnabled()) {
+        if (properties.isEnabled() || properties.isPlatformSenderEnabled()) {
             // Hosts only (no path, query or credentials): enough to spot a wrong environment at a glance.
             log.info("Google email connection is enabled [redirectHost={}, callbackPath={}]",
                     properties.redirectHostForLog(), GoogleOAuthProperties.CALLBACK_PATH);
@@ -36,7 +36,7 @@ public class GoogleConfig {
         try {
             return new TokenCipher(properties.getTokenEncryptionKey(), properties.getTokenEncryptionKeyId());
         } catch (TokenCipherException invalid) {
-            if (properties.isEnabled()) {
+            if (properties.isEnabled() || properties.isPlatformSenderEnabled()) {
                 throw new IllegalStateException("GOOGLE_TOKEN_ENCRYPTION_KEY is invalid: " + invalid.getMessage());
             }
             log.warn("Google token encryption key ignored because the feature is disabled [reason=INVALID_KEY]");

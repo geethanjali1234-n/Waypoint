@@ -1,4 +1,61 @@
-# Waypoint
+**You need to start a fresh Code/Agent session and ask it to continue from the existing uncommitted worktree:
+
+`C:\Users\geeth\IdeaProjects\waypoint\Waypoint-sanitized`
+
+Tell it:
+
+> Complete Phase 1 only: implement the dedicated platform Gmail sender entity/repository, encrypted refresh-token storage, access-token refresh, sender-account verification for `waypointmyhr@gmail.com`, focused unit tests, and run Maven tests. Preserve all existing uncommitted changes. Do not commit, push, deploy, change Render, or access production MongoDB.
+
+Do not deploy the current changes yet. They are incomplete.
+
+The key existing configuration work is already uncommitted:
+
+- `GoogleOAuthProperties.java`
+- `GoogleOAuthState.java`
+- `application.yaml`
+- `PlatformGoogleSenderConnection.java`
+- `PlatformGoogleSenderConnectionRepository.java`
+- `.github/workflows/production-ci.yml`
+
+After Phase 1 passes tests, continue with OAuth callback/admin endpoints, email routing, documentation, then manually configure Render and Google Cloud.VYou need to start a fresh Code/Agent session and ask it to continue from the existing uncommitted worktree:
+
+`C:\Users\geeth\IdeaProjects\waypoint\Waypoint-sanitized`
+
+Tell it:
+
+> Complete Phase 1 only: implement the dedicated platform Gmail sender entity/repository, encrypted refresh-token storage, access-token refresh, sender-account verification for `waypointmyhr@gmail.com`, focused unit tests, and run Maven tests. Preserve all existing uncommitted changes. Do not commit, push, deploy, change Render, or access production MongoDB.
+
+Do not deploy the current changes yet. They are incomplete.
+
+The key existing configuration work is already uncommitted:
+
+- `GoogleOAuthProperties.java`
+- `GoogleOAuthState.java`
+- `application.yaml`[web](web)
+- `PlatformGoogleSenderConnection.java`
+- `PlatformGoogleSenderConnectionRepository.java`
+- `.github/workflows/production-ci.yml`
+
+After Phase 1 passes tests, continue with OAuth callback/admin endpoints, email routing, documentation, then manually configure Render and Google Cloud.You need to start a fresh Code/Agent session and ask it to continue from the existing uncommitted worktree:
+
+`C:\Users\geeth\IdeaProjects\waypoint\Waypoint-sanitized`
+
+Tell it:
+
+> Complete Phase 1 only: implement the dedicated platform Gmail sender entity/repository, encrypted refresh-token storage, access-token refresh, sender-account verification for `waypointmyhr@gmail.com`, focused unit tests, and run Maven tests. Preserve all existing uncommitted changes. Do not commit, push, deploy, change Render, or access production MongoDB.
+
+Do not deploy the current changes yet. They are incomplete.
+
+The key existing configuration work is already uncommitted:
+
+- `GoogleOAuthProperties.java`
+- `GoogleOAuthState.java`
+- `application.yaml`
+- `PlatformGoogleSenderConnection.java`
+- `PlatformGoogleSenderConnectionRepository.java`
+- `.github/workflows/production-ci.yml`
+
+After Phase 1 passes tests, continue with OAuth callback/admin endpoints, email routing, documentation, then manually configure Render and Google Cloud.**# Waypoint
 
 Waypoint is a full-stack career and event management platform that connects job seekers with employers. It combines job discovery, application tracking, recruiting workflows, professional events, notifications, profile management, and secure document storage in one application.
 

@@ -1,6 +1,7 @@
 package com.waypoint.service;
 
 import com.waypoint.service.google.GmailApiEmailService;
+import com.waypoint.service.google.PlatformGmailApiEmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -23,6 +24,7 @@ class RoutingEmailServiceTest {
 
     private final JavaMailSenderEmailService smtp = mock(JavaMailSenderEmailService.class);
     private final GmailApiEmailService gmail = mock(GmailApiEmailService.class);
+    private final PlatformGmailApiEmailService platformGmail = mock(PlatformGmailApiEmailService.class);
     private RoutingEmailService router;
 
     private final EmailSenderIdentity google = new EmailSenderIdentity("HR ITAP", "hr@itap.example", null)
@@ -32,8 +34,24 @@ class RoutingEmailServiceTest {
 
     @BeforeEach
     void setUp() {
-        router = new RoutingEmailService(smtp, gmail);
+        router = new RoutingEmailService(smtp, gmail, platformGmail);
         ReflectionTestUtils.setField(router, "mailEnabled", true);
+    }
+
+    @Test
+    void enabledPlatformSenderUsesGmailForGlobalOtpAndNeverFallsBackToSmtp() {
+        ReflectionTestUtils.setField(router, "platformSenderEnabled", true);
+        router.sendHtmlEmail("user@x.example", "Your code", "<p>123456</p>", "Your code is 123456");
+        verify(platformGmail).send("user@x.example", "Your code", "<p>123456</p>", "Your code is 123456", List.of());
+        verifyNoInteractions(smtp, gmail);
+    }
+
+    @Test
+    void enabledPlatformSenderNeverTakesAnOrganizationBoundNotification() {
+        ReflectionTestUtils.setField(router, "platformSenderEnabled", true);
+        assertThatThrownBy(() -> router.sendHtmlEmail("hr@x.example", "Request", "<p>Request</p>", null, smtpOnly))
+                .isInstanceOf(RoutingEmailService.OrganizationEmailAuthorizationRequired.class);
+        verifyNoInteractions(platformGmail, smtp);
     }
 
     // ------------------------------------------------------------------ organization mail through Google

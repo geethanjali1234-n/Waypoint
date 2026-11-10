@@ -17,9 +17,13 @@ public class GoogleOAuthProperties {
 
     /** The only path the backend serves for the Google callback ({@code GoogleOAuthCallbackController}). */
     public static final String CALLBACK_PATH = "/api/oauth/google/callback";
+    /** The dedicated WayPoint transactional mailbox; no other account may authorize the platform sender. */
+    public static final String PLATFORM_SENDER_ADDRESS = "waypointmyhr@gmail.com";
     private static final Pattern IPV4 = Pattern.compile("^\\d{1,3}(\\.\\d{1,3}){3}$");
 
     private boolean enabled = false;
+    private boolean platformSenderEnabled = false;
+    private String platformSenderAddress;
     private String clientId;
     private String clientSecret;
     private String redirectUri;
@@ -34,6 +38,10 @@ public class GoogleOAuthProperties {
 
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
+    public boolean isPlatformSenderEnabled() { return platformSenderEnabled; }
+    public void setPlatformSenderEnabled(boolean platformSenderEnabled) { this.platformSenderEnabled = platformSenderEnabled; }
+    public String getPlatformSenderAddress() { return platformSenderAddress; }
+    public void setPlatformSenderAddress(String platformSenderAddress) { this.platformSenderAddress = platformSenderAddress; }
 
     public String getClientId() { return clientId; }
     public void setClientId(String clientId) { this.clientId = clientId; }
@@ -70,11 +78,18 @@ public class GoogleOAuthProperties {
      * Values are never included in the message.
      */
     public void requireCompleteWhenEnabled() {
-        if (!enabled) return;
+        if (!enabled && !platformSenderEnabled) return;
         require("GOOGLE_OAUTH_CLIENT_ID", clientId);
         require("GOOGLE_OAUTH_CLIENT_SECRET", clientSecret);
         require("GOOGLE_OAUTH_REDIRECT_URI", redirectUri);
         require("GOOGLE_TOKEN_ENCRYPTION_KEY", tokenEncryptionKey);
+        if (platformSenderEnabled) {
+            require("GOOGLE_PLATFORM_SENDER_ADDRESS", platformSenderAddress);
+            if (!PLATFORM_SENDER_ADDRESS.equalsIgnoreCase(platformSenderAddress.trim())) {
+                throw new IllegalStateException("GOOGLE_PLATFORM_SENDER_ADDRESS must be " + PLATFORM_SENDER_ADDRESS
+                        + " when GOOGLE_PLATFORM_SENDER_ENABLED is true");
+            }
+        }
         String redirectProblem = redirectUriProblem(redirectUri);
         if (redirectProblem != null) {
             throw new IllegalStateException("GOOGLE_OAUTH_REDIRECT_URI is invalid: " + redirectProblem
@@ -162,7 +177,7 @@ public class GoogleOAuthProperties {
 
     private static void require(String environmentVariable, String value) {
         if (value == null || value.isBlank()) {
-            throw new IllegalStateException(environmentVariable + " must be configured when GOOGLE_EMAIL_ENABLED is true");
+            throw new IllegalStateException(environmentVariable + " must be configured when Google email is enabled");
         }
     }
 }

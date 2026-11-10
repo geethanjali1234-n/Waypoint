@@ -53,6 +53,9 @@ waypoint:
     # otherwise). The client secret and the token encryption key (Base64 of 32 random bytes) belong in secret
     # storage only. SMTP stays the fallback for every message.
     enabled: ${GOOGLE_EMAIL_ENABLED:false}
+    # Dedicated WayPoint transactional sender. This is independent of organization connections.
+    platform-sender-enabled: ${GOOGLE_PLATFORM_SENDER_ENABLED:false}
+    platform-sender-address: ${GOOGLE_PLATFORM_SENDER_ADDRESS:}
     client-id: ${GOOGLE_OAUTH_CLIENT_ID:}
     client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET:}
     redirect-uri: ${GOOGLE_OAUTH_REDIRECT_URI:}

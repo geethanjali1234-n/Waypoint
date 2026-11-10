@@ -34,6 +34,8 @@ public class GoogleOAuthState {
 
     private String organizationId;
     private String userId;
+    /** True only for the singleton platform sender authorization; organization flow remains unchanged. */
+    private boolean platformSender;
 
     @ToString.Exclude
     private String codeVerifierCiphertext;
