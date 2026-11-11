@@ -6,6 +6,7 @@ const timesheetApi = {
   get: (timesheetId) => apiClient.get(`/myhr/timesheets/${timesheetId}`),
   create: (payload) => apiClient.post('/myhr/timesheets', payload),
   update: (timesheetId, payload) => apiClient.put(`/myhr/timesheets/${timesheetId}`, payload),
+  deleteDraft: (timesheetId) => apiClient.delete(`/myhr/timesheets/${timesheetId}`),
   downloadPdf: (timesheetId) => apiClient.get(`/myhr/timesheets/${timesheetId}/pdf`, { responseType: 'blob' }),
   getSettings: () => apiClient.get('/myhr/timesheets/settings'),
   getPeriod: (start, end) => apiClient.get('/myhr/timesheets/period', { params: { start, end } }),

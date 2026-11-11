@@ -1112,6 +1112,20 @@ export default function TimesheetsPage({ role }) {
     goToMode('enter');
   }
 
+  async function deleteDraft(record) {
+    if (!record?.id || record.status !== 'DRAFT') return;
+    const periodLabel = formatPeriod(record.periodStartDate, record.periodEndDate);
+    if (!window.confirm(`Delete the saved timesheet draft for ${periodLabel}? This cannot be undone.`)) return;
+    try {
+      await timesheetApi.deleteDraft(record.id);
+      setRecords((current) => current.filter((item) => item.id !== record.id));
+      setOperationError('');
+      setOperationMessage('Draft deleted.');
+    } catch (error) {
+      setOperationError(errorMessage(error));
+    }
+  }
+
   function beginResubmitRejected(record) {
     setQuickFillRequested(false);
     setSelectedDraftId(null);
@@ -1804,7 +1818,7 @@ entries: entriesToSave.map((entry) => ({ workDate: entry.workDate, hoursWorked: 
     {dataRouter && <DraftNavigationGuard shouldBlock={() => editingEntry && entryFingerprint !== entryBaseline && !allowEntryNavigation.current}
       saving={saving} canSave={!approvedCorrectionId && !uploadingDocument}
       error={operationError} onSave={() => persistRange('DRAFT', { navigateAfterSave: false })} />}
-    {activeView === 'mine' && ownMode === 'landing' && <SavedTimesheetDrafts drafts={ownRecords.filter(record => record.status === 'DRAFT')} onResume={resumeDraft} />}
+    {activeView === 'mine' && ownMode === 'landing' && <SavedTimesheetDrafts drafts={ownRecords.filter(record => record.status === 'DRAFT')} onResume={resumeDraft} onDelete={deleteDraft} />}
     <Modal isOpen={leaveEntryOpen} title="Save your timesheet progress?" onClose={() => !saving && setLeaveEntryOpen(false)} footer={<>
       <Button variant="secondary" disabled={saving} onClick={() => setLeaveEntryOpen(false)}>Keep editing</Button>
       <Button variant="secondary" disabled={saving} onClick={leaveEntry}>Leave without saving</Button>
@@ -1867,13 +1881,16 @@ export function DraftNavigationGuard({ shouldBlock, saving, canSave, error, onSa
   </Modal>;
 }
 
-export function SavedTimesheetDrafts({ drafts, onResume }) {
+export function SavedTimesheetDrafts({ drafts, onResume, onDelete }) {
   return <section className="timesheets__saved-drafts" aria-label="Saved drafts">
     <h2>Saved drafts</h2>
     <p>Continue where you left off. Drafts are not sent for approval.</p>
     {!drafts.length ? <p>No saved drafts yet.</p> : <ul>{drafts.map(draft => <li key={draft.id}>
       <div><strong>{formatPeriod(draft.periodStartDate, draft.periodEndDate)}</strong><span>{formatHours(draft.totalHours)} hours · {(draft.supportingDocuments || []).length} document(s)</span></div>
-      <Button variant="secondary" onClick={() => onResume(draft)} aria-label={`Resume draft ${formatPeriod(draft.periodStartDate, draft.periodEndDate)}`}>Resume draft</Button>
+      <div className="timesheets__saved-draft-actions">
+        <Button variant="secondary" onClick={() => onResume(draft)} aria-label={`Resume draft ${formatPeriod(draft.periodStartDate, draft.periodEndDate)}`}>Resume draft</Button>
+        <Button variant="secondary" onClick={() => onDelete?.(draft)} aria-label={`Delete draft ${formatPeriod(draft.periodStartDate, draft.periodEndDate)}`}>Delete</Button>
+      </div>
     </li>)}</ul>}
   </section>;
 }

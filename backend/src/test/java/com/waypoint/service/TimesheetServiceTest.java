@@ -55,6 +55,33 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TimesheetServiceTest {
+    @Test
+    void employeeCanDeleteOwnSavedDraft() {
+        var actor = actor("employee-1", UserRole.EMPLOYEE);
+        var draft = Timesheet.builder().id("draft-1").userId(actor.userId())
+                .organizationId(actor.organizationId()).status(TimesheetStatus.DRAFT).build();
+        when(authenticatedUserService.require(eq(actor.userId()), anySet(), eq(false))).thenReturn(actor);
+        when(timesheetRepository.findById("draft-1")).thenReturn(Optional.of(draft));
+
+        service.deleteDraft(actor.userId(), "draft-1");
+
+        verify(timesheetRepository).delete(draft);
+    }
+
+    @Test
+    void cannotDeleteSubmittedTimesheetAsADraft() {
+        var actor = actor("employee-1", UserRole.EMPLOYEE);
+        var submitted = Timesheet.builder().id("submitted-1").userId(actor.userId())
+                .organizationId(actor.organizationId()).status(TimesheetStatus.SUBMITTED).build();
+        when(authenticatedUserService.require(eq(actor.userId()), anySet(), eq(false))).thenReturn(actor);
+        when(timesheetRepository.findById("submitted-1")).thenReturn(Optional.of(submitted));
+
+        assertThatThrownBy(() -> service.deleteDraft(actor.userId(), "submitted-1"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Only saved drafts can be deleted");
+        verify(timesheetRepository, never()).delete(any(Timesheet.class));
+    }
+
     @BeforeEach
     void supportingDocumentFixture() {
         org.mockito.Mockito.lenient().when(identityService.validateStored(any()))

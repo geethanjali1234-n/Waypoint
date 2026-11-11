@@ -115,6 +115,18 @@ public class TimesheetService {
         return save(actorUserId, timesheetId, request);
     }
 
+    public void deleteDraft(String actorUserId, String timesheetId) {
+        MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor = requireActor(actorUserId);
+        Timesheet timesheet = findTimesheet(timesheetId);
+        if (!actor.userId().equals(timesheet.getUserId())) {
+            throw new ResourceNotFoundException("Timesheet not found");
+        }
+        if (timesheet.getStatus() != TimesheetStatus.DRAFT) {
+            throw new BusinessException("Only saved drafts can be deleted");
+        }
+        timesheetRepository.delete(timesheet);
+    }
+
     public TimesheetResponse review(
             String actorUserId,
             String timesheetId,

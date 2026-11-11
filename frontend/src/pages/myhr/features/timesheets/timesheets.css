@@ -7831,6 +7831,7 @@ button.timesheets__history-cell:focus-visible {
 .timesheets__saved-drafts li,.timesheets__draft-save { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:16px 0; border-top:1px solid var(--wp-color-border); }
 .timesheets__saved-drafts li > div,.timesheets__draft-save > div { flex:1 1 220px; min-width:0; }
 .timesheets__saved-drafts li span { display:block; margin-top:4px; color:var(--wp-color-text-muted); font-size:.8125rem; }
+.timesheets__saved-draft-actions { display:flex; flex-wrap:wrap; gap:8px; }
 .timesheets__draft-save p { margin:4px 0 0; color:var(--wp-color-text-muted); font-size:.8125rem; line-height:1.5; }
 @media(max-width:600px) { .timesheets__saved-drafts { padding:16px; } .timesheets__draft-save .wp-button { flex:1 1 140px; } }
 .timesheets__document-identity { margin:6px 0 0; font-size:.75rem; line-height:1.5; color:var(--wp-color-text-muted); }
