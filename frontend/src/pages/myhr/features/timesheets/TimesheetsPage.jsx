@@ -1414,7 +1414,10 @@ export default function TimesheetsPage({ role }) {
     } else setRangeHours(nextHours);
     setRangeDescriptions(nextDescriptions);
     setRangeEntryTypes(nextEntryTypes);
-    if (!uploaded?.length && targetRecord?.supportingDocuments?.length) {
+    // A fresh entry, including One-Tap Fill, must not inherit the attachment
+    // from an overlapping submitted timesheet. Keep documents only for an
+    // explicit correction flow where the user is editing that record.
+    if (isReedit && !uploaded?.length && targetRecord?.supportingDocuments?.length) {
       setSupportingDocuments(targetRecord.supportingDocuments);
     }
     if (isReedit) {
@@ -1607,7 +1610,9 @@ entries: entriesToSave.map((entry) => ({ workDate: entry.workDate, hoursWorked: 
     const existingId = updateInPlace ? existing.id : null;
     setSaving(true);
     setOperationError('');
-    setOperationMessage('');
+    setOperationMessage(status === 'SUBMITTED'
+      ? 'Submitting and verifying your supporting document…'
+      : '');
     try {
       const response = existingId ? await timesheetApi.update(existingId, payload) : await timesheetApi.create(payload);
       const saved = response.data?.data;
