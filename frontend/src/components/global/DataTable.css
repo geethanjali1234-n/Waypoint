@@ -1,13 +1,14 @@
 .wp-data-table { border: 1px solid var(--wp-color-border); border-radius: var(--wp-radius-card); background: var(--wp-color-surface); color: var(--wp-color-text); min-width: 0; overflow: hidden; font-family: var(--wp-font-sans); }
 .wp-data-table__scroll { overflow: auto; max-height: 65dvh; overscroll-behavior: contain; }
 .wp-data-table table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--wp-font-size-md); }
-.wp-data-table th, .wp-data-table td { padding: 8px 16px; border-bottom: 1px solid var(--wp-color-border); vertical-align: middle; }
-.wp-data-table th { position: sticky; top: 0; background: var(--wp-color-surface); font-weight: 600; text-align: left; z-index: 1; }
+.wp-data-table th, .wp-data-table td { padding: 14px 16px; border-bottom: 1px solid var(--wp-color-border); vertical-align: middle; }
+.wp-data-table th { position: sticky; top: 0; background: var(--wp-color-surface); color:var(--wp-color-text-muted); font-size:.75rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; text-align: left; z-index: 1; }
 .wp-data-table tbody tr:hover { background: var(--wp-color-hover); }
 .wp-data-table tbody tr.is-openable { cursor: pointer; }
 .wp-data-table tbody tr.is-openable:focus-visible { outline: 2px solid var(--wp-color-primary); outline-offset: -2px; }
 .wp-data-table tr.is-selected { background: var(--wp-color-primary-soft); }
-.wp-data-table button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; min-width: 44px; background: transparent; border: 0; color: var(--wp-color-primary); font: inherit; cursor: pointer; border-radius: var(--wp-radius-control); }
+.wp-data-table button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; min-width: 72px; padding:0 12px; background: var(--wp-color-surface); border: 1px solid var(--wp-color-border); color: var(--wp-color-primary); font:600 .875rem/1 var(--wp-font-sans); cursor: pointer; border-radius: var(--wp-radius-control); }
+.wp-data-table button:hover:not(:disabled) { background:var(--wp-color-primary-soft); border-color:var(--wp-color-primary); }
 .wp-data-table button:disabled { opacity: .5; cursor: default; }
 .wp-data-table footer, .wp-data-table footer nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .wp-data-table footer { padding: 8px 16px; color: var(--wp-color-text-muted); font-size: var(--wp-font-size-sm); }

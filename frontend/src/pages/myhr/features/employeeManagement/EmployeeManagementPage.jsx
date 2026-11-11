@@ -606,7 +606,7 @@ export default function EmployeeManagementPage({ role }) {
             </div>
           ) : (
             <DataTable label="Employees" mobileMode="cards" columns={[
-              { key: 'person', header: 'Person', render: (value, person) => <div className="wp-data-table__person"><span className="wp-data-table__avatar" aria-hidden="true">{initials(person)}</span><span><button type="button" onClick={() => openEmployee(person.userId)}>{value.name || value.id}</button><small>{value.id}</small></span>{person.employeeId && <button type="button" aria-label={`Copy ID ${person.employeeId}`} onClick={(event) => copyToClipboard(person.employeeId, person.employeeId, event)}><StrokeIcon name="copy" size={20} /></button>}</div> },
+              { key: 'person', header: 'Person', render: (value, person) => <div className="wp-data-table__person"><span><button type="button" className="employee-management__person-name" onClick={() => openEmployee(person.userId)}>{value.name || value.id}</button><small>{value.id}</small></span></div> },
               { key: 'personType', header: 'Type', render: (_, person) => personLabel(person.personType) },
               { key: 'designation', header: 'Designation' },
               { key: 'reportingManagerName', header: 'Manager' },

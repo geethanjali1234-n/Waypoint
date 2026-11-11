@@ -21,6 +21,7 @@
 
 .profile-changes__feedback{background:rgba(255, 184, 0, 0.12);border-left:4px solid #ffb800;border-radius:0 8px 8px 0;padding:12px 14px;color:#f8fafc}
 .profile-changes__assigned,.profile-changes__history{background:rgba(8, 24, 18, 0.88);border:1px solid rgba(0, 255, 135, 0.2);border-radius:16px;padding:22px;box-shadow:0 4px 20px rgba(0,0,0,0.4);backdrop-filter:blur(16px)}
+.profile-changes__assigned{display:flex;flex-direction:column;max-height:calc(100dvh - 150px);min-height:0}
 .profile-changes__history h2{color:#f8fafc;margin:0 0 4px;font-weight:750}
 .profile-changes__history-subtitle{color:#cbd5e1;margin:0 0 16px}
 
@@ -54,9 +55,11 @@
 .profile-changes__clear-btn{align-self:flex-end;min-height:42px;white-space:nowrap}
 .profile-changes__search-field{min-width:0}
 .profile-changes__search-field .wp-form-label{margin-bottom:.4rem;color:#cbd5e1;font-weight:700;text-transform:uppercase;font-size:0.75rem}
-.profile-changes__list{display:grid;gap:8px}
+.profile-changes__list{display:grid;flex:1;gap:8px;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:8px}
 
-.profile-changes__request{border-top:1px solid rgba(0, 255, 135, 0.15);display:grid;gap:12px;padding:16px 0}
+.profile-changes__request{display:grid;gap:12px;padding:16px 0}
+.profile-changes__request + .profile-changes__request{border-top:1px solid rgba(0, 255, 135, 0.15)}
+.profile-changes__list .profile-changes__request:first-child{padding-top:0}
 .profile-changes__request-top{align-items:center;display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between}
 .profile-changes__request-top strong{color:#00ff87;font-size:1.05rem;font-weight:750;overflow-wrap:anywhere}
 .profile-changes__request-grid{align-items:center;background:rgba(8, 24, 18, 0.85);border:1px solid rgba(0, 255, 135, 0.15);border-radius:12px;display:grid;gap:16px;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) auto;padding:14px 18px}

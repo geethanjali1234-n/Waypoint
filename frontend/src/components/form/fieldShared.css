@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   margin-bottom: var(--wp-space-lg);
+  min-width: 0;
 }
 
 .wp-field__control {
@@ -15,8 +16,11 @@
   background-color: var(--wp-color-surface);
   border: 1px solid var(--wp-color-border);
   border-radius: var(--wp-radius-control);
-  padding: var(--wp-space-md) var(--wp-space-md);
-  transition: border-color var(--wp-transition-fast), background-color var(--wp-transition-fast);
+  min-height: 44px;
+  padding: 10px 12px;
+  line-height: 1.4;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+  transition: border-color var(--wp-transition-fast), background-color var(--wp-transition-fast), box-shadow var(--wp-transition-fast);
   width: 100%;
   box-sizing: border-box;
 }
@@ -25,7 +29,7 @@
   outline: 2px solid var(--wp-color-primary);
   outline-offset: 2px;
   border-color: var(--wp-color-primary);
-  box-shadow: none;
+  box-shadow: 0 0 0 3px var(--wp-color-primary-soft);
   background-color: var(--wp-color-surface);
 }
 
@@ -38,6 +42,9 @@
   background-color: var(--wp-color-neutral-bg);
   cursor: not-allowed;
 }
+
+select.wp-field__control { appearance: auto; cursor: pointer; }
+textarea.wp-field__control { min-height: 112px; resize: vertical; }
 
 .wp-field__control--error {
   border-color: var(--wp-color-error);
