@@ -1048,7 +1048,7 @@ describe('TimesheetsPage', () => {
     expect(await screen.findByText('Draft saved.')).toBeInTheDocument();
   });
 
-  it('View Hours does not sum hours from duplicate/re-entered records for the same day', async () => {
+  it('View Hours excludes saved drafts instead of showing them as recorded hours', async () => {
     const user = userEvent.setup();
     timesheetApi.list.mockResolvedValue({
       data: {
@@ -1075,8 +1075,8 @@ describe('TimesheetsPage', () => {
 
     await user.click(await screen.findByRole('button', { name: 'View Hours' }));
     expect(screen.getByRole('heading', { name: 'Hours overview' })).toBeInTheDocument();
-    // Replaced 6.00h should be shown, NOT 14.00h (8 + 6)
-    expect(screen.getAllByText('6.00h').length).toBeGreaterThan(0);
+    expect(screen.getByText('0.00h')).toBeInTheDocument();
+    expect(screen.queryByText('6.00h')).not.toBeInTheDocument();
     expect(screen.queryByText('14.00h')).not.toBeInTheDocument();
   });
 

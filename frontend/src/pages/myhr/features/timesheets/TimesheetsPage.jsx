@@ -1891,7 +1891,9 @@ function HoursWorkspace({ loading, records, today }) {
   const cells = useMemo(() => monthCells(selectedMonth), [selectedMonth]);
 
   const consolidated = useMemo(
-    () => consolidatePeriodEntries(records, monthStart, monthEnd, true),
+    // View Hours is the employee's recorded-hours ledger. In-progress drafts
+    // belong in Saved Drafts and must not look like submitted work here.
+    () => consolidatePeriodEntries(records, monthStart, monthEnd),
     [records, monthStart, monthEnd],
   );
 
