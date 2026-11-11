@@ -1,6 +1,6 @@
 
 .employee-management { color:var(--wp-color-text); }
-.employee-management__controls-row { display:flex; flex-wrap:wrap; align-items:center; gap:16px; margin-bottom:24px; min-width:0; }
+.employee-management__controls-row { display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px; margin-bottom:24px; min-width:0; }
 .employee-management__search { display:grid; gap:8px; flex:1 1 280px; color:var(--wp-color-text-muted); font-size:.875rem; }
 .employee-management__search .wp-search-input { margin:0; }
 .employee-management__results-actions,.employee-management__view-toggle { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }

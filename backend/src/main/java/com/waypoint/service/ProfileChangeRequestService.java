@@ -212,7 +212,9 @@ public class ProfileChangeRequestService {
                 authenticatedUserService.require(actorUserId, REVIEWER_ROLES, false);
         ProfileChangeRequest request = loadPending(requestId, actor.organizationId());
         requireAssignedReviewer(actor, request);
-        finalizeDecision(request, ProfileChangeStatus.REJECTED, actor.userId(), processingComment);
+        String reason = normalizeOptional(processingComment, "Rejection reason");
+        if (reason == null || reason.isBlank()) throw new BusinessException("Rejection reason is required");
+        finalizeDecision(request, ProfileChangeStatus.REJECTED, actor.userId(), reason);
         record(actor, AuditActionType.PROFILE_CHANGE_REJECTED, request, "Profile change request rejected");
         notifyProfileChangeRejected(request);
         return request;

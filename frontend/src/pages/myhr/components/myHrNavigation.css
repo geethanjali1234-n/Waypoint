@@ -1,5 +1,5 @@
 /* Role-aware navigation; all roles have ten or fewer links. */
-.myhr-navigation { position:sticky; top:104px; width:236px; height:auto; overflow:visible; align-self:start; padding:0 16px 16px 0; border-right:1px solid var(--wp-color-border); background:var(--wp-color-bg); }
+.myhr-navigation { position:sticky; top:104px; width:236px; max-height:calc(100dvh - 120px); overflow-y:auto; overscroll-behavior:contain; align-self:start; padding:0 16px 16px 0; border-right:1px solid var(--wp-color-border); background:var(--wp-color-bg); }
 .myhr-navigation__toggle { display:grid; place-items:center; width:44px; height:44px; margin-left:auto; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-surface); color:var(--wp-color-text-muted); cursor:pointer; }
 .myhr-navigation__brand,.myhr-navigation__identity { display:none; }
 .myhr-navigation nav { display:grid; gap:4px; }

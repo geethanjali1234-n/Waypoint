@@ -602,9 +602,9 @@ export default function ProfileChangeRequestsPage({ role, defaultHrView = null }
     <Modal className="profile-changes__modal" isOpen={Boolean(selected)} title={isReviewingOther ? 'Review Profile Change Request' : 'Profile Change Request Details'} onClose={closeReviewModal} footer={reviewFooter()}>
       {reviewBody()}
     </Modal>
-    <Modal isOpen={Boolean(decision)} title={decision === 'APPROVED' ? 'Apply Profile Change?' : 'Reject Profile Change?'} onClose={closeDecisionModal} footer={<><Button type="button" variant="secondary" onClick={closeDecisionModal} disabled={decisionState === 'submitting'}>Cancel</Button><Button type="button" variant="primary" onClick={confirmDecision} disabled={!isReviewingOther || decisionState === 'submitting'}>{decisionState === 'submitting' ? 'Processing…' : `Confirm ${decision === 'APPROVED' ? 'Change' : 'Rejection'}`}</Button></>}>
+    <Modal isOpen={Boolean(decision)} title={decision === 'APPROVED' ? 'Apply Profile Change?' : 'Reject Profile Change?'} onClose={closeDecisionModal} footer={<><Button type="button" variant="secondary" onClick={closeDecisionModal} disabled={decisionState === 'submitting'}>Cancel</Button><Button type="button" variant="primary" onClick={confirmDecision} disabled={!isReviewingOther || decisionState === 'submitting' || (decision === 'REJECTED' && !processingComment.trim())}>{decisionState === 'submitting' ? 'Processing…' : `Confirm ${decision === 'APPROVED' ? 'Change' : 'Rejection'}`}</Button></>}>
       <p>{decision === 'APPROVED' ? 'The profile will be updated and the backend status set to APPROVED.' : 'The profile will remain unchanged and the backend status set to REJECTED.'}</p>
-      <TextArea name="processingComment" label="Processing Comment (optional)" value={processingComment} onChange={(event) => setProcessingComment(event.target.value)} disabled={decisionState === 'submitting'} />
+      <TextArea name="processingComment" label={decision === 'REJECTED' ? 'Reason for rejection' : 'Processing comment (optional)'} required={decision === 'REJECTED'} value={processingComment} onChange={(event) => setProcessingComment(event.target.value)} disabled={decisionState === 'submitting'} />
       {decisionError && <p className="profile-changes__feedback" role="alert">{decisionError}</p>}
     </Modal>
   </MyHrFeaturePage>;
