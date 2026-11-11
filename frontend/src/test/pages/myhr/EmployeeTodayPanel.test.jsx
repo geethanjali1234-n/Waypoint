@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import EmployeeTodayPanel from '../../../pages/myhr/components/EmployeeTodayPanel';
 import timesheetApi from '../../../api/timesheetApi';
@@ -21,15 +21,15 @@ describe('Employee daily overview', () => {
     myHrDocumentRequestApi.list.mockResolvedValue({ data: { data: { items: [{ id: 'doc-request', requestTitle: 'Training plan', documentType: 'I983', originalDocumentId: 'original', status: 'SUBMITTED' }] } } });
   });
   afterEach(() => vi.useRealTimers());
-  it('highlights only today and preserves the standard-week handoff without saving hours', async () => {
+  it('highlights only today and keeps one clear entry action without saving hours', async () => {
     timesheetApi.list.mockResolvedValue({ data: { data: [] } });
     render(<MemoryRouter><EmployeeTodayPanel basePath="/myhr/employee" /><LocationState /></MemoryRouter>);
     await screen.findByText(/0 of 5 days in/);
     const week = screen.getByRole('list', { name: 'Monday to Friday progress' });
     expect(within(week).getByText('Mon, Oct 12').closest('li')).toHaveAttribute('aria-current', 'step');
     expect(week.querySelectorAll('[aria-current="step"]')).toHaveLength(1);
-    fireEvent.click(screen.getByRole('link', { name: 'Log standard week' }));
-    expect(screen.getByTestId('entry-state')).toHaveTextContent('"timesheetEntryMethod":"standard"');
+    expect(screen.getByRole('link', { name: 'Log hours' })).toHaveAttribute('href', '/myhr/employee/timesheets?mode=enter');
+    expect(screen.queryByRole('link', { name: 'Log standard week' })).not.toBeInTheDocument();
   });
   it('does not invent a weekday today marker on weekends and marks the past weekdays without hours as not logged', async () => {
     vi.setSystemTime(new Date('2026-10-17T12:00:00'));
@@ -79,6 +79,13 @@ describe('Employee daily overview', () => {
     expect(within(week).getAllByText('Hours recorded')).toHaveLength(2);
     expect(myHrDocumentRequestApi.list).toHaveBeenCalledWith({ workspace: 'mine', page: 0, size: 5 });
   });
+  it('opens submitted timesheet history for reviewing hours and attachments', async () => {
+    timesheetApi.list.mockResolvedValue({ data: { data: [] } });
+    render(<MemoryRouter><EmployeeTodayPanel basePath="/myhr/employee" /></MemoryRouter>);
+    expect(await screen.findByRole('link', { name: 'Review submitted hours and attachments' }))
+      .toHaveAttribute('href', '/myhr/employee/timesheets?mode=history');
+  });
+
   it('shows unavailable states instead of fabricated progress when requests fail', async () => {
     timesheetApi.list.mockRejectedValue(new Error('offline'));
     myHrProfileChangeApi.listMine.mockRejectedValue(new Error('offline'));

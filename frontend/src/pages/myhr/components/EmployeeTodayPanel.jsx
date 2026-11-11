@@ -75,8 +75,7 @@ export default function EmployeeTodayPanel({ name, basePath }) {
       {data.timesheets?.value ? <RouteLine steps={weekSteps} label="Monday to Friday progress" /> : <p role="status">{message('timesheets', '')}</p>}
       <div className="employee-today__actions">
         <Link className="employee-today__primary" to={basePath + '/timesheets?mode=enter'}>Log hours</Link>
-        <Link to={basePath + '/timesheets?mode=enter'} state={{ timesheetEntryMethod: 'standard' }}>Log standard week</Link>
-        <Link className="employee-today__text-link" to={basePath + '/timesheets'}>Review hours and attachments</Link>
+        <Link className="employee-today__text-link" to={basePath + '/timesheets?mode=history'}>Review submitted hours and attachments</Link>
       </div>
     </section>
     <div className="employee-today__requests">
