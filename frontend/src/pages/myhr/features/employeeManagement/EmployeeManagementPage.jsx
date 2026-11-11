@@ -606,7 +606,7 @@ export default function EmployeeManagementPage({ role }) {
             </div>
           ) : (
             <DataTable label="Employees" mobileMode="cards" columns={[
-              { key: 'person', header: 'Person', render: (value) => <div className="wp-data-table__person"><span><strong>{value.name || value.id}</strong><small>{value.id}</small></span></div> },
+              { key: 'person', header: 'Person', render: (value, person) => <div className="wp-data-table__person"><span><button type="button" className="employee-management__person-name" onClick={() => openEmployee(person.userId)}>{value.name || value.id}</button><small>{value.id}</small></span></div> },
               { key: 'personType', header: 'Type', render: (_, person) => personLabel(person.personType) },
               { key: 'designation', header: 'Designation' },
               { key: 'reportingManagerName', header: 'Manager' },

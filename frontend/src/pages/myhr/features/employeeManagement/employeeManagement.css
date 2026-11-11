@@ -3,6 +3,8 @@
 .employee-management__controls-row { display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px; margin-bottom:24px; min-width:0; }
 .employee-management__search { display:grid; gap:8px; flex:1 1 280px; color:var(--wp-color-text-muted); font-size:.875rem; }
 .employee-management__search .wp-search-input { margin:0; }
+.employee-management__person-name { min-width:0 !important; min-height:0 !important; padding:0 !important; border:0 !important; background:transparent !important; color:var(--wp-color-text) !important; font:600 1rem/1.35 var(--wp-font-sans) !important; text-align:left; }
+.employee-management__person-name:hover:not(:disabled) { color:var(--wp-color-primary) !important; text-decoration:underline; }
 .employee-management__results-actions,.employee-management__view-toggle { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
 .employee-management__view-toggle-btn,.employee-management__filter-menu summary { display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:8px 16px; background:var(--wp-color-surface); color:var(--wp-color-text); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); cursor:pointer; font:500 .875rem var(--wp-font-sans); }
 .employee-management__view-toggle-btn.is-active { background:var(--wp-color-primary); color:var(--wp-color-primary-contrast); border-color:var(--wp-color-primary); }
