@@ -48,6 +48,21 @@ export default function EmployeeTodayPanel({ name, basePath }) {
     recordedDays.forEach((recorded, day) => { if (!days.has(day)) days.set(day, { recorded, status: record.status }); });
   });
   const logged = weekdays.filter((day) => days.get(day.key)?.recorded).length;
+  const timesheets = data.timesheets?.value || [];
+  const drafts = timesheets.filter((record) => record.status === 'DRAFT');
+  const submitted = timesheets.filter((record) => record.status === 'SUBMITTED');
+  const draftHours = drafts.reduce((sum, record) => sum + (record.entries || []).reduce((total, entry) => total + Number(entry.hoursWorked || 0), 0), 0);
+  const submittedHours = submitted.reduce((sum, record) => sum + Number(record.totalHours || 0), 0);
+  const pastWeekdaysMissing = weekdays.filter((day) => day.key < dateKey(today) && !days.get(day.key)?.recorded).length;
+  const timesheetStatus = drafts.length
+    ? { tone: 'warning', title: 'Draft timesheet needs attention', body: `${draftHours.toFixed(2)} hours are saved in a draft and are not sent for approval.`, action: 'Resume or delete draft', href: basePath + '/timesheets' }
+    : submitted.length
+      ? { tone: 'pending', title: 'Timesheet awaiting approval', body: `${submittedHours.toFixed(2)} submitted hours are waiting for your manager or HR to review.`, action: 'View submitted hours', href: basePath + '/timesheets?mode=history' }
+      : pastWeekdaysMissing > 0
+        ? { tone: 'warning', title: 'Timesheet needs entries', body: `${pastWeekdaysMissing} past workday${pastWeekdaysMissing === 1 ? '' : 's'} still need hours or a leave entry.`, action: 'Log missing hours', href: basePath + '/timesheets?mode=enter' }
+        : data.timesheets?.value
+          ? { tone: 'success', title: 'Submitted hours are up to date', body: 'Your current submitted hours are recorded. Approval status will update here after review.', action: 'Review hours', href: basePath + '/timesheets?mode=history' }
+          : null;
   const profile = data.profiles?.value?.find((request) => request.status === 'PENDING') || data.profiles?.value?.[0];
   const document = data.documents?.value?.find((request) => dashboardDocumentProgress(request)?.needsAction) || data.documents?.value?.[0];
   const progress = dashboardDocumentProgress(document);
@@ -73,6 +88,10 @@ export default function EmployeeTodayPanel({ name, basePath }) {
       <p className="employee-today__eyebrow">Time &amp; pay</p>
       <h2>{data.timesheets?.value ? "You're " + logged + ' of 5 days in.' : 'Your timesheet this week'}</h2>
       {data.timesheets?.value ? <RouteLine steps={weekSteps} label="Monday to Friday progress" /> : <p role="status">{message('timesheets', '')}</p>}
+      {timesheetStatus && <div className={`employee-today__timesheet-status employee-today__timesheet-status--${timesheetStatus.tone}`} role="status">
+        <div><strong>{timesheetStatus.title}</strong><span>{timesheetStatus.body}</span></div>
+        <Link to={timesheetStatus.href}>{timesheetStatus.action}</Link>
+      </div>}
       <div className="employee-today__actions">
         <Link className="employee-today__primary" to={basePath + '/timesheets?mode=enter'}>Log hours</Link>
         <Link className="employee-today__text-link" to={basePath + '/timesheets?mode=history'}>Review submitted hours and attachments</Link>
