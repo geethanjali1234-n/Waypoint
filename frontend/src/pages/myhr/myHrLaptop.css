@@ -20,11 +20,8 @@
   .wp-workspace.myhr-shell:has(.wp-floating-assistant, .wp-chatbot-window) .wp-workspace__body {
     padding-right: max(76px, calc(68px + env(safe-area-inset-right)));
   }
-  .myhr-shell .myhr-navigation { top: 80px; padding-right: 12px; }
-  .myhr-shell .myhr-navigation:not(.is-collapsed),
-  .myhr-shell .myhr-navigation.is-collapsed.is-peeking { width: 216px; }
-  .myhr-shell .myhr-navigation nav { gap: 2px; }
-  .myhr-shell .myhr-navigation__group { padding-top: 12px; }
+  /* Sticky offset only: sidebar size and spacing come from myHrNavigation.css on every page. */
+  .myhr-shell .myhr-navigation { top: 80px; }
 
   :root .myhr-shell #workspace-content .myhr-feature.time-pay-page {
     --time-pay-inset: 20px;

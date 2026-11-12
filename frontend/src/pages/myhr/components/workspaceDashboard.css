@@ -61,9 +61,6 @@
 .workspace-dashboard__activity-more summary h2 { margin:0; }
 .workspace-dashboard__activity-more summary span { color:var(--wp-color-primary); white-space:nowrap; }
 .workspace-dashboard__activity-more[open] + .workspace-dashboard__latest-event { display:none; }
-@media(min-width:1001px) {
-  .wp-workspace:has(.workspace-dashboard) .myhr-navigation__group { padding-top:8px; }
-}
 
 @media(min-width:1001px) {
   .wp-workspace__main:has(> .workspace-dashboard) { padding-bottom:0; }
@@ -72,9 +69,6 @@
   .workspace-dashboard__activity { padding:12px; }
   .workspace-dashboard__activity-more summary { min-height:32px; }
   .workspace-dashboard__coming-up a { min-height:36px; }
-  .wp-workspace:has(.workspace-dashboard) .myhr-navigation nav { gap:0; }
-  .wp-workspace:has(.workspace-dashboard) .myhr-navigation nav a { min-height:40px; padding-block:6px; }
-  .wp-workspace:has(.workspace-dashboard) .myhr-navigation__group { padding-top:4px; padding-bottom:2px; line-height:1.2; }
 }
 
 @media(min-width:1001px) {
