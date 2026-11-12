@@ -17,7 +17,7 @@ const EXPORT_COLUMNS = [
   { key: 'employeeId', header: 'Employee ID' },
   { key: 'employee', header: 'Employee Name' },
   { key: 'period', header: 'Required Period' },
-  { key: 'workedHours', header: 'Total Hours' },
+  { key: 'approvedHours', header: 'Approved Hours' },
   { key: 'readiness', header: 'Readiness' },
 ];
 
@@ -347,7 +347,7 @@ export function PayrollReadinessWorkspace() {
   function payrollReadinessExportValue(column, row) {
     if (column.key === 'employee') return row.employeeName || 'Unnamed employee';
     if (column.key === 'period') return formatPeriod(row.requiredPeriodStart, row.requiredPeriodEnd);
-    if (column.key === 'workedHours') {
+    if (column.key === 'approvedHours') {
       return row[column.key] == null ? '' : Number(Number(row[column.key]).toFixed(2));
     }
     if (column.key === 'readiness') return humanize(row.readinessState);

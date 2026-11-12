@@ -226,14 +226,13 @@ describe('PayrollReadinessPage', () => {
     expect(resolveValue(columns.find((c) => c.key === 'employee'), readyRow)).toBe('Ready Employee');
     expect(resolveValue(columns.find((c) => c.key === 'readiness'), readyRow)).toBe('Ready');
     expect(columns.map((column) => column.header)).toEqual([
-      'Employee ID', 'Employee Name', 'Required Period', 'Total Hours', 'Readiness',
+      'Employee ID', 'Employee Name', 'Required Period', 'Approved Hours', 'Readiness',
     ]);
     const value = (key, row) => resolveValue(columns.find((column) => column.key === key), row);
     expect(value('employeeId', readinessResponse.content[0])).toBe('TD001');
     expect(value('period', readinessResponse.content[0])).toBe('August 1, 2026 - August 31, 2026');
-    expect(value('workedHours', readinessResponse.content[1])).toBe(168);
-    // OT is already included in backend totals.
-    expect(value('workedHours', { ...readyRow, workedHours: 168, overtimeHours: 8 })).toBe(168);
+    expect(value('approvedHours', readinessResponse.content[1])).toBe(0);
+    expect(value('approvedHours', { ...readyRow, approvedHours: 168, workedHours: 176, overtimeHours: 8 })).toBe(168);
   });
 
   it('disables the Download button when there are no rows to export', async () => {
