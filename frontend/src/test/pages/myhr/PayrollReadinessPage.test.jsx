@@ -407,7 +407,7 @@ describe('PayrollReadinessPage', () => {
     const headers = screen.getAllByRole('columnheader');
     expect(headers[1]).toHaveTextContent('Employee Name');
     expect(within(screen.getByRole('table')).getByText('TD001')).toBeInTheDocument();
-    expect(screen.queryByText(readinessResponse.content[0].reason)).not.toBeInTheDocument();
+    expect(screen.getByText(readinessResponse.content[0].reason)).toBeInTheDocument();
     await userEvent.setup().click(screen.getAllByRole('button', { name: 'View' })[0]);
     const details = within(screen.getByRole('dialog'));
     expect(details.getByText('Leave')).toBeInTheDocument();

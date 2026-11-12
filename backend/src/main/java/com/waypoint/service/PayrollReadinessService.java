@@ -406,10 +406,18 @@ public class PayrollReadinessService {
             // weekend, by default) still contributes to the hours totals below,
             // it just isn't needed to satisfy coverage of a required date.
             if (requiredDates.contains(date)) {
-                coveredDates.add(date);
+                // A saved draft is not a payroll submission. Keep it visible as
+                // employee follow-up, but do not let it satisfy required-date
+                // coverage or make the period appear submitted.
                 switch (resolved.status()) {
-                    case APPROVED -> approvedDates.add(date);
-                    case SUBMITTED -> submittedDates.add(date);
+                    case APPROVED -> {
+                        coveredDates.add(date);
+                        approvedDates.add(date);
+                    }
+                    case SUBMITTED -> {
+                        coveredDates.add(date);
+                        submittedDates.add(date);
+                    }
                     case DRAFT -> draftDates.add(date);
                     case REJECTED -> rejectedDates.add(date);
                 }
@@ -514,25 +522,37 @@ public class PayrollReadinessService {
             return new PayrollReadinessDecision(PayrollReadinessState.MISSING_TIMESHEET,
                     "No existing timesheet record overlaps the required month.");
         }
-        if (coverage.coveredDays() == 0) {
-            return new PayrollReadinessDecision(PayrollReadinessState.INCOMPLETE_TIMESHEET,
-                    "Existing overlapping timesheet records do not contain dated entries inside the required month.");
-        }
         if (coverage.hasRejectedCoverage()) {
             return new PayrollReadinessDecision(PayrollReadinessState.CORRECTION_REQUIRED,
                     "At least one required timesheet entry is rejected and requires correction.");
         }
-        if (coverage.hasDraftCoverage() || coverage.hasRecordWithoutEntries()) {
+        if (coverage.hasDraftCoverage() && coverage.coveredDays() == 0) {
+            return new PayrollReadinessDecision(PayrollReadinessState.MISSING_TIMESHEET,
+                    "Required dates are still saved as drafts. Draft hours are excluded from payroll until submitted and approved.");
+        }
+        if (coverage.coveredDays() == 0) {
             return new PayrollReadinessDecision(PayrollReadinessState.INCOMPLETE_TIMESHEET,
-                    "At least one required timesheet record is incomplete or still a draft.");
+                    "Existing overlapping timesheet records do not contain submitted or approved dated entries inside the required month.");
         }
         if (coverage.missingDays() > 0 && coverage.hasApprovedCoverage()) {
+            if (coverage.hasDraftCoverage()) {
+                return new PayrollReadinessDecision(PayrollReadinessState.PARTIALLY_APPROVED,
+                        "Some required dates are still saved as drafts. Draft hours are excluded from payroll until submitted and approved.");
+            }
             return new PayrollReadinessDecision(PayrollReadinessState.PARTIALLY_APPROVED,
                     "Some required month dates have approved coverage, but the target month is not fully covered by existing entries.");
         }
         if (coverage.missingDays() > 0) {
+            if (coverage.hasDraftCoverage()) {
+                return new PayrollReadinessDecision(PayrollReadinessState.MISSING_TIMESHEET,
+                        "Some required dates are still saved as drafts. Draft hours are excluded from payroll until submitted and approved.");
+            }
             return new PayrollReadinessDecision(PayrollReadinessState.MISSING_TIMESHEET,
                     "The required month is not fully covered by existing dated timesheet entries.");
+        }
+        if (coverage.hasRecordWithoutEntries()) {
+            return new PayrollReadinessDecision(PayrollReadinessState.INCOMPLETE_TIMESHEET,
+                    "An overlapping timesheet has no dated entries inside the required month.");
         }
         if (coverage.hasSubmittedCoverage()) {
             return new PayrollReadinessDecision(PayrollReadinessState.AWAITING_APPROVAL,

@@ -1546,5 +1546,10 @@
 .payroll-readiness__data-table .payroll-readiness__coverage progress { width:100%; max-width:100%; }
 .payroll-readiness__data-table .payroll-readiness__row-actions { display:flex; flex-wrap:wrap; gap:4px; }
 .payroll-readiness__data-table .payroll-readiness__row-actions button { min-height:44px; min-width:0; padding:6px 8px; white-space:normal; }
+.payroll-readiness__readiness-cell { display:flex; flex-direction:column; align-items:flex-start; gap:6px; min-width:0; }
+.payroll-readiness__readiness-cell small { display:block; color:var(--wp-color-text-muted); font-size:.72rem; line-height:1.4; overflow-wrap:anywhere; }
+.payroll-readiness__readiness-cell small strong { color:var(--wp-color-text); }
+.payroll-readiness__card-issue { display:flex; flex-direction:column; gap:3px; margin-top:4px; padding:10px; border-left:3px solid var(--wp-color-warning); background:var(--wp-color-warning-bg); color:var(--wp-color-text); font-size:.8rem; line-height:1.4; }
+.payroll-readiness__card-issue strong { font-size:.75rem; }
 /* React owns Table/Cards selection. Do not turn a selected desktop table into
    CSS cards when a sidebar or browser zoom narrows the content area. */

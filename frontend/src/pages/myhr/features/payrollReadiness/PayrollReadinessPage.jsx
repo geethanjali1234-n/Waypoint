@@ -110,6 +110,13 @@ function submissionStatus(row) {
   return 'Submission incomplete';
 }
 
+function responsibilityLabel(row) {
+  if (row?.readinessState === 'READY') return 'No action required';
+  if (row?.responsibility === 'HR_ADMIN_FOLLOW_UP') return 'HR/admin action required';
+  if (row?.responsibility === 'EMPLOYEE_ACTION_REQUIRED') return 'Employee action required';
+  return 'Review required';
+}
+
 function reminderMessage(result) {
   if (!result) return '';
   if (result.sent > 0) return `${result.sent} reminder${result.sent === 1 ? '' : 's'} sent.`;
@@ -523,6 +530,10 @@ export function PayrollReadinessWorkspace() {
                     <span className="payroll-readiness__card-label">Approved / Total Hours (Incl. OT)</span>
                     <span>{formatHours(row.approvedHours)} / {formatHours(row.workedHours)}</span>
                   </div>
+                  {row.readinessState !== 'READY' && <div className="payroll-readiness__card-issue" role="status">
+                    <strong>{responsibilityLabel(row)}</strong>
+                    <span>{row.reason || 'This employee is not ready for payroll.'}</span>
+                  </div>}
                   {row.lastReminderAt && (
                     <div className="payroll-readiness__card-row payroll-readiness__card-row--reminder">
                       <span className="payroll-readiness__card-label">Last Reminder</span>
@@ -563,7 +574,10 @@ export function PayrollReadinessWorkspace() {
             if (column.key === 'coverage') return <div className="payroll-readiness__coverage"><span>{coverageLabel(row)}</span>{Number.isFinite(row.coveragePercentage) && <progress aria-label={`Timesheet coverage for ${row.employeeName}`} max="100" value={Math.max(0, Math.min(100, row.coveragePercentage))} />}</div>;
             if (column.key === 'approvedHours') return formatHours(row.approvedHours);
             if (column.key === 'totalHours') return formatHours(row.workedHours);
-            if (column.key === 'readiness') return <StatusTag status={STATUS_STATES[row.readinessState] || 'inactive'} label={humanize(row.readinessState)} />;
+            if (column.key === 'readiness') return <div className="payroll-readiness__readiness-cell">
+              <StatusTag status={STATUS_STATES[row.readinessState] || 'inactive'} label={humanize(row.readinessState)} />
+              {row.readinessState !== 'READY' && <small title={row.reason || ''}><strong>{responsibilityLabel(row)}:</strong> {row.reason || 'This employee is not ready for payroll.'}</small>}
+            </div>;
             if (column.key === 'actions') return <div className="payroll-readiness__row-actions">
               <Button type="button" variant="secondary" className="payroll-readiness__action-btn" onClick={() => setDrawerRow(row)}>View</Button>
               {canRemind(row) ? <Button type="button" variant="ghost" className="payroll-readiness__action-btn" disabled={reminderBusy === row.employeeUserId} onClick={() => handleSingleReminder(row)}>{reminderBusy === row.employeeUserId ? 'Sending...' : 'Send Reminder'}</Button> : <small>{isSelf(row) ? 'Your manager handles reminders' : 'No reminder needed'}</small>}
@@ -613,6 +627,7 @@ export function PayrollReadinessWorkspace() {
             <dt>Last Reminder</dt><dd>{drawerRow.lastReminderAt ? formatDateTime(drawerRow.lastReminderAt) : 'No reminder sent for this payroll month'}</dd>
           </dl>
           <section><h4>Issue / Reason</h4><p>{drawerRow.reason || 'No additional issue details available.'}</p></section>
+          <section><h4>Next action</h4><p><strong>{responsibilityLabel(drawerRow)}.</strong> {drawerRow.readinessState === 'READY' ? 'Approved hours may be included in payroll.' : 'Only approved hours can be included in payroll.'}</p></section>
           <section><h4>Submission monitoring</h4><p>This status tells the vendor whether the employee has submitted timesheet entries covering the required payroll month. Approval readiness remains separate and is shown in the Readiness status.</p></section>
         </div>
       </>}
