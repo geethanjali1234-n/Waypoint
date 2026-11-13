@@ -3,7 +3,7 @@
 .employee-management__controls-row { display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px; margin-bottom:24px; min-width:0; }
 .employee-management__search { display:grid; gap:8px; flex:1 1 280px; color:var(--wp-color-text-muted); font-size:.875rem; }
 .employee-management__search .wp-search-input { margin:0; }
-.employee-management__person-name { min-width:0 !important; min-height:0 !important; padding:0 !important; border:0 !important; background:transparent !important; color:var(--wp-color-text) !important; font:600 1rem/1.35 var(--wp-font-sans) !important; text-align:left; }
+.employee-management__person-name { min-width:0 !important; min-height:0 !important; padding:0 !important; border:0 !important; background:transparent !important; color:var(--wp-color-text) !important; font:600 .9375rem/1.35 var(--wp-font-sans) !important; text-align:left; }
 .employee-management__person-name:hover:not(:disabled) { color:var(--wp-color-primary) !important; text-decoration:underline; }
 .employee-management__results-actions,.employee-management__view-toggle { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
 .employee-management__view-toggle-btn,.employee-management__filter-menu summary { display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:8px 16px; background:var(--wp-color-surface); color:var(--wp-color-text); border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); cursor:pointer; font:500 .875rem var(--wp-font-sans); }
@@ -85,4 +85,27 @@
 }
 @media(max-width:480px) {
   .employee-management__card-footer .wp-button { width:100%; }
+}
+
+/* Roster table (HR and Admin share this page). Scoped here so other DataTable pages are untouched.
+   Phones (<=600px) keep the card layout from DataTable.css, so these rules start above that. */
+@media (min-width:601px) {
+  /* The existing scroll wrapper scrolls sideways instead of squeezing columns; the gutter keeps
+     the usable width the same whether or not a scrollbar is shown. */
+  .employee-management .wp-data-table__scroll { overflow-x:auto; scrollbar-gutter:stable; }
+  .employee-management .wp-data-table table { min-width:960px; table-layout:auto; }
+  .employee-management .wp-data-table :is(th,td) { white-space:nowrap; }
+  /* Person stays flexible: it takes the spare width and truncates long names with an ellipsis. */
+  .employee-management .wp-data-table__person { min-width:220px; max-width:360px; }
+  .employee-management .wp-data-table__person > span { min-width:0; max-width:100%; display:block; }
+  .employee-management .wp-data-table__person :is(.employee-management__person-name,small) { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .employee-management .wp-data-table td > button { flex-shrink:0; white-space:nowrap; }
+}
+
+/* Buttons here inherit the 18px default from Button.css; other My HR pages size theirs at 15px or smaller.
+   The detail panel renders in a portal outside .employee-management, so it is listed separately.
+   Phones (<=768px) keep their existing button styling. */
+@media (min-width:769px) {
+  .employee-management .wp-button,
+  .employee-management__panel .wp-button { font-size:.9375rem; }
 }

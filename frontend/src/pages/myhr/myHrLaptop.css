@@ -1,5 +1,6 @@
-/* Laptop density only. Phone, tablet and wide desktop layouts keep their rules. */
-@media (min-width: 1024px) and (max-width: 1600px) {
+/* Laptop density. Applies at every width from 1024px up so spacing, header height and sidebar offset
+   do not jump at an upper breakpoint (the page body is still capped at 1920px). Phone and tablet keep their rules. */
+@media (min-width: 1024px) {
   .wp-workspace.myhr-shell {
     --myhr-page-inline: 20px;
     --myhr-page-block: 16px;
@@ -60,3 +61,6 @@
   .myhr-shell .timesheets__upload-zone { margin-top: 0; gap: 8px; }
   .myhr-shell .timesheets__manual-actions { margin-top: 0; padding-top: 8px; }
 }
+
+/* Same scrollbar space on every machine (classic Windows scrollbars otherwise take ~15px). Only pages using the My HR shell. */
+:root:has(.myhr-shell) { scrollbar-gutter: stable; }
