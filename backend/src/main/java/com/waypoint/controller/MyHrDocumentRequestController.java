@@ -89,10 +89,12 @@ public class MyHrDocumentRequestController {
     @PostMapping(path = "/{requestId}/signed-response", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<DocumentRequestResponse> submitSignedResponse(HttpServletRequest request, @PathVariable String requestId,
             @RequestPart(value = "signature", required = false) MultipartFile signature,
-            @RequestPart(value = "signedDocument", required = false) MultipartFile signedDocument) throws IOException {
+            @RequestPart(value = "signedDocument", required = false) MultipartFile signedDocument,
+            @RequestParam(value = "timeZone", required = false) String timeZone) throws IOException {
         return new ApiResponse<>(true, "Signed response submitted", service.submitSignedResponse(userId(request), requestId,
                 signature == null ? null : signature.getOriginalFilename(), signature == null ? null : signature.getContentType(), signature == null ? null : signature.getBytes(),
-                signedDocument == null ? null : signedDocument.getOriginalFilename(), signedDocument == null ? null : signedDocument.getContentType(), signedDocument == null ? null : signedDocument.getBytes()));
+                signedDocument == null ? null : signedDocument.getOriginalFilename(), signedDocument == null ? null : signedDocument.getContentType(), signedDocument == null ? null : signedDocument.getBytes(),
+                timeZone));
     }
     @PostMapping("/{requestId}/reject") public ApiResponse<DocumentRequestResponse> reject(HttpServletRequest request,
             @PathVariable String requestId, @Valid @RequestBody DocumentRequestRejectRequest input) {

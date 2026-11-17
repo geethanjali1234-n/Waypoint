@@ -540,7 +540,7 @@ export default function OfferLetterPreparePage({ role }) {
         : 'This role is not eligible for benefits.'}`,
       ...standardClauses.map((clause) => `${clause.number}. ${clause.title}: ${clause.body}${clause.highlight ? ` ${clause.highlight}` : ''}`),
       `Sincerely,\n${orgName}\n${issuerName}${issuerTitle ? `\n${issuerTitle}` : ''}\nDate: ${form.issueDate ? formatDateOnly(form.issueDate) : ''}`,
-      `Employee Details and acceptance:\nI agree with the terms stated in this offer letter.\n\nName: ${form.employeeName}\nDate: ${form.issueDate ? formatDateOnly(form.issueDate) : ''}`,
+      `Employee Details and acceptance:\nI agree with the terms stated in this offer letter.\n\nName: ${form.employeeName}\nDate: `,
       `${orgName.toUpperCase()} | ${orgAddress} | ${orgPhone} | ${orgWebsite}`,
     ].join('\n\n'),
   }), [form, designationLabel, issuerName, issuerTitle, orgName, orgAddress, orgPhone, orgWebsite, rolesAndResponsibilities, standardClauses]);
@@ -758,7 +758,19 @@ export default function OfferLetterPreparePage({ role }) {
     }
     pdf.text(`Date: ${date}`, margin, signatureY + (issuerTitle ? 114 : 98));
     pdf.text(`Name: ${form.employeeName}`, rightX, signatureY + 96);
-    pdf.text(`Date: ${form.issueDate ? formatDateLong(form.issueDate) : '[Issue Date]'}`, rightX, signatureY + 112);
+    // The employee's date is the day they actually sign, so it stays blank here.
+    // Like the signature anchor above, this hidden field marks where the backend
+    // writes the signing date when the employee signs in Waypoint.
+    pdf.text('Date:', rightX, signatureY + 112);
+    const employeeSignedDateField = new pdf.AcroForm.TextField();
+    employeeSignedDateField.fieldName = 'waypoint_employee_signed_date';
+    employeeSignedDateField.x = rightX + pdf.getTextWidth('Date: ');
+    employeeSignedDateField.y = signatureY + 102;
+    employeeSignedDateField.width = 160;
+    employeeSignedDateField.height = 13;
+    employeeSignedDateField.readOnly = true;
+    employeeSignedDateField.showWhenPrinted = false;
+    pdf.addField(employeeSignedDateField);
 
     const footerY = pageHeight - 38;
     const footerText = `${orgName.toUpperCase()} | ${orgAddress} | ${orgPhone} | ${orgWebsite}`;

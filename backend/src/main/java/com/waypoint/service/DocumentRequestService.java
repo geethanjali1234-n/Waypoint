@@ -65,6 +65,9 @@ public class DocumentRequestService {
             "Exit interview form", "COBRA election form (outgoing)", "Other document");
     private static final String RELATED_ENTITY_TYPE = "DOCUMENT_REQUEST";
     private static final String EMPLOYEE_SIGNATURE_FIELD = "waypoint_employee_signature";
+    private static final String EMPLOYEE_SIGNED_DATE_FIELD = "waypoint_employee_signed_date";
+    /** Matches the long date format the offer letter PDF uses for its other dates. */
+    private static final DateTimeFormatter SIGNED_DATE_FORMAT = DateTimeFormatter.ofPattern("MMMM d, uuuu", java.util.Locale.US);
     static final DateTimeFormatter REQUIRED_BY_FORMAT = DateTimeFormatter.ofPattern("MM-dd-uuuu");
 
     private final DocumentRequestRepository requestRepository;
@@ -448,6 +451,18 @@ public class DocumentRequestService {
     public DocumentRequestResponse submitSignedResponse(String actorUserId, String requestId,
             String signatureFileName, String signatureContentType, byte[] signatureContent,
             String signedFileName, String signedContentType, byte[] signedContent) {
+        return submitSignedResponse(actorUserId, requestId, signatureFileName, signatureContentType, signatureContent,
+                signedFileName, signedContentType, signedContent, null);
+    }
+
+    /**
+     * Same as above; signerTimeZone is the signer's browser IANA zone (e.g. "America/New_York"). Only the zone
+     * comes from the client: the signing instant is always the server clock, so the printed date cannot be
+     * backdated by changing the device clock. A missing or invalid zone falls back to the organization zone.
+     */
+    public DocumentRequestResponse submitSignedResponse(String actorUserId, String requestId,
+            String signatureFileName, String signatureContentType, byte[] signatureContent,
+            String signedFileName, String signedContentType, byte[] signedContent, String signerTimeZone) {
         var actor = authenticatedUserService.require(actorUserId, Set.of(UserRole.EMPLOYEE, UserRole.HR, UserRole.COMPANY_ADMIN), false);
         DocumentRequest request = requireOrganizationRequest(actor, requestId);
         if (!actor.userId().equals(request.getRequestedByUserId())) throw new ForbiddenException("Only the requesting user can submit a signed response");
@@ -468,7 +483,7 @@ public class DocumentRequestService {
             if (!"application/pdf".equalsIgnoreCase(original.contentType())) throw new BusinessException("The completed document must be a PDF to apply an electronic signature");
             EmployeeProfile profile = employeeProfileRepository.findByUserId(actor.userId()).orElse(null);
             User signer = requireUserInOrganization(actor.userId(), actor.organizationId());
-            byte[] signedPdf = applySignature(original.content(), signatureContent, displayName(signer, profile), requestId, now);
+            byte[] signedPdf = applySignature(original.content(), signatureContent, displayName(signer, profile), requestId, now, signerZone(signerTimeZone));
             responseDocument = documents().store(new DocumentUploadRequest(actor.organizationId(), request.getRequestedByUserId(), DocumentType.REQUESTED_DOCUMENT, RELATED_ENTITY_TYPE, request.getId(), "signed-" + original.fileName().replaceAll("(?i)\\.pdf$", "") + ".pdf", "application/pdf", signedPdf, 1, actor.userId()));
         } else {
             String fileName = signedFileName == null || signedFileName.isBlank() ? "signed-document" : signedFileName;
@@ -494,7 +509,7 @@ notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor
     }
 
     /** Stamp current offer letters in their dedicated acceptance area; preserve legacy letters with an appended acceptance page. */
-    private byte[] applySignature(byte[] originalPdf, byte[] signatureImage, String signer, String requestId, LocalDateTime signedAt) {
+    private byte[] applySignature(byte[] originalPdf, byte[] signatureImage, String signer, String requestId, LocalDateTime signedAt, java.time.ZoneId signerZone) {
         try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             PdfReader reader = new PdfReader(originalPdf);
             try {
@@ -509,6 +524,7 @@ notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor
                     image.setAbsolutePosition(left + (width - image.getScaledWidth()) / 2, bottom + (height - image.getScaledHeight()) / 2);
                     stamper.getOverContent(page).addImage(image);
                     stamper.getAcroFields().removeField(EMPLOYEE_SIGNATURE_FIELD);
+                    stampSignedDate(stamper, signedAt, signerZone);
                 } else {
                     int page = reader.getNumberOfPages() + 1;
                     stamper.insertPage(page, PageSize.LETTER);
@@ -529,6 +545,34 @@ notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor
             } finally { reader.close(); }
             return output.toByteArray();
         } catch (Exception failure) { throw new BusinessException("The employee signature could not be applied to the completed document"); }
+    }
+
+    /** The signer's browser zone when it is a valid IANA id, otherwise the organization (document-request) zone. */
+    private java.time.ZoneId signerZone(String signerTimeZone) {
+        if (signerTimeZone != null && !signerTimeZone.isBlank()) {
+            try { return java.time.ZoneId.of(signerTimeZone.trim()); } catch (java.time.DateTimeException ignored) { /* fall back below */ }
+        }
+        return reminderProperties.zone();
+    }
+
+    /**
+     * Writes the actual signing date, as a calendar day in the signer's zone, into the employee "Date:" slot
+     * of letters that reserve one. Older letters have no slot and keep their printed date.
+     */
+    private void stampSignedDate(PdfStamper stamper, LocalDateTime signedAt, java.time.ZoneId signerZone) throws Exception {
+        float[] position = stamper.getAcroFields().getFieldPositions(EMPLOYEE_SIGNED_DATE_FIELD);
+        if (position == null || position.length < 5 || signedAt == null) return;
+        var canvas = stamper.getOverContent((int) position[0]);
+        canvas.beginText();
+        canvas.setFontAndSize(BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, false), 10);
+        canvas.setRGBColorFill(0, 0, 0);
+        // The field box extends 3pt below the text baseline used for the other signature-block lines.
+        canvas.setTextMatrix(position[1], position[2] + 3);
+        // signedAt is recorded on the server clock; show it as the calendar day in the signer's zone.
+        canvas.showText(signedAt.atZone(java.time.ZoneId.systemDefault())
+                .withZoneSameInstant(signerZone).format(SIGNED_DATE_FORMAT));
+        canvas.endText();
+        stamper.getAcroFields().removeField(EMPLOYEE_SIGNED_DATE_FIELD);
     }
 
     public RequestDocumentContent getDocumentContent(String actorUserId, String requestId, String documentId) {
@@ -556,7 +600,7 @@ notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor
             User signer = requireUserInOrganization(request.getRequestedByUserId(), actor.organizationId());
             EmployeeProfile profile = employeeProfileRepository.findByUserId(signer.getId()).orElse(null);
             return new RequestDocumentContent("signed-offer-letter.pdf", "application/pdf",
-                    applySignature(original.content(), signature.content(), displayName(signer, profile), requestId, request.getSignatureSubmittedAt()));
+                    applySignature(original.content(), signature.content(), displayName(signer, profile), requestId, request.getSignatureSubmittedAt(), reminderProperties.zone()));
         }
         DocumentService.DocumentContent content = documents().getContent(documentId);
         StoredDocument metadata = content.metadata();

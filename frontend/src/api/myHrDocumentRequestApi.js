@@ -36,6 +36,12 @@ const myHrDocumentRequestApi = {
     const body = new FormData();
     if (signature) body.append('signature', await compressFileForUpload(signature));
     if (signedDocument) body.append('signedDocument', await compressFileForUpload(signedDocument));
+    // Only the zone is sent (e.g. "America/New_York"); the server uses its own clock, so the signing
+    // date reflects the signer's local day without trusting the device clock.
+    try {
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (timeZone) body.append('timeZone', timeZone);
+    } catch { /* server falls back to the organization time zone */ }
     return apiClient.post(`/myhr/document-requests/${requestId}/signed-response`, body);
   },
   reject: (requestId, reason) => apiClient.post(`/myhr/document-requests/${requestId}/reject`, { reason }),
