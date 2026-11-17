@@ -5,7 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { EmailInput, TextInput, PasswordInput, Button, ValidationMessage } from '../../../components';
 import authApi from '../../../api/authApi';
-import { getApiBaseUrl } from '../../../api/apiClient';
 import {
   clearMyHrAuthentication,
   clearMyHrSession,
@@ -170,55 +169,6 @@ export default function LoginForm({ workspace = 'JOB_SEEKER' }) {
 
       {typeof window !== 'undefined' && (window.Capacitor?.isNativePlatform?.() || window.location.hostname !== 'localhost') && (
         <div style={{ marginTop: '1.25rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--wp-color-text-muted, #cbd5e1)' }}>
-          <span>API Server: <code style={{ color: 'var(--wp-color-accent-cyan, #00ff87)', background: 'rgba(0, 255, 135, 0.1)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>{getApiBaseUrl()}</code></span>
-          <button
-            type="button"
-            onClick={() => {
-              const current = localStorage.getItem('waypoint_api_url') || getApiBaseUrl();
-              let newUrl = window.prompt('Configure Backend API URL (use http:// for local dev):', current);
-              if (newUrl !== null && newUrl.trim() !== '') {
-                newUrl = newUrl.trim();
-                if (newUrl.startsWith('https://') && (newUrl.includes(':8081') || newUrl.includes('192.168.') || newUrl.includes('10.') || newUrl.includes('localhost'))) {
-                  newUrl = newUrl.replace('https://', 'http://');
-                }
-                localStorage.setItem('waypoint_api_url', newUrl);
-                window.location.reload();
-              }
-            }}
-            style={{
-              marginLeft: '0.5rem',
-              background: 'none',
-              border: 'none',
-              color: '#60a5fa',
-              cursor: 'pointer',
-              textDecoration: 'underline',
-              fontSize: '0.8rem',
-              fontWeight: 600
-            }}
-          >
-            Change
-          </button>
-          {localStorage.getItem('waypoint_api_url') && (
-            <button
-              type="button"
-              onClick={() => {
-                localStorage.removeItem('waypoint_api_url');
-                window.location.reload();
-              }}
-              style={{
-                marginLeft: '0.5rem',
-                background: 'none',
-                border: 'none',
-                color: '#f87171',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                fontSize: '0.8rem',
-                fontWeight: 600
-              }}
-            >
-              Reset
-            </button>
-          )}
           <div style={{ marginTop: '0.45rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', opacity: 0.85 }}>
             <span>App: <strong style={{ color: '#f8fafc' }}>v{APP_CURRENT_VERSION.versionName}</strong></span>
             <span>·</span>
