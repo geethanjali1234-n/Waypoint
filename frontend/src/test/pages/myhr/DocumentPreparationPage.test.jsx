@@ -78,16 +78,6 @@ const GENERIC_CASES = [
     },
   },
   {
-    id: 'EMPLOYMENT_LETTER', requestTitle: 'Employment Letter', routeSegment: 'employment-letter',
-    prepareLabel: 'Prepare Employment Letter', templateName: 'Standard Employment Letter Template',
-    fill: async (user) => {
-      await user.type(screen.getByLabelText(/^Designation/), 'Software Engineer');
-      await user.type(screen.getByLabelText(/^Employment Start Date/), '2024-01-15');
-      await user.selectOptions(screen.getByLabelText(/^Employment Status/), 'ACTIVE');
-      await user.type(screen.getByLabelText(/^Work Location/), 'Austin, TX');
-    },
-  },
-  {
     id: 'I983', requestTitle: 'Signed I-983', routeSegment: 'signed-i983',
     prepareLabel: 'Prepare Signed I-983', templateName: 'Standard Signed I-983 Template',
     fill: async (user) => {

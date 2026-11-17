@@ -13,7 +13,6 @@ import {
 const EXPECTED = {
   OFFER_LETTER: { requiresEmployeeSignature: true, requiresSignedReturn: true },
   EMPLOYMENT_VERIFICATION: { requiresEmployeeSignature: false, requiresSignedReturn: false },
-  EMPLOYMENT_LETTER: { requiresEmployeeSignature: false, requiresSignedReturn: false },
   EXPERIENCE_LETTER: { requiresEmployeeSignature: false, requiresSignedReturn: false },
   SALARY_VERIFICATION: { requiresEmployeeSignature: false, requiresSignedReturn: false },
   LCA: { requiresEmployeeSignature: false, requiresSignedReturn: false },
@@ -31,9 +30,10 @@ const EXPECTED = {
 const TYPES_WITHOUT_NAMED_DOCUMENTS = Object.keys(SELF_SERVICE_TYPE_CONFIG).filter((id) => !['OFFER_LETTER', 'I983'].includes(id));
 
 describe('selfServiceDocumentCatalog', () => {
-  it('lists all 10 self-service document types - there is no separate Pre-Employment / Onboarding Documents type', () => {
-    expect(SELF_SERVICE_DOCUMENT_TYPES).toHaveLength(10);
-    expect(Object.keys(SELF_SERVICE_TYPE_CONFIG)).toHaveLength(10);
+  it('lists all 9 self-service document types - there is no separate Pre-Employment / Onboarding Documents type', () => {
+    expect(SELF_SERVICE_DOCUMENT_TYPES).toHaveLength(9);
+    expect(Object.keys(SELF_SERVICE_TYPE_CONFIG)).toHaveLength(9);
+    expect(SELF_SERVICE_TYPE_CONFIG.EMPLOYMENT_LETTER).toBeUndefined();
     expect(SELF_SERVICE_TYPE_CONFIG.PRE_EMPLOYMENT_ONBOARDING).toBeUndefined();
   });
 

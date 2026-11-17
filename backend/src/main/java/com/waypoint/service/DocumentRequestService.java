@@ -658,8 +658,12 @@ notificationOrchestrator.notify(NotificationEvent.builder().organizationId(actor
     }
 
     private RequestedDocumentType parseDocumentType(String value) {
-        try { return RequestedDocumentType.valueOf(value.trim()); }
+        RequestedDocumentType type;
+        try { type = RequestedDocumentType.valueOf(value.trim()); }
         catch (RuntimeException failure) { throw new BusinessException("Invalid document type"); }
+        // Retired: only kept so existing requests still load. Use Employment or Salary Verification instead.
+        if (type == RequestedDocumentType.EMPLOYMENT_LETTER) throw new BusinessException("Invalid document type");
+        return type;
     }
 
     private void requireAssignedRecipient(MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor, DocumentRequest request) {

@@ -16,13 +16,6 @@ import endWithPeriod from '../../../../../utils/endWithPeriod';
  * signatory (and only the signatory) approves it.
  */
 
-const EMPLOYMENT_STATUS_OPTIONS = [
-  { value: 'ACTIVE', label: 'Active' },
-  { value: 'ON_LEAVE', label: 'On Leave' },
-  { value: 'TERMINATED', label: 'Terminated' },
-];
-
-const statusLabel = (value) => EMPLOYMENT_STATUS_OPTIONS.find((option) => option.value === value)?.label || '';
 const dateOrPlaceholder = (value, placeholder) => (value ? formatDateOnly(value) : placeholder);
 const articleFor = (word) => (/^[aeiou]/i.test(word) ? 'an' : 'a');
 
@@ -127,28 +120,6 @@ export const DOCUMENT_TYPE_CONFIGS = {
     },
     closing: signatoryClosingWithFooter,
     signedByAuthorizedSignatory: true,
-  },
-
-  EMPLOYMENT_LETTER: {
-    templateName: 'Standard Employment Letter Template',
-    fields: [
-      { name: 'designation', label: 'Designation', type: 'text', required: true },
-      { name: 'employmentStartDate', label: 'Employment Start Date', type: 'date', required: true },
-      { name: 'employmentStatus', label: 'Employment Status', type: 'select', required: true, options: EMPLOYMENT_STATUS_OPTIONS },
-      { name: 'workLocation', label: 'Work Location', type: 'text', required: true },
-      { name: 'purpose', label: 'Purpose', type: 'text', required: false, placeholder: 'e.g. Visa application, loan application' },
-    ],
-    preview: (form) => [
-      { type: 'p', text: 'To Whom It May Concern,' },
-      {
-        type: 'p',
-        text: `This letter confirms that ${form.employeeName || '[Employee Name]'} is employed with our organization as `
-          + `${form.designation || '[Designation]'}, starting from ${dateOrPlaceholder(form.employmentStartDate, '[Employment Start Date]')}. `
-          + `The employee's current status is ${statusLabel(form.employmentStatus) || '[Employment Status]'}, based at ${form.workLocation || '[Work Location]'}.`
-          + `${form.purpose ? ` This letter is issued for the purpose of ${form.purpose}.` : ''}`,
-      },
-      { type: 'p', text: `This letter is issued on ${dateOrPlaceholder(form.issueDate, '[Issue Date]')}.` },
-    ],
   },
 
   // One merged template for both Experience and Relieving Letter requests

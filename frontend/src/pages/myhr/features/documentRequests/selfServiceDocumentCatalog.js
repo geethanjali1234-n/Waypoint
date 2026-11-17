@@ -30,7 +30,6 @@
 export const SELF_SERVICE_DOCUMENT_TYPES = [
   ['OFFER_LETTER', 'Offer Letter'],
   ['EMPLOYMENT_VERIFICATION', 'Employment Verification'],
-  ['EMPLOYMENT_LETTER', 'Employment Letter'],
   ['EXPERIENCE_LETTER', 'Experience and Relieving Letter'],
   ['SALARY_VERIFICATION', 'Salary Verification Letter'],
   ['LCA', 'LCA'],
@@ -48,7 +47,7 @@ export const SELF_SERVICE_DOCUMENT_TYPES = [
 // type or category for them.
 export const SELF_SERVICE_CATEGORIES = [
   { id: 'PRE_EMPLOYMENT_ONBOARDING_OFFER', label: 'Pre-Employment / Onboarding & Offer', typeIds: ['OFFER_LETTER'] },
-  { id: 'EMPLOYMENT_LETTERS', label: 'Employment Verification & Letters', typeIds: ['EMPLOYMENT_VERIFICATION', 'EMPLOYMENT_LETTER', 'SALARY_VERIFICATION'] },
+  { id: 'EMPLOYMENT_LETTERS', label: 'Employment Verification & Letters', typeIds: ['EMPLOYMENT_VERIFICATION', 'SALARY_VERIFICATION'] },
   { id: 'SEPARATION', label: 'Separation Documents', typeIds: ['EXPERIENCE_LETTER'] },
   { id: 'IMMIGRATION', label: 'Immigration & Visa Support', typeIds: ['LCA', 'PERM', 'I140', 'I983'] },
   { id: 'OTHER', label: 'Other', typeIds: ['OTHER'] },
@@ -107,11 +106,6 @@ export const SELF_SERVICE_TYPE_CONFIG = {
   }),
   EMPLOYMENT_VERIFICATION: base({
     documentType: 'EMPLOYMENT_VERIFICATION', category: 'EMPLOYMENT_LETTERS', description: 'Employment Verification',
-    employeeInstructions: NO_SIGNATURE_INSTRUCTIONS,
-    requiresEmployeeSignature: false, requiresSignedReturn: false,
-  }),
-  EMPLOYMENT_LETTER: base({
-    documentType: 'EMPLOYMENT_LETTER', category: 'EMPLOYMENT_LETTERS', description: 'Employment Letter',
     employeeInstructions: NO_SIGNATURE_INSTRUCTIONS,
     requiresEmployeeSignature: false, requiresSignedReturn: false,
   }),

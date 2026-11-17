@@ -198,7 +198,7 @@ class GoogleRoutedEmailFlowsTest {
 
     private void employeeRequestsDocument(String orgId) {
         documentRequests().createSelfServiceRequest("emp-" + orgId,
-                new EmployeeDocumentRequestCreateRequest("EMPLOYMENT_LETTER", "Employment letter", "Needed", null), List.of());
+                new EmployeeDocumentRequestCreateRequest("EMPLOYMENT_VERIFICATION", "Employment letter", "Needed", null), List.of());
     }
 
     private MimeMessage googleMessage(int index) throws Exception {

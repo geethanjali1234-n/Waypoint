@@ -99,18 +99,6 @@ export const DOCUMENT_WORKFLOW_TYPES = [
     requiresSignedReturn: false,
   },
   {
-    id: 'EMPLOYMENT_LETTER',
-    requestTitle: 'Employment Letter',
-    label: 'Employment Letter',
-    prepareLabel: 'Prepare Employment Letter',
-    routeSegment: 'employment-letter',
-    category: 'EMPLOYMENT_LETTERS',
-    // Same category as Employment Verification - no signature required.
-    // Working default; revisit if product direction changes.
-    requiresEmployeeSignature: false,
-    requiresSignedReturn: false,
-  },
-  {
     id: 'I983',
     requestTitle: 'Signed I-983',
     label: 'Signed I-983',

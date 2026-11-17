@@ -126,7 +126,7 @@ class DocumentRequestServiceTest {
                 "Please provide", List.of("Signed offer letter / employment agreement"));
     }
     private EmployeeDocumentRequestCreateRequest selfInput() {
-        return new EmployeeDocumentRequestCreateRequest("EMPLOYMENT_LETTER", "Employment letter", "Needed", null);
+        return new EmployeeDocumentRequestCreateRequest("EMPLOYMENT_VERIFICATION", "Employment letter", "Needed", null);
     }
 
     @Test void companyAdminCreatesPendingRequestForActiveOrganizationUser() {
@@ -407,6 +407,16 @@ class DocumentRequestServiceTest {
         when(users.findById("admin")).thenReturn(Optional.of(user("admin", UserRole.COMPANY_ADMIN)));
         DocumentRequestResponse result = service.createSelfServiceRequest("hr", selfInput(), List.of());
         assertThat(result.requestedForUserId()).isEqualTo("admin");
+    }
+
+    @Test void retiredEmploymentLetterTypeCannotBeRequested() {
+        actor("hr", UserRole.HR); when(assignments.findByEmployeeUserIdAndRelationshipTypeAndIsActiveTrue(
+                "hr", RelationshipType.PRIMARY_REPORTING_MANAGER)).thenReturn(Optional.of(assignment("hr", "admin")));
+        when(users.findById("admin")).thenReturn(Optional.of(user("admin", UserRole.COMPANY_ADMIN)));
+        var retired = new EmployeeDocumentRequestCreateRequest("EMPLOYMENT_LETTER", "Employment Letter", "Needed", null);
+        assertThatThrownBy(() -> service.createSelfServiceRequest("hr", retired, List.of()))
+                .isInstanceOf(BusinessException.class).hasMessage("Invalid document type");
+        verify(requests, never()).save(any(DocumentRequest.class));
     }
 
     @Test void employeeSelfServiceRequiresActiveAuthoritativeManager() {
