@@ -11,7 +11,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(properties = {
-        "MONGODB_URI=mongodb://localhost:27017/waypoint-test",
+        "MONGODB_URI=mongodb://127.0.0.1:1/waypoint-test",
+        "spring.data.mongodb.auto-index-creation=false",
         "MAIL_HOST=localhost",
         "MAIL_USERNAME=test",
         "MAIL_PASSWORD=test",

@@ -1,6 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { conversationalReply, workplaceQuery } from '../../components/chatbot/conversationIntents';
 import { askWavi } from '../../components/chatbot/waviAssistant';
+import { sendMyHrChatMessage } from '../../api/myHrChatApi';
+
+vi.mock('../../api/myHrChatApi', () => ({ sendMyHrChatMessage: vi.fn() }));
+afterEach(() => localStorage.removeItem('accessToken'));
 
 const employee = { role: 'EMPLOYEE', route: '/myhr/employee/profile-change-requests' };
 
@@ -36,17 +40,26 @@ describe('Wavy conversational continuity', () => {
     expect(reply.context).toBeUndefined();
   });
 
-  it('walks through existing workflow steps after casual conversation', async () => {
-    const initial = await askWavi('How do I update my address?', employee);
-    expect(initial.context.intent).toBe('workflow-guide');
-    const thanks = await askWavi('thanks', { ...employee, context: initial.context });
-    expect(thanks.social).toBe(true);
-    expect(thanks.context).toBeUndefined();
-    const first = await askWavi('walk me through it', { ...employee, previousQuery: 'How do I update my address?', context: initial.context });
+  it('walks through workflow steps after casual conversation through the chat backend and its stamped history', async () => {
+    // Follow-ups are understood by the single chat backend from this session's server-stamped turns.
+    localStorage.setItem('accessToken', 'test-token');
+    sendMyHrChatMessage.mockReset();
+    sendMyHrChatMessage
+      .mockResolvedValueOnce({ message: '1. Navigate to My Profile.', historyProvenance: { user: 'u1', assistant: 'a1' }, actions: [] })
+      .mockResolvedValueOnce({ message: '2. Tap Request Change.', historyProvenance: { user: 'u2', assistant: 'a2' }, actions: [] });
+    const first = await askWavi('How do I update my address?', { ...employee, sessionKey: 's' });
     expect(first.text).toContain('1. Navigate');
-    const next = await askWavi('next', { ...employee, context: first.context });
+    const history = [
+      { sender: 'user', text: 'How do I update my address?', provenance: first.provenance.user, sessionKey: 's' },
+      { sender: 'assistant', text: first.text, provenance: first.provenance.assistant, sessionKey: 's' },
+    ];
+    const next = await askWavi('next', { ...employee, sessionKey: 's', history });
     expect(next.text).toContain('2. Tap');
     expect(next.confirmed).toBeUndefined();
+    expect(sendMyHrChatMessage).toHaveBeenLastCalledWith('next', [
+      { role: 'user', content: 'How do I update my address?', provenance: 'u1' },
+      { role: 'assistant', content: '1. Navigate to My Profile.', provenance: 'a1' },
+    ]);
   });
 
   it('can change topics without retaining an old search', () => {

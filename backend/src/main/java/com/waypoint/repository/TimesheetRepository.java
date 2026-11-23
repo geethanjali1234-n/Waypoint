@@ -7,6 +7,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 
 public interface TimesheetRepository extends MongoRepository<Timesheet, String> {
 
@@ -27,6 +29,11 @@ public interface TimesheetRepository extends MongoRepository<Timesheet, String> 
     /** Timesheets whose work period overlaps [periodOnOrBefore's lower bound, periodOnOrAfter]. */
     List<Timesheet> findByOrganizationIdAndUserIdAndPeriodStartDateLessThanEqualAndPeriodEndDateGreaterThanEqualOrderByPeriodStartDateDesc(
             String organizationId, String userId, LocalDate periodStartDateOnOrBefore, LocalDate periodEndDateOnOrAfter);
+
+    Optional<Timesheet> findFirstByOrganizationIdAndUserIdOrderByPeriodStartDateDescSubmittedAtDesc(String organizationId, String userId);
+
+    List<Timesheet> findByOrganizationIdAndUserIdAndPeriodStartDateLessThanEqualAndPeriodEndDateGreaterThanEqualOrderByPeriodStartDateDesc(
+            String organizationId, String userId, LocalDate periodStartDateOnOrBefore, LocalDate periodEndDateOnOrAfter, Pageable pageable);
 
     List<Timesheet> findByOrganizationIdAndUserIdInAndPeriodStartDateLessThanEqualAndPeriodEndDateGreaterThanEqual(
             String organizationId, Collection<String> userIds, LocalDate periodStartDateOnOrBefore, LocalDate periodEndDateOnOrAfter);

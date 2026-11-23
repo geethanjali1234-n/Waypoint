@@ -134,9 +134,13 @@ public class EmployeeManagementService {
                         target.getId(), RelationshipType.PRIMARY_REPORTING_MANAGER)
                 .orElse(null);
         ReportingManagerRef reportingManager = null;
-        if (activeAssignment != null) {
+        if (activeAssignment != null && actor.organizationId().equals(activeAssignment.getOrganizationId())) {
             String managerUserId = activeAssignment.getReportingManagerUserId();
             User managerUser = userRepository.findById(managerUserId).orElse(null);
+            // An invalid or cross-organization assignment must not expose another organization's identity.
+            if (managerUser != null && !actor.organizationId().equals(managerUser.getOrganizationId())) {
+                throw new ForbiddenException("Reporting manager assignment is not available for your organization");
+            }
             EmployeeProfile managerProfile = managerUser == null ? null
                     : employeeProfileRepository.findByUserId(managerUserId).orElse(null);
             reportingManager = new ReportingManagerRef(

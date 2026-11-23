@@ -189,6 +189,17 @@ class NavigationRegistryService {
         keywords: ['address', 'name', 'phone', 'contact', 'changes'],
       }),
 
+      new NavigationAction({
+        id: 'knowledge-base',
+        category: CATEGORIES.REPORTS,
+        icon: '📚',
+        title: 'Knowledge Base',
+        subtitle: 'Manage approved company policy documents',
+        allowedRoles: [ROLES.COMPANY_ADMIN, ROLES.HR],
+        pathResolver: (seg) => `/myhr/${seg}/knowledge-base`,
+        keywords: ['knowledge', 'policy', 'documents'],
+      }),
+
       // 5. Payroll Readiness
       new NavigationAction({
         id: 'payroll-readiness',

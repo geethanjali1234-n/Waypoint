@@ -1,6 +1,8 @@
 package com.waypoint.service;
 
 import com.waypoint.dto.myhr.CreateProfileChangeRequestRequest;
+import com.waypoint.dto.myhr.MyHrOwnProfileChangeHistory;
+import com.waypoint.dto.myhr.MyHrProfileChangeQueueSummary;
 import com.waypoint.dto.myhr.ProfileChangeRequestDetailResponse;
 import com.waypoint.dto.myhr.ProfileChangeRequestResponse;
 import com.waypoint.dto.myhr.ReportingManagerSummary;
@@ -30,6 +32,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
+import java.util.Comparator;
+import java.util.Optional;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -140,6 +144,56 @@ public class ProfileChangeRequestService {
                 .findByOrganizationIdAndRequesterUserIdOrderByRequestedAtDesc(actor.organizationId(), actor.userId()));
     }
 
+    public Optional<ProfileChangeStatus> mostRecentOwnStatus(String actorUserId) {
+        MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor =
+                authenticatedUserService.require(actorUserId, REQUESTER_ROLES, false);
+        return profileChangeRequestRepository
+                .findByOrganizationIdAndRequesterUserIdOrderByRequestedAtDesc(actor.organizationId(), actor.userId())
+                .stream()
+                .filter(request -> actor.organizationId().equals(request.getOrganizationId()))
+                .filter(request -> actor.userId().equals(request.getRequesterUserId()))
+                .sorted(Comparator
+                        .comparingInt((ProfileChangeRequest request) -> profileChangeStatusOrder(request.getStatus()))
+                        .thenComparing(ProfileChangeRequest::getRequestedAt,
+                                Comparator.nullsLast(Comparator.reverseOrder())))
+                .findFirst()
+                .map(ProfileChangeRequest::getStatus);
+    }
+
+    /** Returns safe history for the authenticated user's latest request, whichever profile field it changes. */
+    public Optional<MyHrOwnProfileChangeHistory> mostRecentOwnHistory(String actorUserId) {
+        return mostRecentOwnHistoryForField(actorUserId, null);
+    }
+
+    /** Returns safe history for the authenticated user's latest request for one profile field (any field if null). */
+    public Optional<MyHrOwnProfileChangeHistory> mostRecentOwnHistoryForField(
+            String actorUserId, ProfileChangeField field) {
+        MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor =
+                authenticatedUserService.require(actorUserId, REQUESTER_ROLES, false);
+        return profileChangeRequestRepository
+                .findByOrganizationIdAndRequesterUserIdOrderByRequestedAtDesc(actor.organizationId(), actor.userId())
+                .stream()
+                // Retain explicit safeguards even though the repository query is scoped.
+                .filter(request -> actor.organizationId().equals(request.getOrganizationId()))
+                .filter(request -> actor.userId().equals(request.getRequesterUserId()))
+                .filter(request -> field == null || field == request.getFieldName())
+                .max(Comparator.comparing(ProfileChangeRequest::getRequestedAt,
+                        Comparator.nullsFirst(Comparator.naturalOrder())))
+                .map(request -> new MyHrOwnProfileChangeHistory(
+                        request.getStatus(), request.getRequestedAt(), request.getProcessedAt(), null /* Production does not persist an effective time. */));
+    }
+
+    private int profileChangeStatusOrder(ProfileChangeStatus status) {
+        if (status == null) {
+            return 3;
+        }
+        return switch (status) {
+            case PENDING -> 0;
+            case REJECTED -> 1;
+            case APPROVED -> 2;
+        };
+    }
+
     public List<ProfileChangeRequestResponse> listForAdmin(String actorUserId) {
         MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor =
                 authenticatedUserService.require(actorUserId, REVIEWER_ROLES, false);
@@ -148,6 +202,28 @@ public class ProfileChangeRequestService {
                         actor.organizationId(), actor.userId())
                 : profileChangeRequestRepository.findByOrganizationIdOrderByRequestedAtDesc(actor.organizationId());
         return enrich(requests);
+    }
+
+    public MyHrProfileChangeQueueSummary queueSummary(String actorUserId) {
+        MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor =
+                authenticatedUserService.require(actorUserId, REVIEWER_ROLES, false);
+        List<ProfileChangeRequest> requests = actor.role() == UserRole.HR
+                ? profileChangeRequestRepository.findByOrganizationIdAndAssignedToUserIdOrderByRequestedAtDesc(
+                actor.organizationId(), actor.userId())
+                : profileChangeRequestRepository.findByOrganizationIdOrderByRequestedAtDesc(actor.organizationId());
+        List<ProfileChangeRequest> scoped = requests.stream()
+                // Retain safeguards if a repository implementation returns a malformed row.
+                .filter(request -> actor.organizationId().equals(request.getOrganizationId()))
+                .filter(request -> actor.role() != UserRole.HR || actor.userId().equals(request.getAssignedToUserId()))
+                .toList();
+        return new MyHrProfileChangeQueueSummary(scoped.size(),
+                countWithStatus(scoped, ProfileChangeStatus.PENDING),
+                countWithStatus(scoped, ProfileChangeStatus.APPROVED),
+                countWithStatus(scoped, ProfileChangeStatus.REJECTED));
+    }
+
+    private int countWithStatus(List<ProfileChangeRequest> requests, ProfileChangeStatus status) {
+        return (int) requests.stream().filter(request -> request.getStatus() == status).count();
     }
 
     public ProfileChangeRequestDetailResponse getDetailForAdmin(String actorUserId, String requestId) {

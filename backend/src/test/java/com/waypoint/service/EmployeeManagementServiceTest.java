@@ -250,6 +250,20 @@ class EmployeeManagementServiceTest {
     }
 
     @Test
+    void ownProfileDoesNotExposeAManagerFromAnotherOrganization() {
+        actor("emp-1", UserRole.EMPLOYEE);
+        when(userRepository.findById("emp-1")).thenReturn(Optional.of(user("emp-1", UserRole.EMPLOYEE, AccountStatus.ACTIVE)));
+        when(organizationRepository.findById("org-1")).thenReturn(Optional.of(Organization.builder().id("org-1").build()));
+        when(reportingAssignmentRepository.findByEmployeeUserIdAndRelationshipTypeAndIsActiveTrue(
+                "emp-1", RelationshipType.PRIMARY_REPORTING_MANAGER)).thenReturn(Optional.of(active("emp-1", "foreign-hr")));
+        when(userRepository.findById("foreign-hr")).thenReturn(Optional.of(
+                User.builder().id("foreign-hr").role(UserRole.HR).organizationId("org-2").build()));
+
+        assertThatThrownBy(() -> service.getOwnDetail("emp-1")).isInstanceOf(ForbiddenException.class);
+        verify(employeeProfileRepository, never()).findByUserId("foreign-hr");
+    }
+
+    @Test
     void hrOwnProfileShowsACompanyAdminManagerByRealNameAndDesignationNeverByLoginId() {
         actor("hr-1", UserRole.HR);
         User hr = user("hr-1", UserRole.HR, AccountStatus.ACTIVE);

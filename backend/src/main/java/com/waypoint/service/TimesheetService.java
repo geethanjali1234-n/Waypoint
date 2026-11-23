@@ -1,6 +1,9 @@
 package com.waypoint.service;
 
 import com.waypoint.dto.myhr.TimesheetEntryRequest;
+import com.waypoint.dto.myhr.MyHrLatestTimesheetSubmission;
+import com.waypoint.dto.myhr.MyHrRecentTimesheetStatus;
+import com.waypoint.dto.myhr.MyHrTimesheetQueueSummary;
 import com.waypoint.dto.myhr.TimesheetEntryResponse;
 import com.waypoint.dto.myhr.TimesheetReviewRequest;
 import com.waypoint.dto.myhr.TimesheetResponse;
@@ -96,6 +99,135 @@ public class TimesheetService {
                                 Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
         return toResponses(records);
+    }
+
+    /** Read-only bounded own-hours projection. Unlike reviewer lists this never loads coworkers or document metadata. */
+    public com.waypoint.dto.myhr.MyHrDailyHours getOwnDailyHours(String actorUserId, LocalDate from, LocalDate to) {
+        var actor = requireActor(actorUserId);
+        if (from == null || to == null) {
+            var latest = timesheetRepository.findFirstByOrganizationIdAndUserIdOrderByPeriodStartDateDescSubmittedAtDesc(
+                    actor.organizationId(), actor.userId()).filter(t -> actor.organizationId().equals(t.getOrganizationId())
+                    && actor.userId().equals(t.getUserId()));
+            if (latest.isEmpty()) return new com.waypoint.dto.myhr.MyHrDailyHours(null, null, List.of(), false);
+            from = latest.get().getPeriodStartDate();
+            to = latest.get().getPeriodEndDate();
+        }
+        if (from == null || to == null || to.isBefore(from) || java.time.temporal.ChronoUnit.DAYS.between(from, to) > 92) {
+            throw new IllegalArgumentException("Daily hours require a valid range of at most 93 days");
+        }
+        final LocalDate start = from, end = to;
+        var records = timesheetRepository
+                .findByOrganizationIdAndUserIdAndPeriodStartDateLessThanEqualAndPeriodEndDateGreaterThanEqualOrderByPeriodStartDateDesc(
+                        actor.organizationId(), actor.userId(), to, from, org.springframework.data.domain.PageRequest.of(0, 101));
+        var projected = records.stream().limit(100)
+                .filter(t -> t != null && actor.organizationId().equals(t.getOrganizationId()) && actor.userId().equals(t.getUserId()))
+                .filter(t -> t.getPeriodStartDate() != null && t.getPeriodEndDate() != null
+                        && !t.getPeriodStartDate().isAfter(end) && !t.getPeriodEndDate().isBefore(start))
+                .map(t -> new com.waypoint.dto.myhr.MyHrDailyHours.Submission(t.getPeriodStartDate(), t.getPeriodEndDate(), t.getStatus(),
+                        (t.getEntries() == null ? List.<TimesheetEntry>of() : t.getEntries()).stream()
+                                .filter(e -> e != null && e.getWorkDate() != null && !e.getWorkDate().isBefore(start)
+                                        && !e.getWorkDate().isAfter(end))
+                                .map(e -> new com.waypoint.dto.myhr.MyHrDailyHours.Entry(e.getWorkDate(), e.getHoursWorked())).toList())).toList();
+        return new com.waypoint.dto.myhr.MyHrDailyHours(from, to, projected, records.size() > 100);
+    }
+
+    public Optional<MyHrRecentTimesheetStatus> getMostRecentStatusForUser(String actorUserId) {
+        MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor = requireActor(actorUserId);
+        return timesheetRepository
+                .findFirstByOrganizationIdAndUserIdOrderByPeriodStartDateDescSubmittedAtDesc(
+                        actor.organizationId(), actor.userId())
+                .filter(timesheet -> actor.organizationId().equals(timesheet.getOrganizationId())
+                        && actor.userId().equals(timesheet.getUserId()))
+                .map(timesheet -> new MyHrRecentTimesheetStatus(
+                        timesheet.getPeriodStartDate(), timesheet.getPeriodEndDate(), timesheet.getStatus()));
+    }
+
+    /**
+     * The signed-in user's own timesheets whose work period overlaps [from, to], earliest period first. Only the
+     * caller's own records in their own organization are ever returned, whatever their role.
+     */
+    public List<com.waypoint.dto.myhr.MyHrTimesheetPeriodStatus> getOwnStatusesOverlapping(
+            String actorUserId, LocalDate from, LocalDate to) {
+        MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor = requireActor(actorUserId);
+        if (from == null || to == null || to.isBefore(from)) {
+            return List.of();
+        }
+        return timesheetRepository
+                .findByOrganizationIdAndUserIdAndPeriodStartDateLessThanEqualAndPeriodEndDateGreaterThanEqualOrderByPeriodStartDateDesc(
+                        actor.organizationId(), actor.userId(), to, from)
+                .stream()
+                .filter(timesheet -> timesheet != null && actor.organizationId().equals(timesheet.getOrganizationId())
+                        && actor.userId().equals(timesheet.getUserId())
+                        && timesheet.getPeriodStartDate() != null && timesheet.getPeriodEndDate() != null
+                        && !timesheet.getPeriodStartDate().isAfter(to) && !timesheet.getPeriodEndDate().isBefore(from))
+                .sorted(Comparator.comparing(Timesheet::getPeriodStartDate))
+                .map(timesheet -> new com.waypoint.dto.myhr.MyHrTimesheetPeriodStatus(timesheet.getPeriodStartDate(),
+                        timesheet.getPeriodEndDate(), timesheet.getStatus(), timesheet.getSubmittedAt()))
+                .toList();
+    }
+
+    /**
+     * The signed-in user's own latest submission, by {@code submittedAt} only: it is set each time a
+     * timesheet is submitted or resubmitted, kept when it is reviewed and cleared when it is saved as
+     * a draft. The work period, creation, update and review times are never used as a submission date.
+     */
+    public Optional<MyHrLatestTimesheetSubmission> getLatestSubmissionForUser(String actorUserId) {
+        MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor = requireActor(actorUserId);
+        List<Timesheet> submitted = timesheetRepository
+                .findByOrganizationIdAndUserIdOrderBySubmittedAtDesc(actor.organizationId(), actor.userId())
+                .stream()
+                .filter(timesheet -> actor.organizationId().equals(timesheet.getOrganizationId())
+                        && actor.userId().equals(timesheet.getUserId()))
+                .filter(timesheet -> timesheet.getStatus() != null && timesheet.getStatus() != TimesheetStatus.DRAFT)
+                .toList();
+        Optional<Timesheet> latest = submitted.stream()
+                .filter(timesheet -> timesheet.getSubmittedAt() != null)
+                .max(Comparator.comparing(Timesheet::getSubmittedAt));
+        if (latest.isEmpty() && !submitted.isEmpty()) {
+            // Submitted, but without a recorded submission time: report that, never another date.
+            return Optional.of(new MyHrLatestTimesheetSubmission(null, null, null, null));
+        }
+        return latest.map(timesheet -> new MyHrLatestTimesheetSubmission(timesheet.getSubmittedAt(),
+                timesheet.getPeriodStartDate(), timesheet.getPeriodEndDate(), timesheet.getStatus()));
+    }
+
+    /**
+     * Returns count-only review data in the same scope used by the timesheet review workflow.
+     * HR is limited to current direct reports whose timesheet names that HR user as its reviewer;
+     * Company Admin is limited to non-draft timesheets in its organization.
+     */
+    public MyHrTimesheetQueueSummary queueSummary(String actorUserId) {
+        MyHrAuthenticatedUserService.AuthenticatedMyHrUser actor = authenticatedUserService.require(
+                actorUserId, TIMESHEET_REVIEWERS, false);
+
+        List<Timesheet> scoped;
+        if (actor.role() == UserRole.COMPANY_ADMIN) {
+            scoped = timesheetRepository.findByOrganizationIdOrderByPeriodStartDateDesc(actor.organizationId()).stream()
+                    .filter(timesheet -> actor.organizationId().equals(timesheet.getOrganizationId()))
+                    .filter(timesheet -> timesheet.getStatus() != null && timesheet.getStatus() != TimesheetStatus.DRAFT)
+                    .toList();
+        } else {
+            Set<String> directReportIds = activeDirectReportIds(actor);
+            if (directReportIds.isEmpty()) {
+                return new MyHrTimesheetQueueSummary(0, 0, 0, 0);
+            }
+            scoped = timesheetRepository
+                    .findByOrganizationIdAndReportingManagerUserIdOrderBySubmittedAtDesc(
+                            actor.organizationId(), actor.userId())
+                    .stream()
+                    .filter(timesheet -> actor.organizationId().equals(timesheet.getOrganizationId()))
+                    .filter(timesheet -> actor.userId().equals(timesheet.getReportingManagerUserId()))
+                    .filter(timesheet -> timesheet.getUserId() != null
+                            && !actor.userId().equals(timesheet.getUserId())
+                            && directReportIds.contains(timesheet.getUserId()))
+                    .filter(timesheet -> timesheet.getStatus() != null && timesheet.getStatus() != TimesheetStatus.DRAFT)
+                    .toList();
+        }
+
+        int submitted = (int) scoped.stream().filter(timesheet -> timesheet.getStatus() == TimesheetStatus.SUBMITTED).count();
+        int approved = (int) scoped.stream().filter(timesheet -> timesheet.getStatus() == TimesheetStatus.APPROVED).count();
+        int rejected = (int) scoped.stream().filter(timesheet -> timesheet.getStatus() == TimesheetStatus.REJECTED).count();
+        return new MyHrTimesheetQueueSummary(scoped.size(), submitted, approved, rejected);
     }
 
     public TimesheetResponse getForUser(String actorUserId, String timesheetId) {

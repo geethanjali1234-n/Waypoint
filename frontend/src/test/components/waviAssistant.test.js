@@ -4,141 +4,121 @@ import timesheetApi from '../../api/timesheetApi';
 import myHrEmployeeApi from '../../api/myHrEmployeeApi';
 import myHrProfileChangeApi from '../../api/myHrProfileChangeApi';
 import { askWavi, permittedActions } from '../../components/chatbot/waviAssistant';
-import wavyApi from '../../api/wavyApi';
+import { sendMyHrChatMessage } from '../../api/myHrChatApi';
+import { serverHistory } from '../../components/chatbot/waviAssistant';
 
 vi.mock('../../api/payrollReadinessApi', () => ({ default: { getReadiness: vi.fn() } }));
 vi.mock('../../api/timesheetApi', () => ({ default: { list: vi.fn() } }));
 vi.mock('../../api/myHrEmployeeApi', () => ({ default: { list: vi.fn(), getMine: vi.fn() } }));
 vi.mock('../../api/myHrProfileChangeApi', () => ({ default: { listForAdmin: vi.fn() } }));
-vi.mock('../../api/wavyApi', () => ({ default: { chat: vi.fn() } }));
+vi.mock('../../api/myHrChatApi', () => ({ sendMyHrChatMessage: vi.fn() }));
 
-beforeEach(() => { vi.resetAllMocks(); wavyApi.chat.mockResolvedValue({ data: { success: true, data: { mode: 'limited', notice: 'Workflow guidance' } } }); localStorage.setItem('accessToken', 'test-token'); });
+// By default this deployment has no chat backend (HTTP 404): Wavy says so and reads nothing else.
+beforeEach(() => { vi.resetAllMocks(); sendMyHrChatMessage.mockRejectedValue({ response: { status: 404 } }); localStorage.setItem('accessToken', 'test-token'); });
 afterEach(() => localStorage.removeItem('accessToken'));
 const admin = { role: 'COMPANY_ADMIN', route: '/myhr/admin/payroll-readiness' };
 const employee = { role: 'EMPLOYEE', route: '/myhr/employee/timesheets' };
 const ok = (data) => ({ data: { success: true, data } });
 
 describe('Wavy trusted application data', () => {
-  it('answers who is my HR using the actual profile assignment', async () => {
-    myHrEmployeeApi.getMine.mockResolvedValue(ok({ reportingManager: { name: 'Riley Chen', roleLabel: 'HR' } }));
-    const reply = await askWavi('Who is my HR?', employee);
-    expect(reply.text).toContain('Riley Chen');
-    expect(reply.text).toContain('HR** role');
-    expect(reply.source).toBe('Your authenticated profile');
-  });
 
-  it('does not label an administrator as HR', async () => {
-    myHrEmployeeApi.getMine.mockResolvedValue(ok({ reportingManager: { name: 'Alex', roleLabel: 'COMPANY_ADMIN' } }));
-    const reply = await askWavi('Who is my HR?', employee);
-    expect(reply.text).toContain("won't assume");
-    expect(reply.text).not.toContain('HR** role');
-  });
 
-  it('uses a real backend model response instead of the canned conversation', async () => {
-    wavyApi.chat.mockResolvedValue(ok({ mode: 'ai', text: 'A live conversational answer.', actions: [], sources: [{ id: 'guide', title: 'Waypoint guide' }] }));
-    const reply = await askWavi('Hello, can you help me?', { ...employee, history: [{ sender: 'user', text: 'My original task' }] });
+  it('uses the Claude-first chat answer, its verified citations and its stamps instead of the canned conversation', async () => {
+    sendMyHrChatMessage.mockResolvedValue({ message: 'A live conversational answer.', knowledgeStatus: 'GROUNDED',
+      citations: [{ sourceNumber: 1, title: 'Leave Policy', documentName: 'leave.pdf', hrOnly: false }],
+      historyProvenance: { user: 'stamp-u2', assistant: 'stamp-a2' }, actions: ['TIMESHEETS', 'UNKNOWN_PAGE', 'EMPLOYEES'] });
+    const reply = await askWavi('Hello, can you help me?', { ...employee, sessionKey: 's1', history: [
+      { sender: 'user', text: 'My original task', provenance: 'stamp-u1', sessionKey: 's1' },
+      { sender: 'assistant', text: 'Server answer', provenance: 'stamp-a1', sessionKey: 's1' },
+      { sender: 'assistant', text: 'Local guidance', sessionKey: 's1' },
+      { sender: 'user', text: 'Another account', provenance: 'stamp-x', sessionKey: 'other' },
+      { sender: 'assistant', text: 'Failed attempt', error: true, sessionKey: 's1' },
+    ] });
     expect(reply.text).toBe('A live conversational answer.');
-    expect(reply.source).toBe('Waypoint guide');
-    expect(wavyApi.chat).toHaveBeenCalledWith(expect.objectContaining({ history: [{ role: 'user', text: 'My original task' }] }));
+    expect(reply.server).toBe(true);
+    expect(reply.sources).toEqual([{ sourceNumber: 1, title: 'Leave Policy', documentName: 'leave.pdf', hrOnly: false }]);
+    expect(reply.source).toBe('Approved company policies');
+    expect(reply.knowledgeStatus).toBe('GROUNDED');
+    expect(reply.provenance).toEqual({ user: 'stamp-u2', assistant: 'stamp-a2' });
+    // the server's page keys become this role's own, permitted routes; unknown and unavailable ones give no button
+    expect(reply.actions).toEqual([{ label: 'Timesheets', path: '/myhr/employee/timesheets' }]);
+    // only this session's server-stamped turns go back to the server; an unstamped reply is not sent
+    expect(sendMyHrChatMessage).toHaveBeenCalledWith('Hello, can you help me?', [
+      { role: 'user', content: 'My original task', provenance: 'stamp-u1' },
+      { role: 'assistant', content: 'Server answer', provenance: 'stamp-a1' },
+    ]);
+  });
+
+  it('sends at most the last ten stamped turns and never an over-long, blank or unstamped one', () => {
+    const turns = Array.from({ length: 14 }, (_, index) => ({ sender: index % 2 ? 'assistant' : 'user', text: `turn ${index}`, provenance: `s${index}` }));
+    const sent = serverHistory([...turns, { sender: 'user', text: '   ', provenance: 'b' }, { sender: 'system', text: 'x', provenance: 'y' },
+      { sender: 'user', text: 'unstamped' }], undefined);
+    expect(sent).toHaveLength(10);
+    expect(sent[0]).toEqual({ role: 'user', content: 'turn 4', provenance: 's4' });
+    expect(sent.some((turn) => turn.content === 'unstamped')).toBe(false);
+    expect(serverHistory([{ sender: 'user', text: 'x'.repeat(5000), provenance: 'p' }])[0].content).toHaveLength(4000);
+  });
+
+  it.each(['Hi', 'Alright', 'Thanks', 'Okay!', 'Thank you Wavy', 'Sounds good'])('sends %s to the single chat backend and shows no navigation cards it did not return', async (query) => {
+    sendMyHrChatMessage.mockResolvedValue({ message: 'Happy to help.', actions: [] });
+    const response = await askWavi(query, admin);
+    expect(sendMyHrChatMessage).toHaveBeenCalledWith(query, []);
+    expect(response.text).toBe('Happy to help.');
+    expect(response.actions).toEqual([]);
+    expect(myHrEmployeeApi.list).not.toHaveBeenCalled();
+    expect(payrollReadinessApi.getReadiness).not.toHaveBeenCalled();
+  });
+
+  // Formerly answered in the browser from separate record APIs; the browser no longer reads records to answer.
+  it.each([
+    ['Who is my HR?', employee], ['I need to find an employee', admin], ['find an employee named Alice', employee],
+    ['Check pending approvals', { ...admin, route: '/myhr/admin/profile-change-requests' }],
+    ['Check pending approvals', { ...admin, route: '/myhr/admin/timesheets' }],
+    ['When is my timesheet deadline?', employee], ['Check payroll status', admin], ['Check my timesheet status', employee],
+  ])('with no chat backend (HTTP 404) says so for %s and reads no records in the browser', async (query, options) => {
+    const reply = await askWavi(query, options);
+    expect(reply.error).toBe(true);
+    expect(reply.text).toBe('Wavy chat is not enabled for this workspace.');
+    expect(reply.actions).toEqual([]);
+    expect(myHrEmployeeApi.getMine).not.toHaveBeenCalled();
+    expect(myHrEmployeeApi.list).not.toHaveBeenCalled();
+    expect(myHrProfileChangeApi.listForAdmin).not.toHaveBeenCalled();
+    expect(timesheetApi.list).not.toHaveBeenCalled();
+    expect(payrollReadinessApi.getReadiness).not.toHaveBeenCalled();
   });
 
   it('does not bypass an authentication or authorization failure with local tools', async () => {
-    wavyApi.chat.mockRejectedValue({ response: { status: 403 } });
+    sendMyHrChatMessage.mockRejectedValue({ response: { status: 403 } });
     const reply = await askWavi('Who is my HR?', employee);
     expect(reply.error).toBe(true);
     expect(myHrEmployeeApi.getMine).not.toHaveBeenCalled();
   });
-  it.each(['Hi', 'Alright', 'Thanks', 'Okay!', 'Thank you Wavy', 'Sounds good'])('handles %s conversationally without API calls or navigation cards', async (query) => {
-    const response = await askWavi(query, admin);
-    expect(response.social).toBe(true);
-    expect(response.actions).toEqual([]);
-    expect(response.text).not.toContain('exact match');
-    expect(myHrEmployeeApi.list).not.toHaveBeenCalled();
-    expect(payrollReadinessApi.getReadiness).not.toHaveBeenCalled();
-  });
 
-  it('clarifies an employee search and filters only authorized API results', async () => {
-    const start = await askWavi('I need to find an employee', admin);
-    expect(start.text).toContain('name, employee ID, or designation');
-    const field = await askWavi('by name', { ...admin, context: start.context });
-    expect(field.text).toBe("What's the name?");
-    myHrEmployeeApi.list.mockResolvedValue(ok([
-      { name: 'Alice Chen', employeeId: 'E12', designation: 'Engineer', personalEmail: 'private@example.com' },
-      { name: 'Bob Jones', employeeId: 'E13', designation: 'Designer' },
-    ]));
-    const found = await askWavi('Alice', { ...admin, context: field.context });
-    expect(found.text).toContain('Alice Chen');
-    expect(found.text).not.toContain('Bob Jones');
-    expect(found.text).not.toContain('private@example.com');
-    expect(found.source).toBe('Employee Management API');
-  });
 
-  it('does not query the employee roster for an employee role', async () => {
-    const response = await askWavi('find an employee named Alice', employee);
-    expect(myHrEmployeeApi.list).not.toHaveBeenCalled();
-    expect(response.text).toContain("isn't available for your role");
-  });
 
-  it('uses the current profile-request route to resolve an approval status question', async () => {
-    myHrProfileChangeApi.listForAdmin.mockResolvedValue(ok([{ status: 'PENDING' }, { status: 'APPROVED' }]));
-    const response = await askWavi('Check pending approvals', { ...admin, route: '/myhr/admin/profile-change-requests' });
-    expect(response.text).toContain('**1** pending request');
-    expect(response.source).toBe('Profile requests API');
-  });
 
-  it('checks submitted timesheets from the API on the timesheet route', async () => {
-    timesheetApi.list.mockResolvedValue(ok([{ status: 'SUBMITTED' }, { status: 'APPROVED' }]));
-    const response = await askWavi('Check pending approvals', { ...admin, route: '/myhr/admin/timesheets' });
-    expect(response.text).toContain('**1** submitted timesheet');
-    expect(response.source).toBe('Timesheets API');
-  });
-  it('reports only returned payroll counts and confirms a successful read', async () => {
-    payrollReadinessApi.getReadiness.mockResolvedValue(ok({ summary: { totalEmployees: 9, readyForPayroll: 6, awaitingApproval: 2 } }));
+  it('displays the authorized backend payroll summary without a separate frontend data read', async () => {
+    sendMyHrChatMessage.mockResolvedValue({ message: 'Payroll readiness: 6 of 9 employees are ready for payroll; 2 are awaiting approval.', actions: ['PAYROLL_READINESS'] });
     const response = await askWavi('Check payroll status', admin);
-    expect(response.text).toContain('**6 of 9**');
-    expect(response.text).toContain('**2**');
-    expect(response.confirmed).toBe(true);
-    expect(response.source).toBe('Payroll readiness API');
-  });
-
-  it('does not query payroll for employees or invent a deadline', async () => {
-    const response = await askWavi('When is my timesheet deadline?', employee);
-    expect(payrollReadinessApi.getReadiness).not.toHaveBeenCalled();
-    expect(response.text).toContain("don't have a verified deadline");
+    expect(response.text).toContain('6 of 9');
+    expect(response.text).toContain('2 are awaiting approval');
+    expect(response.actions).toEqual([{ label: 'Payroll Readiness', path: '/myhr/admin/payroll-readiness' }]);
     expect(response.confirmed).toBeUndefined();
+    expect(payrollReadinessApi.getReadiness).not.toHaveBeenCalled();
+    expect(sendMyHrChatMessage).toHaveBeenCalledWith('Check payroll status', []);
   });
 
-  it('uses the actual API cutoff instead of the knowledge-base date', async () => {
-    payrollReadinessApi.getReadiness.mockResolvedValue(ok({ period: { payrollCutoffDate: '2026-11-19' } }));
+
+  it('uses the cutoff returned by the backend instead of the knowledge-base date', async () => {
+    sendMyHrChatMessage.mockResolvedValue({ message: 'The payroll cutoff for the current period is 2026-11-19.', actions: ['PAYROLL_READINESS'] });
     const response = await askWavi('When is payroll cutoff?', admin);
     expect(response.text).toContain('2026-11-19');
     expect(response.text).not.toContain('10th');
+    expect(payrollReadinessApi.getReadiness).not.toHaveBeenCalled();
   });
 
-  it('offers recovery without inventing counts if the payload is incomplete', async () => {
-    payrollReadinessApi.getReadiness.mockResolvedValue(ok({ summary: {} }));
-    const response = await askWavi('Check payroll status', admin);
-    expect(response.error).toBe(true);
-    expect(response.confirmed).toBeUndefined();
-    expect(response.actions[0]).toEqual({ label: 'Try again', query: 'Check payroll status' });
-  });
 
-  it('respects backend denial without claiming success or encouraging retries', async () => {
-    payrollReadinessApi.getReadiness.mockRejectedValue({ response: { status: 403 } });
-    const response = await askWavi('Check payroll status', admin);
-    expect(response.text).toContain("isn't available for your account");
-    expect(response.confirmed).toBeUndefined();
-    expect(response.actions.some((action) => action.label === 'Try again')).toBe(false);
-  });
 
-  it('reads own timesheet status through the authenticated API', async () => {
-    timesheetApi.list.mockResolvedValue(ok([{ status: 'APPROVED' }, { status: 'SUBMITTED' }]));
-    const response = await askWavi('Check my timesheet status', employee);
-    expect(response.text).toContain('**2** timesheets');
-    expect(response.text).toContain('**1** approved');
-    expect(response.confirmed).toBe(true);
-    expect(response.actions[0].path).toBe('/myhr/employee/timesheets');
-  });
 
   it('does not advertise restricted or unimplemented routes to employees', () => {
     expect(permittedActions([
@@ -146,5 +126,51 @@ describe('Wavy trusted application data', () => {
       { label: 'Unknown', path: '/myhr/employee/not-implemented' },
       { label: 'Profile', path: '/myhr/employee/profile' },
     ], 'EMPLOYEE')).toEqual([{ label: 'Profile', path: '/myhr/employee/profile' }]);
+  });
+});
+
+describe('Wavy refusal handling', () => {
+  it.each([400, 401, 403, 429, 500, 502, 503, 504])('does not invoke another data path after HTTP %s', async (status) => {
+    sendMyHrChatMessage.mockRejectedValue({ response: { status } });
+    const reply = await askWavi('Who is my HR?', employee);
+    expect(reply.error).toBe(true);
+    // at most a retry of the same question; never a different route to the data
+    expect(reply.actions.every((action) => action.query === 'Who is my HR?')).toBe(true);
+    expect(reply.notice).toBeUndefined();
+    expect(myHrEmployeeApi.getMine).not.toHaveBeenCalled();
+    expect(myHrEmployeeApi.list).not.toHaveBeenCalled();
+    expect(timesheetApi.list).not.toHaveBeenCalled();
+    expect(payrollReadinessApi.getReadiness).not.toHaveBeenCalled();
+  });
+
+  it('does not invoke another data path when the failure reason is unknown', async () => {
+    sendMyHrChatMessage.mockRejectedValue(new Error('network error'));
+    const reply = await askWavi('Who is my HR?', employee);
+    expect(reply.error).toBe(true);
+    expect(reply.actions.every((action) => action.query === 'Who is my HR?')).toBe(true);
+    expect(myHrEmployeeApi.getMine).not.toHaveBeenCalled();
+  });
+
+  it('says plainly that the AI usage limit was reached and offers no retry and no other path', async () => {
+    sendMyHrChatMessage.mockRejectedValue({ response: { status: 503, data: { message: 'The AI assistant has reached its configured usage limit and cannot answer this request.' } } });
+    const reply = await askWavi('Who is my HR?', employee);
+    expect(reply.error).toBe(true);
+    expect(reply.text).toMatch(/usage limit/i);
+    expect(reply.actions).toEqual([]);
+    expect(myHrEmployeeApi.getMine).not.toHaveBeenCalled();
+  });
+
+
+  it('never sends a message to the server without a signed-in workplace session', async () => {
+    localStorage.removeItem('accessToken');
+    await askWavi('How do I submit a timesheet?', employee);
+    expect(sendMyHrChatMessage).not.toHaveBeenCalled();
+  });
+
+  it('treats an empty chat answer as a failure, not as an answer', async () => {
+    sendMyHrChatMessage.mockResolvedValue({ message: '   ', knowledgeStatus: null, citations: [], historyProvenance: null, actions: null });
+    const reply = await askWavi('Hello', employee);
+    expect(reply.error).toBe(true);
+    expect(reply.text).toBeTruthy();
   });
 });

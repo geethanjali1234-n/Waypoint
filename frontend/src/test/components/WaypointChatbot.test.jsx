@@ -3,9 +3,18 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import WaypointChatbot from '../../components/chatbot/WaypointChatbot';
 import { queryKnowledgeBase, getQuickSuggestions } from '../../components/chatbot/knowledgeBase';
+import { sendMyHrChatMessage } from '../../api/myHrChatApi';
 
-beforeEach(() => localStorage.setItem('myHrAuthenticatedUser', JSON.stringify({ role: 'HR' })));
-afterEach(() => localStorage.removeItem('myHrAuthenticatedUser'));
+// Wavy answers only through the single chat backend (/api/myhr/chat); the UI tests below use its mocked replies.
+vi.mock('../../api/myHrChatApi', () => ({ sendMyHrChatMessage: vi.fn() }));
+
+beforeEach(() => {
+  localStorage.setItem('myHrAuthenticatedUser', JSON.stringify({ role: 'HR' }));
+  localStorage.setItem('accessToken', 'test-token');
+  sendMyHrChatMessage.mockReset();
+  sendMyHrChatMessage.mockResolvedValue({ message: 'Here is how that works.', actions: [] });
+});
+afterEach(() => { localStorage.removeItem('myHrAuthenticatedUser'); localStorage.removeItem('accessToken'); });
 
 const mockedNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -211,6 +220,8 @@ describe('WaypointChatbot Component', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Waypoint Assistant/i }));
 
+    sendMyHrChatMessage.mockResolvedValue({ message: '1-Tap Express Clearance Criteria: complete, policy-compliant timesheets can be cleared in one step.',
+      actions: ['TIMESHEETS'] });
     // Click the Express Clearance suggestion chip
     const chip = screen.getByRole('button', { name: /Timesheets.*Review & clear/i });
     fireEvent.click(chip);
@@ -237,12 +248,14 @@ describe('WaypointChatbot Component', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Waypoint Assistant/i }));
 
+    // When the chat backend cannot answer, Wavy does not fall back to a canned deadline.
+    sendMyHrChatMessage.mockRejectedValue({ response: { status: 503 } });
     const input = screen.getByPlaceholderText(/Ask Wavy about your workday/i);
     fireEvent.change(input, { target: { value: 'i want to know by when should i submit my timesheety' } });
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
 
     await waitFor(() => {
-      expect(screen.getByText(/couldn.t check that information right now/i)).toBeInTheDocument();
+      expect(screen.getByText(/temporarily unavailable/i)).toBeInTheDocument();
     }, { timeout: 1500 });
 
     expect(screen.queryByText(/Friday 5:00 PM/i)).not.toBeInTheDocument();
@@ -259,12 +272,14 @@ describe('WaypointChatbot Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Waypoint Assistant/i }));
 
     const input = screen.getByPlaceholderText(/Ask Wavy about your workday/i);
+    sendMyHrChatMessage.mockResolvedValue({ message: 'The payroll cutoff for the current period is 2026-11-19.', actions: [] });
     fireEvent.change(input, { target: { value: 'when is payroll cutoff?' } });
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
 
     await waitFor(() => {
-      expect(screen.getByText(/couldn.t check that information right now/i)).toBeInTheDocument();
+      expect(screen.getByText(/payroll cutoff for the current period is 2026-11-19/i)).toBeInTheDocument();
     }, { timeout: 1500 });
+    expect(sendMyHrChatMessage).toHaveBeenCalledWith('when is payroll cutoff?', []);
   });
 
   it('clears conversation from the options menu and restores welcome cards', () => {
@@ -333,6 +348,8 @@ describe('Contextual assistant presentation', () => {
       const chips = screen.getByLabelText('Suggested topics');
       expect(chips.querySelector('button')).toHaveTextContent('Document Requests');
       expect(screen.queryByRole('button', { name: /Employee Management/i })).not.toBeInTheDocument();
+      sendMyHrChatMessage.mockResolvedValue({ message: 'You can request an employment letter from Document Requests.',
+        actions: ['DOCUMENT_REQUESTS'] });
       fireEvent.click(screen.getByRole('button', { name: /Document Requests.*Letters/i }));
       expect(screen.queryByRole('heading', { name: /Hey! I'm Wavy/i })).not.toBeInTheDocument();
       expect(screen.getByLabelText('Assistant is typing')).toBeInTheDocument();

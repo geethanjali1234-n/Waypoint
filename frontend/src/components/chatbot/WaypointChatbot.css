@@ -161,3 +161,30 @@
 /* A checked read is useful feedback, not a completed-task celebration. */
 .wp-chatbot-feedback > span { animation:none; }
 @media(max-width:360px) { .wp-chatbot-message__mascot > .wavy-mascot { width:34px; height:38px; } }
+
+/* Claude-first Wavy answers: structured lists and verified policy sources (additive; the mascot UI above is unchanged). */
+.wp-chatbot-sources { display:flex; flex-direction:column; gap:4px; margin-top:8px; padding:8px 12px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:var(--wp-color-surface); font-size:.75rem; line-height:1.4; }
+.wp-chatbot-sources__label { font-weight:600; color:var(--wp-color-text-muted); }
+.wp-chatbot-sources__list { display:flex; flex-direction:column; gap:4px; margin:0; padding:0; list-style:none; }
+.wp-chatbot-source { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 8px; color:var(--wp-color-text); overflow-wrap:anywhere; }
+.wp-chatbot-source__number { font-weight:600; color:var(--wp-color-primary); }
+.wp-chatbot-source__title { font-weight:600; }
+.wp-chatbot-source__file { color:var(--wp-color-text-muted); }
+.wp-chatbot-source__badge { padding:0 8px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-pill); color:var(--wp-color-text-muted); font-size:.7rem; }
+.wp-chatbot-source__explain { padding:2px 6px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-control); background:transparent; color:var(--wp-color-primary); cursor:pointer; font:inherit; }
+.wp-chatbot-knowledge-note { margin:8px 0 0; color:var(--wp-color-text-muted); font-size:.75rem; line-height:1.4; }
+/* --- Wavy answers: structured text and responsive controls --- */
+.wp-wavi-plain { white-space:pre-wrap; }
+.wp-wavi-answer { display:flex; flex-direction:column; gap:8px; white-space:normal; }
+.wp-wavi-answer__lead { margin:0; font-size:13px; font-weight:600; line-height:1.55; color:var(--wp-color-text); }
+.wp-wavi-group { display:flex; flex-direction:column; gap:6px; }
+.wp-wavi-group__title { margin:0; font-size:11px; font-weight:600; color:var(--wp-color-text-muted); }
+.wp-wavi-rows { display:flex; flex-direction:column; gap:4px; margin:0; padding:0; list-style:none; }
+.wp-wavi-row { padding:7px 10px; border-left:3px solid var(--wp-color-primary-soft); border-radius:6px; background:var(--wp-color-bg); font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+.wp-wavi-toggle { align-self:flex-start; min-height:32px; padding:4px 10px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-pill, 999px); background:var(--wp-color-surface); color:var(--wp-color-primary); font-size:11px; font-weight:600; cursor:pointer; }
+.wp-wavi-toggle:hover { background:var(--wp-color-hover); }
+.wp-wavi-toggle:focus-visible, .wp-wavi-retry:focus-visible { outline:2px solid var(--wp-color-primary); outline-offset:2px; }
+.wp-wavi-note { margin:0; font-size:11px; line-height:1.5; color:var(--wp-color-text-muted); }
+.wp-wavi-retry { display:inline-flex; align-items:center; gap:6px; margin-top:8px; min-height:34px; padding:6px 12px; border:1px solid var(--wp-color-border); border-radius:var(--wp-radius-pill, 999px); background:var(--wp-color-surface); color:var(--wp-color-primary); font-size:11px; font-weight:600; cursor:pointer; }
+.wp-wavi-retry:disabled { opacity:.55; cursor:default; }
+@media (max-width: 640px) { .wp-wavi-row { font-size:12.5px; padding:8px 10px; } .wp-wavi-toggle, .wp-wavi-retry { min-height:40px; } }

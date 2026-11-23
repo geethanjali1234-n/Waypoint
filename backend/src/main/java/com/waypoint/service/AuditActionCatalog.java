@@ -119,6 +119,8 @@ public final class AuditActionCatalog {
         put(map, AuditActionType.GOOGLE_EMAIL_CONNECTED, AuditEventCategory.SECURITY, "Google email account connected");
         put(map, AuditActionType.GOOGLE_EMAIL_DISCONNECTED, AuditEventCategory.SECURITY, "Google email account disconnected");
         put(map, AuditActionType.GOOGLE_EMAIL_TEST_SENT, AuditEventCategory.SECURITY, "Google email test sent");
+        put(map, AuditActionType.EXTERNAL_AI_PROCESSING_APPROVED, AuditEventCategory.SECURITY, "External AI processing approved");
+        put(map, AuditActionType.EXTERNAL_AI_PROCESSING_REVOKED, AuditEventCategory.SECURITY, "External AI processing revoked");
 
         return map;
     }

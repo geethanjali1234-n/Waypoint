@@ -1,10 +1,4 @@
 waypoint:
-  wavy:
-    enabled: ${WAVY_AI_ENABLED:true}
-    provider: ${WAVY_AI_PROVIDER:ollama}
-    ollama-url: ${WAVY_OLLAMA_URL:http://127.0.0.1:11434}
-    api-key: ${WAVY_AI_API_KEY:}
-    model: ${WAVY_AI_MODEL:qwen3:4b-instruct-2507-q4_K_M}
   # Application uploads always use MongoDB GridFS. The local root remains only
   # as a legacy-file migration/read fallback.
   resume-storage-root: ${RESUME_STORAGE_ROOT:uploads}
@@ -85,6 +79,75 @@ waypoint:
       scheduler-cron: ${PAYROLL_READINESS_SCHEDULER_CRON:0 15 2 * * *}
       standard-workday-hours: ${PAYROLL_READINESS_STANDARD_WORKDAY_HOURS:8}
       require-weekend-coverage: ${PAYROLL_READINESS_REQUIRE_WEEKEND_COVERAGE:false}
+    ai:
+      # Claude is the default for permitted general chat; temporary Claude outages fall back to
+      # verified-local Ollama unless Claude-only mode is explicitly enabled.
+      primary-provider: ${MYHR_AI_PRIMARY_PROVIDER:claude}
+      claude-only:
+        # Claude writes every AI-generated chat reply and Ollama is never called: when Claude is unavailable
+        # the assistant says so (HTTP 503). Requires primary-provider claude. Policy excerpts still reach Claude
+        # only as described under chat.knowledge-grounding.allow-external-provider. Keep false until approved.
+        enabled: ${MYHR_AI_CLAUDE_ONLY_ENABLED:false}
+      claude:
+        api-key: ${CLAUDE_API_KEY:}
+        api-url: ${CLAUDE_API_URL:https://api.anthropic.com/v1/messages}
+        model: ${CLAUDE_API_MODEL:claude-sonnet-5}
+        timeout: ${CLAUDE_API_TIMEOUT:60s}
+        # Output-token limit per chat reply; model thinking counts toward it. A reply that reaches it is cut
+        # off and is never shown (the Ollama fallback answers instead).
+        max-tokens: ${CLAUDE_API_MAX_TOKENS:4096}
+      ollama:
+        base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+        model: ${OLLAMA_MODEL:llama3.1:8b}
+        timeout: ${OLLAMA_TIMEOUT:5m}
+        # Output-token limit for a grounded (policy) answer (64-8192); an answer cut off at it is never shown.
+        grounded-max-tokens: ${OLLAMA_GROUNDED_MAX_TOKENS:1024}
+        # How long Ollama keeps the model loaded after a request, e.g. 30m. Empty = Ollama's default (5m); a cold
+        # load of llama3.1:8b adds its load time to the next answer.
+        keep-alive: ${OLLAMA_KEEP_ALIVE:}
+      voyage:
+        api-key: ${VOYAGE_API_KEY:}
+        api-url: ${VOYAGE_API_URL:https://api.voyageai.com/v1/embeddings}
+        model: ${VOYAGE_MODEL:voyage-4-lite}
+        dimensions: ${VOYAGE_DIMENSIONS:1024}
+        timeout: ${VOYAGE_TIMEOUT:30s}
+    # MyHR knowledge base (RAG). Every switch defaults to off; enable only with team approval.
+    knowledge:
+      management:
+        # HR/admin upload, approval, replacement and ingestion requests. Listing and revocation stay available.
+        enabled: ${MYHR_KNOWLEDGE_MANAGEMENT_ENABLED:false}
+      ingestion:
+        # Sends approved policy text to the Voyage embedding provider; also requires management.enabled.
+        # COMPANY_WIDE text is governed by this switch alone. HR_ONLY text is embedded only when a Company Admin
+        # has recorded the organization's Voyage approval for HR_ONLY (/api/myhr/knowledge/external-processing);
+        # EMPLOYEE_PRIVATE is never embedded. A Claude approval never counts as a Voyage approval.
+        enabled: ${MYHR_KNOWLEDGE_INGESTION_ENABLED:false}
+      activation:
+        enabled: ${MYHR_KNOWLEDGE_ACTIVATION_ENABLED:false}
+      retrieval:
+        enabled: ${MYHR_KNOWLEDGE_RETRIEVAL_ENABLED:false}
+        # Minimum Atlas cosine vectorSearchScore ((1 + cosine) / 2) for a chunk to be used as context.
+        min-score: ${MYHR_KNOWLEDGE_RETRIEVAL_MIN_SCORE:0.0}
+        # Drops candidates scoring more than this below the best match (same score scale as min-score), so excerpts
+        # from a much less relevant policy are not supplied with the right one. 0 = off. Calibrate against the live
+        # index before enabling; offline tests only verify the mechanism.
+        relative-score-margin: ${MYHR_KNOWLEDGE_RETRIEVAL_RELATIVE_SCORE_MARGIN:0.0}
+    chat:
+      # Master switch for the Claude-first Wavy chat (POST /api/myhr/chat). OFF by default so that merging this code
+      # changes nothing in an existing deployment: no chat endpoint exists and nothing is sent to any AI provider.
+      enabled: ${MYHR_CHAT_ENABLED:false}
+      knowledge-grounding:
+        # Grounds chat answers in approved policies; also requires knowledge.retrieval.enabled.
+        enabled: ${MYHR_CHAT_KNOWLEDGE_GROUNDING_ENABLED:false}
+        # Deployment switch that lets Claude, an external provider, be considered for policy answers. On its
+        # own it sends nothing: Claude also needs every retrieved excerpt to be COMPANY_WIDE (HR_ONLY and
+        # EMPLOYEE_PRIVATE never leave Waypoint) and an organization-level ExternalPolicyProcessingAuthorization
+        # that permits those excerpts: a Company Admin's recorded organization approval for Claude AND a recorded
+        # approval of each excerpt's exact activated policy version. None exist by default, so policy answers stay
+        # on verified-local Ollama. Keep false until the company has explicitly approved this.
+        # Not covered here: Voyage receives the question text (every grounded chat) and approved policy chunk text
+        # at ingestion; see knowledge.ingestion.enabled.
+        allow-external-provider: ${MYHR_CHAT_KNOWLEDGE_ALLOW_EXTERNAL_PROVIDER:false}
     document-request-reminders:
       # Off by default. Turn on explicitly with DOCUMENT_REQUEST_REMINDERS_ENABLED=true.
       enabled: ${DOCUMENT_REQUEST_REMINDERS_ENABLED:false}

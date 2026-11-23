@@ -5,9 +5,12 @@ import myHrEmployeeApi from '../../api/myHrEmployeeApi';
 import myHrProfileChangeApi from '../../api/myHrProfileChangeApi';
 import { conversationalReply, employeeSearchIntent, isFollowUp, workplaceQuery } from './conversationIntents';
 import { navigationRegistry } from '../../services/navigation/navigationRegistry';
-import { queryKnowledgeBase } from './knowledgeBase';
+import { getRelevantNavigationActions, queryKnowledgeBase } from './knowledgeBase';
 import { getContextActions } from './quickActions';
-import wavyApi from '../../api/wavyApi';
+import { sendMyHrChatMessage } from '../../api/myHrChatApi';
+import { resolveWaviActions } from './waviActions';
+import { chatErrorMessage } from './waviAnswerFormat';
+import { WAVI_OUT_OF_SCOPE_REPLY } from './waviScope';
 
 const staffRoles = ['COMPANY_ADMIN', 'HR'];
 const isWorkplaceRole = (role) => [...staffRoles, 'EMPLOYEE'].includes(role);
@@ -28,30 +31,75 @@ function unwrap(response) {
   return response.data.data;
 }
 
+const MAX_HISTORY_MESSAGES = 10;
+
+/**
+ * The earlier turns of THIS login session for the server, newest last. A turn keeps the opaque stamp the server issued
+ * for it (the browser never interprets it); a turn with no stamp (a local workflow-guide reply) carries none, so the
+ * server never treats it as verified. Failed attempts and notices are not conversation.
+ */
+export function serverHistory(history, sessionKey) {
+  return (history || [])
+    .filter((turn) => ['user', 'assistant'].includes(turn.sender) && typeof turn.text === 'string' && turn.text.trim()
+      && !turn.error && typeof turn.provenance === 'string' && turn.provenance
+      && (turn.sessionKey === undefined || turn.sessionKey === sessionKey))
+    .slice(-MAX_HISTORY_MESSAGES)
+    .map((turn) => ({ role: turn.sender, content: turn.text.slice(0, 4000),
+      ...(typeof turn.provenance === 'string' && turn.provenance ? { provenance: turn.provenance } : {}) }));
+}
+
+/**
+ * A failed authenticated chat request cannot be answered through a different data path. A 404 can mean the
+ * feature is disabled, but cannot prove which authorization or verification decisions would have applied.
+ */
+export function chatFailureOutcome(error) {
+  const status = error?.response?.status;
+  const serverText = String(error?.response?.data?.message ?? '');
+  if (status === 404) return { eligible: false, text: 'Wavy chat is not enabled for this workspace.', retry: false };
+  if (status === 503 && /usage limit/i.test(serverText)) return { eligible: false, text: 'Wavy has reached its AI usage limit for now, so it cannot answer this question. Please try again later or contact your administrator.', retry: false };
+  const { text, retry } = chatErrorMessage(error);
+  return { eligible: false, text, retry };
+}
+
 export async function askWavi(query, options) {
-  let notice = '';
   if (getAccessToken() && isWorkplaceRole(options.role)) {
     try {
-      const response = await wavyApi.chat({ message: query.slice(0, 2000), route: (options.route || '').slice(0, 500),
-        history: (options.history || []).filter((turn) => ['user', 'assistant'].includes(turn.sender) && turn.text?.trim())
-          .slice(-10).map((turn) => ({ role: turn.sender, text: turn.text.slice(0, 2000) })) });
-      const data = unwrap(response);
-      if (['ai', 'verified'].includes(data.mode) && typeof data.text === 'string' && data.text.trim()) {
-        return { text: data.text, actions: permittedActions(data.actions || [], options.role),
-          source: data.sources?.map((source) => source.title).join(' · '), sources: data.sources || [],
-          mode: data.mode, confirmed: data.confirmed, context: null };
-      }
-      notice = data.notice || 'AI conversation is unavailable. Using workflow guidance.';
-    } catch (error) {
-      if ([401, 403].includes(error?.response?.status)) return {
-        text: error.response.status === 401 ? 'Your session expired. Sign in again so I can check your workplace information.' : "Your account doesn't have access to this assistant.",
-        actions: [], error: true, mode: 'limited',
+      const reply = await sendMyHrChatMessage(query.slice(0, 2000), serverHistory(options.history, options.sessionKey));
+      if (reply != null && (typeof reply !== 'object' || Array.isArray(reply))) return {
+        text: "The assistant's response couldn't be displayed. Please try again.", error: true, mode: 'limited', actions: [],
       };
-      notice = 'AI conversation is currently unavailable. Using workflow guidance.';
+      if (reply?.message == null || (typeof reply.message === 'string' && !reply.message.trim())) return {
+        text: 'The assistant returned an empty response. Please try again.', error: true, mode: 'limited', actions: [],
+      };
+      if (typeof reply.message !== 'string') return {
+        text: "The assistant's response couldn't be displayed. Please try again.", error: true, mode: 'limited', actions: [],
+      };
+      const citations = (Array.isArray(reply.citations) ? reply.citations : [])
+        .filter((citation) => Number.isInteger(citation?.sourceNumber) && citation.sourceNumber > 0 && citation.sourceNumber <= 99
+          && typeof citation?.title === 'string')
+        .slice(0, 10)
+        .map((citation) => ({ sourceNumber: citation.sourceNumber, title: citation.title,
+          documentName: typeof citation.documentName === 'string' ? citation.documentName : null, hrOnly: Boolean(citation.hrOnly) }));
+      return {
+        text: reply.message,
+        // The server's page keys decide the buttons, resolved to this role's own routes and filtered like every other action.
+        actions: permittedActions(reply.message === WAVI_OUT_OF_SCOPE_REPLY ? [] : reply.actions == null
+          ? getRelevantNavigationActions(query, options.role,
+            (options.history || []).filter((turn) => turn.sender === 'user' && turn.provenance
+              && turn.sessionKey === options.sessionKey).map((turn) => turn.text))
+          : resolveWaviActions(reply.actions, options.role, query), options.role),
+        source: citations.length ? 'Approved company policies' : undefined,
+        sources: citations, knowledgeStatus: reply.knowledgeStatus,
+        provenance: reply.historyProvenance, server: true,
+        context: null,
+      };
+    } catch (error) {
+      const outcome = chatFailureOutcome(error);
+      return { text: outcome.text, error: true, mode: 'limited',
+        actions: outcome.retry ? [{ label: 'Try again', query }] : [] };
     }
   }
-  const guided = await askGuidedWavi(query, options);
-  return { ...guided, mode: 'limited', notice };
+  return { text: 'Sign in to your My HR account to use Wavy.', error: true, mode: 'limited', actions: [] };
 }
 
 async function askGuidedWavi(query, { role, route, previousQuery = '', context = null, history = [] }) {

@@ -234,7 +234,7 @@ class MyHrSharedDataModelTest {
         assertThat(MongoRepository.class).isAssignableFrom(ProfileChangeRequestRepository.class);
         assertThat(MongoRepository.class).isAssignableFrom(AuditLogRepository.class);
 
-        assertThat(TimesheetRepository.class.getDeclaredMethods()).hasSize(7);
+        assertThat(TimesheetRepository.class.getDeclaredMethods()).hasSize(9); // 7 existing + the 2 read queries Wavy needs
         assertThat(PayrollRecordRepository.class.getDeclaredMethods()).hasSize(3);
         assertThat(PaystubRepository.class.getDeclaredMethods()).hasSize(4);
         assertThat(ProfileChangeRequestRepository.class.getDeclaredMethods()).hasSize(5);

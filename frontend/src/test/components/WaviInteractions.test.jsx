@@ -3,9 +3,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import WaypointChatbot from '../../components/chatbot/WaypointChatbot';
 import { askWavi } from '../../components/chatbot/waviAssistant';
-import wavyApi from '../../api/wavyApi';
-
-vi.mock('../../api/wavyApi', () => ({ default: { capabilities: vi.fn() } }));
 
 vi.mock('../../components/chatbot/waviAssistant', async () => ({
   ...(await vi.importActual('../../components/chatbot/waviAssistant')),
@@ -55,17 +52,16 @@ it('responds to pending and failed requests with event-driven expressions and re
   expect(mascot()).toHaveAttribute('data-state', 'thinking');
   await waitFor(() => expect(askWavi).toHaveBeenCalled());
   await act(async () => reject(new Error('Network unavailable')));
-  expect(mascot()).toHaveAttribute('data-state', 'confused');
+  await waitFor(() => expect(mascot()).toHaveAttribute('data-state', 'confused'));
   expect(screen.getByRole('button', { name: /Try again/i })).toBeInTheDocument();
 });
 
-it('shows AI availability from the backend and renders the real model response', async () => {
+it('renders the server reply without claiming unavailable AI status', async () => {
   localStorage.setItem('accessToken', 'test-token');
-  wavyApi.capabilities.mockResolvedValue({ data: { data: { aiAvailable: true } } });
-  askWavi.mockResolvedValue({ text: 'Here is a live answer.', mode: 'ai', source: 'Waypoint product guidance' });
+  askWavi.mockResolvedValue({ text: 'Here is a live answer.', source: 'Waypoint product guidance' });
   openAndSend('Can you help me with my profile?');
-  expect(await screen.findByText(/AI enabled/)).toBeInTheDocument();
   expect(await screen.findByText('Here is a live answer.')).toBeInTheDocument();
+  expect(screen.queryByText(/AI enabled/)).not.toBeInTheDocument();
   expect(screen.getByText(/Waypoint product guidance/)).toBeInTheDocument();
 });
 

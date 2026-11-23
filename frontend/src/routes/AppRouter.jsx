@@ -54,6 +54,7 @@ import EmployeeDocumentSignPage from "../pages/myhr/features/documentRequests/do
 import I983SigningPage from "../pages/myhr/features/documentRequests/i983/I983SigningPage";
 import { GENERIC_DOCUMENT_WORKFLOW_TYPES } from "../pages/myhr/features/documentRequests/documentWorkflowTypes";
 import ReportsPage from "../pages/myhr/features/reports/ReportsPage";
+import KnowledgeBasePage from "../pages/myhr/features/knowledge/KnowledgeBasePage";
 import AuditHistoryPage from "../pages/myhr/features/admin/AuditHistoryPage";
 import OrganizationSettingsPage from "../pages/myhr/features/admin/OrganizationSettingsPage";
 import RoleProtectedRoute from "./RoleProtectedRoute";
@@ -323,6 +324,10 @@ const router = createBrowserRouter([
     element: <MyHrProtectedRoute allowedRoles={["HR"]}><ReportsPage role="HR" /></MyHrProtectedRoute>,
   },
   {
+    path: "/myhr/hr/knowledge-base",
+    element: <MyHrProtectedRoute allowedRoles={["HR"]}><KnowledgeBasePage /></MyHrProtectedRoute>,
+  },
+  {
     path: "/myhr/hr/payroll-readiness",
     element: <MyHrProtectedRoute allowedRoles={["HR"]}><PayrollReadinessPage role="HR" /></MyHrProtectedRoute>,
   },
@@ -390,6 +395,10 @@ const router = createBrowserRouter([
   {
     path: "/myhr/admin/reports",
     element: <MyHrProtectedRoute allowedRoles={["COMPANY_ADMIN"]}><ReportsPage role="COMPANY_ADMIN" /></MyHrProtectedRoute>,
+  },
+  {
+    path: "/myhr/admin/knowledge-base",
+    element: <MyHrProtectedRoute allowedRoles={["COMPANY_ADMIN"]}><KnowledgeBasePage /></MyHrProtectedRoute>,
   },
   {
     path: "/myhr/admin/payroll-readiness",

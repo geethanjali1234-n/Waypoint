@@ -219,6 +219,74 @@ public class DocumentRequestService {
         return result;
     }
 
+    public List<MyHrOwnDocumentRequestHistory> listOwnHistory(String actorUserId) {
+        var actor = authenticatedUserService.require(actorUserId, Set.of(UserRole.EMPLOYEE), false);
+        return requestRepository
+                .findByOrganizationIdOrderByRequestedAtDesc(actor.organizationId())
+                .stream()
+                // Defend against an altered repository implementation or malformed legacy row.
+                .filter(request -> actor.organizationId().equals(request.getOrganizationId()))
+                .filter(request -> involves(request, actor.userId()))
+                .sorted(Comparator.comparing(DocumentRequest::getRequestedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(request -> new MyHrOwnDocumentRequestHistory(
+                        request.getDocumentType(), request.getRequestTitle(),
+                        request.getRequestedDocuments() == null ? List.of() : List.copyOf(request.getRequestedDocuments()),
+                        request.getCategory(), actor.userId().equals(request.getRequestedByUserId()), request.getStatus(),
+                        request.getRequestedAt(), request.getReviewedAt(), request.getApprovedAt(), request.getFulfilledAt(),
+                        request.getRejectedAt(), request.getSignatureSubmittedAt(), request.getRejectionReason(),
+                        hasSignedDocument(request), hasDownloadableCompletedDocument(request)))
+                .toList();
+    }
+
+    /**
+     * Read-only, count-only queue state for Wavi. HR is scoped to requests explicitly assigned
+     * to that HR user; a Company Admin is scoped to its authenticated organization. In particular,
+     * direct-report visibility alone never turns a request into an HR review assignment.
+     */
+    public MyHrDocumentRequestQueueSummary queueSummary(String actorUserId) {
+        var actor = authenticatedUserService.require(actorUserId, MANAGER_ROLES, false);
+        List<DocumentRequest> organizationRequests = requestRepository
+                .findByOrganizationIdOrderByRequestedAtDesc(actor.organizationId()).stream()
+                // Keep the service safe if a repository implementation returns a malformed row.
+                .filter(request -> actor.organizationId().equals(request.getOrganizationId()))
+                .toList();
+        List<DocumentRequest> queue = actor.role() == UserRole.HR
+                ? organizationRequests.stream()
+                .filter(request -> actor.userId().equals(request.getRequestedForUserId())).toList()
+                : organizationRequests;
+
+        int pendingFulfillment = countWithStatus(queue, DocumentRequestStatus.PENDING);
+        int awaitingI983Review = (int) queue.stream()
+                .filter(request -> request.getDocumentType() == RequestedDocumentType.I983)
+                .filter(request -> request.getStatus() == DocumentRequestStatus.SUBMITTED)
+                .count();
+        int returnedForCorrection = countWithStatus(queue, DocumentRequestStatus.RETURNED_FOR_CORRECTION);
+        int pendingAdminApproval = actor.role() == UserRole.COMPANY_ADMIN ? (int) queue.stream()
+                .filter(request -> request.getOfferLetterApproval() != null)
+                .filter(request -> request.getStatus() == DocumentRequestStatus.SUBMITTED)
+                .count() : 0;
+        int completed = actor.role() == UserRole.COMPANY_ADMIN
+                ? countWithStatus(queue, DocumentRequestStatus.FULFILLED) : 0;
+        return new MyHrDocumentRequestQueueSummary(queue.size(), pendingFulfillment, awaitingI983Review,
+                returnedForCorrection, pendingAdminApproval, completed);
+    }
+
+    private int countWithStatus(List<DocumentRequest> requests, DocumentRequestStatus status) {
+        return (int) requests.stream().filter(request -> request.getStatus() == status).count();
+    }
+
+    private boolean hasSignedDocument(DocumentRequest request) {
+        return request.getSignedResponseDocumentId() != null || request.getEmployeeSignatureDocumentId() != null
+                || request.getOrganizationSignedDocumentId() != null;
+    }
+
+    private boolean hasDownloadableCompletedDocument(DocumentRequest request) {
+        if (request.getStatus() != DocumentRequestStatus.FULFILLED) return false;
+        return request.getFulfilledDocumentId() != null || request.getSignedResponseDocumentId() != null
+                || request.getEmployeeSignatureDocumentId() != null || request.getOrganizationSignedDocumentId() != null;
+    }
+
     public DocumentRequestResponse get(String actorUserId, String requestId) {
         var actor = authenticatedUserService.require(actorUserId, ALL_ROLES, false);
         DocumentRequest request = requireVisible(actor, requestId);

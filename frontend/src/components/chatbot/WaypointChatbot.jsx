@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getMyHrSession } from '../../auth/myHrSession';
+import { getMyHrSession, MY_HR_AUTHENTICATION_CLEARED_EVENT } from '../../auth/myHrSession';
 import { askWavi, permittedActions } from './waviAssistant';
 import { resolveEffectiveRole } from '../../services/navigation/navigationRegistry';
 import { getContextActions } from './quickActions';
@@ -11,46 +11,94 @@ import AssistantMascot from './AssistantMascot';
 import WaviMascot from './WaviMascot';
 import useWaviMascot from './useWaviMascot';
 import { isFollowUp } from './conversationIntents';
-import wavyApi from '../../api/wavyApi';
-import { getAccessToken } from '../../auth/myHrSession';
+import WaviAnswer from './WaviAnswer';
+import { useWaviConversation, waviSessionKey } from './WaviConversationContext';
 
 export default function WaypointChatbot({ displayName } = {}) {
   const navigate = useNavigate();
   const { animation: mascot, send: animateMascot } = useWaviMascot();
   const session = getMyHrSession();
+  const shared = useWaviConversation();
+  // Server stamps and answers belong to one login session: they never outlive it or move to another account.
+  const sessionKey = waviSessionKey(session);
   const location = useLocation();
   const role = resolveEffectiveRole(location.pathname, session);
   const suggestions = permittedActions(getContextActions(role, location.pathname + location.search), role);
-  const [isOpen, setIsOpen] = useState(false);
-  const [aiAvailable, setAiAvailable] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
+  const isOpen = shared?.isOpen ?? localOpen;
+  const setIsOpen = shared?.setIsOpen ?? setLocalOpen;
   const [isMobile, setIsMobile] = useState(false);
-  const [messages, setMessages] = useState([]);
+  const [localMessages, setLocalMessages] = useState([]);
+  const messages = shared ? (shared.sessionKey === sessionKey ? shared.messages : []) : localMessages;
+  const setMessages = shared?.setMessages ?? setLocalMessages;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef(null);
   const menuRef = useRef(null);
   const feedRef = useRef(null);
   const hasConversation = messages.length > 0;
-  const [hasUnread, setHasUnread] = useState(false);
+  const [localUnread, setLocalUnread] = useState(false);
+  const hasUnread = shared?.hasUnread ?? localUnread;
+  const setHasUnread = shared?.setHasUnread ?? setLocalUnread;
   const openRef = useRef(false);
   const replyTimerRef = useRef(null);
   const requestRef = useRef(0);
+  const inFlightRef = useRef(false);
   const lastTaskQueryRef = useRef('');
   const conversationContextRef = useRef(null);
   const successTimerRef = useRef(null);
-  const [feedback, setFeedback] = useState('');
+  const [localFeedback, setLocalFeedback] = useState('');
+  const feedback = shared?.feedback ?? localFeedback;
+  const setFeedback = shared?.setFeedback ?? setLocalFeedback;
   const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [localTyping, setLocalTyping] = useState(false);
+  const isTyping = shared?.isTyping ?? localTyping;
+  const setIsTyping = shared?.setIsTyping ?? setLocalTyping;
+  const [waitingLong, setWaitingLong] = useState(false);
   const messageIdRef = useRef(1);
+  messageIdRef.current = Math.max(messageIdRef.current, ...messages.map((message) => Number(message.id) || 0));
   const inputRef = useRef(null);
 
+  useEffect(() => { shared?.refreshAuthenticatedSession(); }, [sessionKey]);
+
   useEffect(() => {
-    if (!isOpen || !getAccessToken()) return;
-    let active = true;
-    wavyApi.capabilities().then((response) => {
-      if (active) setAiAvailable(response.data?.data?.aiAvailable === true);
-    }).catch(() => { if (active) setAiAvailable(false); });
-    return () => { active = false; };
-  }, [isOpen]);
+    if (!isTyping) { setWaitingLong(false); return undefined; }
+    const timer = setTimeout(() => setWaitingLong(true), 6000);
+    return () => clearTimeout(timer);
+  }, [isTyping]);
+
+  // A different (or ended) login session starts a new conversation: nothing is carried over or replayed.
+  const previousSessionKeyRef = useRef(sessionKey);
+  useEffect(() => {
+    const checkSession = () => {
+      if (previousSessionKeyRef.current === waviSessionKey(getMyHrSession())) return;
+      clearTimeout(replyTimerRef.current);
+      requestRef.current += 1;
+      inFlightRef.current = false;
+      setMessages([]);
+      setIsTyping(false);
+      setFeedback('');
+      shared?.refreshAuthenticatedSession();
+    };
+    window.addEventListener('storage', checkSession);
+    window.addEventListener(MY_HR_AUTHENTICATION_CLEARED_EVENT, checkSession);
+    return () => {
+      window.removeEventListener('storage', checkSession);
+      window.removeEventListener(MY_HR_AUTHENTICATION_CLEARED_EVENT, checkSession);
+    };
+  }, [shared]);
+  useEffect(() => {
+    if (previousSessionKeyRef.current === sessionKey) return;
+    previousSessionKeyRef.current = sessionKey;
+    clearTimeout(replyTimerRef.current);
+    clearTimeout(successTimerRef.current);
+    requestRef.current += 1;
+    inFlightRef.current = false;
+    lastTaskQueryRef.current = '';
+    conversationContextRef.current = null;
+    setMessages([]);
+    setIsTyping(false);
+    setFeedback('');
+  }, [sessionKey]);
 
   useEffect(() => {
     const media = window.matchMedia?.('(max-width: 640px)');
@@ -79,6 +127,8 @@ export default function WaypointChatbot({ displayName } = {}) {
     clearTimeout(replyTimerRef.current);
     clearTimeout(successTimerRef.current);
     requestRef.current += 1;
+    inFlightRef.current = false;
+    if (shared) shared.setIsTyping(false);
   }, []);
 
   // Auto-scroll to latest message
@@ -124,18 +174,26 @@ export default function WaypointChatbot({ displayName } = {}) {
     }
   }, [isOpen, isMobile, toggleOpen]);
 
-  const handleSend = (textToSend) => {
+  const handleSend = (textToSend, retry = false) => {
     const query = (textToSend || inputValue).trim();
-    if (!query || isTyping) return;
+    if (!query || isTyping || inFlightRef.current) return;
+    if (sessionKey !== waviSessionKey(getMyHrSession())) {
+      setMessages([]);
+      shared?.refreshAuthenticatedSession();
+      return;
+    }
+    inFlightRef.current = true;
 
-    const userMessage = {
+    const priorQuestion = retry ? [...messages].reverse().find((message) => message.sender === 'user' && message.text === query) : null;
+    const userMessage = priorQuestion || {
       id: ++messageIdRef.current,
       sender: 'user',
       text: query,
       timestamp: new Date().toISOString(),
+      sessionKey,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => priorQuestion ? prev.filter((message) => message !== prev.at(-1) || !message.error) : [...prev, userMessage]);
     setInputValue('');
     setIsTyping(true);
     animateMascot({ type: 'REQUEST_SENT' });
@@ -144,16 +202,14 @@ export default function WaypointChatbot({ displayName } = {}) {
     clearTimeout(successTimerRef.current);
     const requestId = ++requestRef.current;
     const previousQuery = lastTaskQueryRef.current;
+    const pendingReply = askWavi(query, { role, route: location.pathname + location.search, previousQuery,
+      context: conversationContextRef.current, history: messages.slice(-12), sessionKey })
+      .catch(() => ({ text: "I couldn't finish that request. Try again, or open the relevant workspace.",
+        error: true, actions: [{ label: 'Try again', query }] }));
     replyTimerRef.current = setTimeout(async () => {
-      let response;
-      try {
-        response = await askWavi(query, { role, route: location.pathname + location.search, previousQuery, context: conversationContextRef.current, history: messages.slice(-12) });
-      } catch {
-        response = { text: "I couldn't finish that request. Try again, or open the relevant workspace.", error: true, actions: [{ label: 'Try again', query }] };
-      }
+      const response = await pendingReply;
       if (requestId !== requestRef.current) return;
-      if (response.mode === 'ai') setAiAvailable(true);
-      else if (response.mode === 'limited') setAiAvailable(false);
+      if (sessionKey !== waviSessionKey(getMyHrSession())) return; // the login changed while the answer was on its way
       if (response.clearTask) lastTaskQueryRef.current = '';
       else if (!response.social && !response.preserveTask && !isFollowUp(query)) lastTaskQueryRef.current = query;
       if ('context' in response) conversationContextRef.current = response.context;
@@ -168,9 +224,17 @@ export default function WaypointChatbot({ displayName } = {}) {
         error: response.error,
         source: response.source,
         notice: response.notice && !messages.some((message) => message.notice === response.notice) ? response.notice : undefined,
+        sessionKey,
+        server: response.server === true,
+        sources: response.sources || [],
+        knowledgeStatus: response.knowledgeStatus,
+        provenance: response.provenance?.assistant,
       };
-      setMessages((prev) => [...prev, botMessage]);
+      // The server's opaque stamp for this question is kept with it so the next turn can be verified.
+      setMessages((prev) => [...prev.map((message) => message.id === userMessage.id
+        ? { ...message, provenance: response.provenance?.user } : message), botMessage]);
       setIsTyping(false);
+      inFlightRef.current = false;
       animateMascot({ type: 'RESPONSE_RECEIVED', error: response.error === true, needsClarification: response.needsClarification === true });
       if (response.actionCompleted === true) animateMascot({ type: 'TASK_CONFIRMED', kind: 'mutation', confirmed: response.confirmed === true });
       setFeedback(response.error ? 'error' : response.confirmed ? 'success' : '');
@@ -186,9 +250,15 @@ export default function WaypointChatbot({ displayName } = {}) {
     }
   };
 
-  const handleActionClick = (action) => {
-    if (action.query) { handleSend(action.query); return; }
+  const handleActionClick = (action, message) => {
+    if (action.query) { handleSend(action.query, message?.error === true && action.label === 'Try again'); return; }
     if (!action.path) return;
+    // Checked at click time too: a shortcut from another account's (or a signed-out) session is never followed.
+    if (message && message.sessionKey !== undefined && message.sessionKey !== waviSessionKey(getMyHrSession())) {
+      setMessages([]);
+      shared?.refreshAuthenticatedSession();
+      return;
+    }
     navigate(action.path);
     toggleOpen(false);
   };
@@ -197,6 +267,7 @@ export default function WaypointChatbot({ displayName } = {}) {
     clearTimeout(replyTimerRef.current);
     clearTimeout(successTimerRef.current);
     requestRef.current += 1;
+    inFlightRef.current = false;
     lastTaskQueryRef.current = '';
     conversationContextRef.current = null;
     setFeedback('');
@@ -235,7 +306,7 @@ export default function WaypointChatbot({ displayName } = {}) {
               <div className="wp-chatbot-header__avatar" aria-hidden="true"><WaviMascot variant="compact" animation={mascot} active={isOpen} onWake={() => animateMascot({ type: 'WAKE' })} /></div>
               <div className="wp-chatbot-header__title">
                 <strong>Wavy <span className="wp-chatbot-brand">by Waypoint</span></strong>
-                <small><span className="wp-chatbot-online" /> {aiAvailable ? 'AI enabled · Read-only tools' : 'Workflow guide · Live lookups'}</small>
+                <small><span className="wp-chatbot-online" /> Workflow guide · Read-only tools</small>
               </div>
             </div>
             <div className="wp-chatbot-header__actions">
@@ -289,7 +360,7 @@ export default function WaypointChatbot({ displayName } = {}) {
                   <span>{action.description}</span>
                 </button>)}
               </div>
-              <p className="wp-chatbot-disclaimer">{aiAvailable ? 'AI replies can make mistakes. Check the cited sources. Wavy can read permitted information but cannot change HR records.' : 'Workflow guidance is available. AI conversation needs backend configuration. Live lookups are labeled with their source.'}</p>
+              <p className="wp-chatbot-disclaimer">Wavy can read permitted information but cannot change HR records. Check cited sources.</p>
             </div>}
             {messages.map((msg) => (
               <div
@@ -303,24 +374,53 @@ export default function WaypointChatbot({ displayName } = {}) {
                 )}
                 <div className="wp-chatbot-bubble">
                   {msg.sender === 'assistant' && <span className="wp-chatbot-message__speaker">Wavy</span>}
-                  {renderFormattedText(msg.text)}
+                  {msg.sender === 'assistant' && msg.server ? <WaviAnswer text={msg.text} /> : renderFormattedText(msg.text)}
                   {msg.notice && <span className="wp-chatbot-message__notice">{msg.notice}</span>}
                 </div>
+
+                {msg.sources?.length > 0 && (
+                  <div className="wp-chatbot-sources" aria-label="Sources">
+                    <span className="wp-chatbot-sources__label">Sources</span>
+                    <ul className="wp-chatbot-sources__list">
+                      {msg.sources.map((citation) => (
+                        <li key={citation.sourceNumber} className="wp-chatbot-source">
+                          <span className="wp-chatbot-source__number">[{citation.sourceNumber}]</span>
+                          <span className="wp-chatbot-source__title">{citation.title}</span>
+                          {citation.documentName && citation.documentName !== citation.title
+                            && <span className="wp-chatbot-source__file">{citation.documentName}</span>}
+                          {citation.hrOnly && <span className="wp-chatbot-source__badge">HR only</span>}
+                          {msg.id === messages[messages.length - 1]?.id && msg.provenance && msg.sessionKey === sessionKey && (
+                            <button type="button" className="wp-chatbot-source__explain" disabled={isTyping}
+                              aria-label={`Explain source ${citation.sourceNumber}: ${citation.title}`}
+                              onClick={() => handleSend(`Explain source ${citation.sourceNumber}`)}>
+                              Explain
+                            </button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {msg.knowledgeStatus === 'KNOWLEDGE_UNAVAILABLE' && (
+                  <p className="wp-chatbot-knowledge-note" role="note">
+                    Company policy search is temporarily unavailable, so this answer is not based on company policy documents.
+                  </p>
+                )}
 
                 {msg.source && <span className="wp-chatbot-message__source">Checked {new Date(msg.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} &middot; {msg.source}</span>}
                 <time className="wp-chatbot-message__time" dateTime={msg.timestamp}>
                   {new Date(msg.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                 </time>
                 {/* Optional Action Deep Links */}
-                {msg.id === messages[messages.length - 1].id && msg.actions && msg.actions.length > 0 && (
+                {msg.actions && msg.actions.length > 0 && (
                   <div className="wp-chatbot-actions">
                     {msg.actions.map((act, idx) => (
                       <button
                         type="button"
                         key={idx}
                         className="wp-chatbot-action-btn"
-                        disabled={isTyping}
-                        onClick={() => handleActionClick(act)}
+                        disabled={isTyping && !!act.query}
+                        onClick={() => handleActionClick(act, msg)}
                       >
                         <span>{act.label}</span>
                         <StrokeIcon name="arrow-right" size={20} />
@@ -338,6 +438,7 @@ export default function WaypointChatbot({ displayName } = {}) {
             {isTyping && (
               <div className="wp-chatbot-typing" aria-label="Assistant is typing">
                 <WaviMascot variant="compact" animation={mascot} active={isOpen} />
+                <span>{waitingLong ? 'This is taking longer than usual…' : 'Checking your Waypoint records…'}</span>
                 <span className="wp-chatbot-typing-dot" />
                 <span className="wp-chatbot-typing-dot" />
                 <span className="wp-chatbot-typing-dot" />

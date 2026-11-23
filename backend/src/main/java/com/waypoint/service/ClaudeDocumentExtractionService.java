@@ -42,6 +42,13 @@ public class ClaudeDocumentExtractionService {
     private final String apiKey;
     private final String apiUrl;
     private final String model;
+    /** The shared cumulative cap (see ClaudeSpendConfiguration); no cap unless Spring supplies one. */
+    private ClaudeSpendLimiter spendLimiter = ClaudeSpendLimiter.fromSettings(0, null);
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void shareSpendLimiter(ClaudeSpendLimiter shared) {
+        if (shared != null) this.spendLimiter = shared;
+    }
 
     public ClaudeDocumentExtractionService(
             RestClient.Builder restClientBuilder,
@@ -54,8 +61,20 @@ public class ClaudeDocumentExtractionService {
         this.model = model;
     }
 
+    /**
+     * Off switch that does not depend on the shared Claude key: this reader sends an uploaded scan to Claude and has no
+     * organization-approval gate, so a deployment that sets CLAUDE_API_KEY for chat can still keep it off
+     * ({@code waypoint.myhr.timesheet-document-ai.enabled=false}). Default true: existing behaviour is unchanged.
+     */
+    @org.springframework.beans.factory.annotation.Value("${waypoint.myhr.timesheet-document-ai.enabled:true}")
+    private boolean enabled = true;
+
+    void enabled(boolean value) {
+        this.enabled = value;
+    }
+
     public boolean isConfigured() {
-        return StringUtils.hasText(apiKey);
+        return enabled && StringUtils.hasText(apiKey);
     }
 
     public Optional<ParsedTimesheetResponse> extract(byte[] bytes, String fileName, String documentId, String dateOrder) {
@@ -66,6 +85,10 @@ public class ClaudeDocumentExtractionService {
         try {
             String replyText = requestExtraction(bytes, mediaType, dateOrder);
             return replyText == null ? Optional.empty() : toResponse(replyText, fileName, documentId);
+        } catch (ClaudeChatClient.ClaudeSpendLimitException capped) {
+            // Fail closed: nothing was sent. The caller continues with the local parser's result.
+            log.info("Claude document extraction skipped: the configured spending cap was reached or cannot be verified");
+            return Optional.empty();
         } catch (RestClientException exception) {
             log.warn("Claude document extraction request failed for {}", fileName, exception);
             return Optional.empty();
@@ -115,14 +138,38 @@ public class ClaudeDocumentExtractionService {
         requestBody.put("max_tokens", MAX_TOKENS);
         requestBody.set("messages", messages);
 
-        JsonNode response = restClient.post()
-                .uri(apiUrl)
-                .header("x-api-key", apiKey)
-                .header("anthropic-version", ANTHROPIC_VERSION)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(requestBody)
-                .retrieve()
-                .body(JsonNode.class);
+        // Reserve the worst case against the shared ledger BEFORE sending (in-flight requests count immediately), then
+        // settle from the response's usage. Images are downscaled by the API, so their input is bounded; a PDF is
+        // estimated from its size (deliberately high). An unknown cost can only make the cap stricter.
+        ClaudeSpendLimiter.Prices rates = ClaudeSpendLimiter.Prices.forModel(model);
+        double reserved = 0;
+        if (spendLimiter.enabled()) {
+            long fileTokens = "image".equals(blockType) ? 6_000 : bytes.length / 10L + 1_000;
+            long textTokens = prompt(dateOrder).length() / 2L + 200;
+            reserved = spendLimiter.reserve(rates.worstCase((int) Math.min(Integer.MAX_VALUE, fileTokens + textTokens), MAX_TOKENS));
+        }
+        JsonNode response;
+        try {
+            response = restClient.post()
+                    .uri(apiUrl)
+                    .header("x-api-key", apiKey)
+                    .header("anthropic-version", ANTHROPIC_VERSION)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(requestBody)
+                    .retrieve()
+                    .body(JsonNode.class);
+        } catch (org.springframework.web.client.RestClientResponseException rejected) {
+            int code = rejected.getStatusCode().value();
+            // A rejected request (4xx other than timeout/rate limit) was not processed: nothing was spent.
+            if (code >= 400 && code < 500 && code != 408 && code != 429) spendLimiter.release(reserved);
+            throw rejected;
+        }
+        if (response != null && response.path("usage").isObject()) {
+            JsonNode usage = response.path("usage");
+            spendLimiter.settle(reserved, new ClaudeChatClient.RouteUsage(usage.path("input_tokens").asInt(0),
+                    usage.path("output_tokens").asInt(0), usage.path("cache_creation_input_tokens").asInt(0),
+                    usage.path("cache_read_input_tokens").asInt(0)), rates);
+        } // a response without usage leaves the worst-case reservation in place
 
         if (response == null) return null;
         JsonNode contentArray = response.path("content");

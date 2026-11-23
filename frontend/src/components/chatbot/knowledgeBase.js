@@ -1,4 +1,5 @@
 import { getContextActions } from './quickActions';
+import { classifyOwnRecordIntent, classifyUnsupportedField, interpretWaviQuestion } from './waviIntents';
 
 /**
  * Waypoint Comprehensive Knowledge Base & Scored NLP Intent Engine
@@ -1089,4 +1090,411 @@ export function queryKnowledgeBase(input, role = 'HR', route = '') {
     text: "I couldn't find an exact match. Try a more specific question, or open one of these workflows.",
     actions: getContextActions(role, route).slice(0, 3).map(({ label, path }) => ({ label, path })),
   };
+}
+
+// Workflow how-to intents. Kept in step with MyHrChatService's workflow guidance on the backend, so a
+// workflow button appears exactly when the assistant answers with that workflow's instructions.
+const WORKFLOW_POLICY_TERMS = /\b(?:polic(?:y|ies)|deadlines?|cut-?offs?|due|when|why|status|overtime|holidays?|rules?|allowed|eligib(?:le|ility)|maximum|minimum|limits?|late|how (?:many|much|long))\b/;
+const WORKFLOW_CHANGE_ACTION = /\b(?:update|updating|change|changing|edit|editing|modify|correct|correcting|fix|fixing)\b/;
+const TIMESHEET_ENTRY_ACTION = /\b(?:enter|entering|fill (?:in|out|up)|fill|filling|log|record|create|submit|submitting|submission)\b/;
+const TIMESHEET_RESUBMIT_ACTION = /\bresubmit(?:ting)?\b/;
+// Matched on the plain lower-cased text: normalizeInput rewrites "rejected" to "reject", which is a correction topic.
+const TIMESHEET_REVIEW_ACTION = /\b(?:review|reviewing|approve|approving|reject|rejecting)\b/;
+const TIMESHEET_SUBJECT = /\b(?:timesheets?|hours)\b/;
+// Whose timesheets: the asker's team or reports, or the asker's own. Keep both in step with the backend.
+const TEAM_TIMESHEET_SUBJECT = /\b(?:team|direct reports?|my (?:employees|reports|staff)|employees?['’]? (?:time ?sheets?|time ?cards?|hours))\b/;
+const OWN_TIMESHEETS = /\bmy (?:own )?(?:submitted |previous |past |earlier |historical )?(?:time ?cards?|time ?sheets?|hours?)\b|\b(?:time ?cards?|time ?sheets?|hours?)\b.*\bi (?:sent|submitted|entered|logged|worked)\b/;
+// The backend's two review-location questions; answered with the page the asker's role uses.
+const TIMESHEET_REVIEW_LOCATION_QUESTION = /^where can i review (?:submitted|employee) timesheets$/;
+// Submitted-history navigation is distinct from a latest-status lookup. Keep this in step with the backend.
+const TIMESHEET_HISTORY_NAVIGATION = /\b(?:where(?: can| do)? i|show(?: me)?|take me to|go to|open|find|view|check|see|access)\b.*\b(?:(?:my )?(?:submitted|previous|past|earlier|historical) (?:time ?cards?|time ?sheets?|hours?)|(?:time ?cards?|time ?sheets?|hours?)\b.*\bi (?:sent|submitted|entered|logged|worked)\b)/;
+// "Do contractors / Does everyone / Are interns ...": a policy rule about a group, not a how-to request.
+const GROUP_ELIGIBILITY_QUESTION = /^(?:do|does|are|is|can|could|will|would|should|may|must)\s+(?:all\s+|our\s+|the\s+)?(?:employees?|staff|contractors?|consultants?|freelancers?|interns?|temps?|new hires?|part-time|full-time|managers?|everyone|everybody)\b/;
+const PROFILE_SUBJECT = /\b(?:phone(?: number)?|mobile number|address|personal email|my email|my (?:legal |first |last |full )?name|profile|contact (?:details|info|information)|personal (?:details|info|information))\b/;
+const OFFER_LETTER = /\boffer letters?\b/;
+const DOCUMENT_REQUEST = /\b(?:request|need|get|want|obtain)\b.*\b(?:employment verification|verification letter|employment letter|experience letter|relieving letter|i-?983|a document)\b/;
+// "Where / how can I ..." location questions, matched on the plain lower-cased text exactly as the backend does.
+const LOCATION_QUESTION = /^(?:where|how)\b|^(?:can|could|may) i (?:check|see|view|find|track|download|upload|access)\b/;
+const LOOK_UP_ACTION = /\b(?:check|checking|see|view|find|track|tracking|know|look|follow)\b/;
+const STATUS_TERMS = /\b(?:status|progress|approved|rejected|pending|completed|submitted timesheets?)\b/;
+const DOCUMENT_REQUEST_SUBJECT = /\b(?:document|letter)s? requests?\b|\brequests? for (?:a |an |my )?(?:document|letter)s?\b/;
+const UPLOAD_ACTION = /\b(?:upload|uploading|submit|send|attach|provide)\b/;
+const ONBOARDING_SUBJECT = /\b(?:onboarding|pre-?employment|new[- ]hire)\b/;
+const DOCUMENT_RETRIEVAL_ACTION = /\b(?:download|view|see|find|open|access|print|locate|copy|sign|signed|approved)\b/;
+const POLICY_REFERENCE = /\b(?:polic(?:y|ies)|rules?|guidelines?|eligib(?:le|ility))\b/;
+// Same phrasings as the backend's TIMESHEET_SUBMISSION_DATE_QUESTION lookup and OWN_REJECTED_TIMESHEET intent,
+// matched on the plain lower-cased text; both answers point to Submitted Timesheets.
+const TIMESHEET_SUBMISSION_DATE_QUESTION = new RegExp(
+  '^(?:(?:can|could|would) you (?:please )?tell me |please tell me |tell me )?(?:'
+  + '(?:when|what date|what day|on what date) did i (?:last |most recently )?submit (?:my|a) '
+  + '(?:(?:last|latest|most recent|previous|recent) )?timesheet'
+  + '|(?:when|what date|what day|on what date) was my (?:(?:last|latest|most recent|previous) )?timesheet (?:submitted|submission)'
+  + '|when i (?:last |most recently )?submitted (?:my|a) (?:(?:last|latest|most recent|previous) )?timesheet'
+  + '|when was the last time i submitted (?:my|a) timesheet'
+  + '|what (?:is|was) the (?:submission )?date of my (?:(?:last|latest|most recent) )?timesheet(?: submission)?)$',
+);
+const OWN_REJECTED_TIMESHEET = /\bmy (?:(?:latest|last|recent|most recent) )?timesheets? (?:was|is|got|has been|have been|were) (?:rejected|declined|sent back|returned)\b|\bmy rejected timesheets?\b|\b(?:rejected|declined|sent back|returned) my timesheets?\b/;
+// Deterministic backend queue questions. Keep shortcuts aligned with the backend role boundary so a
+// reviewer sees the existing review page and an employee is never sent to a reviewer queue.
+const HR_TIMESHEET_QUEUE_QUESTION = /^(?:(?:how many|what number of) timesheets (?:are )?(?:waiting|awaiting) (?:for )?my review|do i have any employee timesheets awaiting approval|how many assigned timesheets are pending|where can i review submitted timesheets)$/;
+const ADMIN_TIMESHEET_QUEUE_QUESTION = /^(?:how many (?:(?:timesheets are )?(?:submitted|pending(?: approval)?|awaiting approval)|(?:submitted|pending(?: approval)?|awaiting approval) timesheets (?:are|are there)|(?:timesheets are )?awaiting review|awaiting-review timesheets (?:are|are there)|timesheets (?:have been|were|are) approved|approved timesheets (?:are|are there)|timesheets (?:have been|were|are) rejected|rejected timesheets (?:are|are there))(?: in (?:my|the) organization)?|where can i review employee timesheets)$/;
+// "... waiting for my approval / pending my review / assigned to me / awaiting my action". Mirrors the backend
+// MY_*_QUEUE_QUESTION patterns, which answer in the verified role's own scope.
+const MY_QUEUE_POLITE_PREFIX = /^(?:(?:can|could|would) you (?:please )?(?:tell me|show me|check)|please (?:tell me|show me|check))\s+/;
+const myQueueQuestion = (subject) => new RegExp('^(?:how many|what number of|do i have any|are there any) '
+  + subject + ' (?:that )?(?:(?:are |is )?(?:waiting|awaiting|pending|needing|requiring|need|require)(?: for| on)? my '
+  + '(?:approval|review|action|attention|decision|sign-?off)|(?:are |is )?(?:waiting|awaiting|pending) (?:for|on) me'
+  + '|(?:are |is )?(?:assigned|routed|sent) to me(?: for (?:approval|review|action))?|(?:are |is )?in my (?:approval |review )?queue'
+  + '|do i (?:need|have) to (?:approve|review|action))$');
+const MY_TIMESHEET_QUEUE_QUESTION = myQueueQuestion('(?:(?:employee|team|submitted|pending) )?timesheets?');
+const MY_PROFILE_CHANGE_QUEUE_QUESTION = myQueueQuestion('(?:(?:employee|pending) )?profile (?:change |update )?(?:requests?|changes?|updates?)');
+const MY_DOCUMENT_REQUEST_QUEUE_QUESTION = myQueueQuestion('(?:(?:employee|pending) )?(?:document requests?|documents?)');
+const DOCUMENT_APPROVAL_WORKFLOW = /^(?:how|where)\b.*\b(?:approve|approving|review)\b.*\b(?:documents?|letters?)(?:\s+requests?)?\b/;
+
+// Phrasings the backend already answers as HR-only assigned-review questions (a Company Admin is refused).
+const HR_ONLY_PROFILE_QUEUE_QUESTION = /^how many profile change requests (?:are )?(?:waiting|awaiting) (?:for )?my review$/;
+const HR_ONLY_DOCUMENT_QUEUE_QUESTION = /^(?:how many|what number of) document requests (?:need|are awaiting) my review$/;
+
+// Shortcuts for the backend's own-record, pending, another-person and queue-count routes, classified by the
+// same rules (waviIntents.js mirrors MyHrOwnRecordIntent), so a shortcut always matches the answer above it.
+const REVIEW_PAGES = {
+  HR: {
+    TIMESHEET: { label: 'Review Team Timesheets', path: '/myhr/hr/timesheets?view=team' },
+    PROFILE_CHANGE: { label: 'Review Profile Change Requests', path: '/myhr/hr/profile-change-requests?view=assigned' },
+    DOCUMENT_REQUEST: { label: 'Received Requests', path: '/myhr/hr/document-requests' },
+  },
+  COMPANY_ADMIN: {
+    TIMESHEET: { label: 'Review Timesheets', path: '/myhr/admin/timesheets' },
+    PROFILE_CHANGE: { label: 'Review Profile Change Requests', path: '/myhr/admin/profile-change-requests' },
+    DOCUMENT_REQUEST: { label: 'Document Approvals', path: '/myhr/admin/offer-letter-approvals' },
+  },
+};
+
+function reviewPage(role, subject) {
+  const page = REVIEW_PAGES[role]?.[subject === 'OFFER_LETTER' ? 'DOCUMENT_REQUEST' : subject];
+  return page ? [page] : [];
+}
+
+function ownRecordActions(input, role) {
+  const intent = classifyOwnRecordIntent(input);
+  if (!intent) return null;
+  // Another person's record is refused; an employee has no review queue.
+  if (intent.kind === 'OTHER_PERSON') return [];
+  if (intent.kind === 'QUEUE_COUNT') return role === 'EMPLOYEE' ? [] : reviewPage(role, intent.subject);
+  if (intent.kind === 'PENDING_CHECK' && role !== 'EMPLOYEE') return reviewPage(role, intent.subject);
+  const basePath = role === 'COMPANY_ADMIN' ? '/myhr/admin' : role === 'HR' ? '/myhr/hr' : '/myhr/employee';
+  switch (intent.subject) {
+    case 'PROFILE_CHANGE':
+      if (role === 'EMPLOYEE') return [{ label: 'Profile Change Requests', path: '/myhr/employee/profile-change-requests' }];
+      // HR's own requests are behind the Profile Change Requests card menu; Company Admin cannot request changes.
+      return role === 'HR' ? [{ label: 'My Profile Change Requests', path: '/myhr/hr/profile-change-requests' }] : [];
+    case 'TIMESHEET':
+      // Rejections and submission dates are on Submitted Timesheets; other statuses open Timesheets.
+      return ['REJECTED', 'REJECTION_REASON', 'REQUESTED_DATE'].includes(intent.aspect)
+        ? workflowActions('TIMESHEET_STATUS', role)
+        : [{ label: 'View Timesheets', path: `${basePath}/timesheets` }];
+    case 'DOCUMENT_REQUEST':
+    case 'OFFER_LETTER':
+      return workflowActions('DOCUMENT_REQUEST_STATUS', role);
+    default:
+      return [];
+  }
+}
+
+// Each reviewer role's own review page; an employee has no review queue, so gets no shortcut.
+function myQueueActions(queueQuestion, role) {
+  const question = queueQuestion.replace(MY_QUEUE_POLITE_PREFIX, '');
+  if (HR_TIMESHEET_QUEUE_QUESTION.test(question) || ADMIN_TIMESHEET_QUEUE_QUESTION.test(question)) return null;
+  if (role === 'COMPANY_ADMIN'
+    && (HR_ONLY_PROFILE_QUEUE_QUESTION.test(question) || HR_ONLY_DOCUMENT_QUEUE_QUESTION.test(question))) return [];
+  if (MY_TIMESHEET_QUEUE_QUESTION.test(question)) {
+    if (role === 'HR') return [{ label: 'Review Team Timesheets', path: '/myhr/hr/timesheets?view=team' }];
+    return role === 'COMPANY_ADMIN' ? [{ label: 'Review Timesheets', path: '/myhr/admin/timesheets' }] : [];
+  }
+  if (MY_PROFILE_CHANGE_QUEUE_QUESTION.test(question)) {
+    if (role === 'HR') return [{ label: 'Review Profile Change Requests', path: '/myhr/hr/profile-change-requests?view=assigned' }];
+    return role === 'COMPANY_ADMIN' ? [{ label: 'Review Profile Change Requests', path: '/myhr/admin/profile-change-requests' }] : [];
+  }
+  if (MY_DOCUMENT_REQUEST_QUEUE_QUESTION.test(question)) {
+    // HR acts on the requests assigned to them (Received requests, the HR default); Company Admin approves.
+    if (role === 'HR') return [{ label: 'Received Requests', path: '/myhr/hr/document-requests' }];
+    return role === 'COMPANY_ADMIN' ? [{ label: 'Document Approvals', path: '/myhr/admin/offer-letter-approvals' }] : [];
+  }
+  return null;
+}
+
+// Whose timesheets, then what is asked: the team's or reports' timesheets, or reviewing, approving or rejecting
+// timesheets not named as the asker's own, is reviewer work. Mirrors the backend's asksAboutTeamTimesheets.
+function asksAboutTeamTimesheets(plain) {
+  return TEAM_TIMESHEET_SUBJECT.test(plain) || (TIMESHEET_REVIEW_ACTION.test(plain) && !OWN_TIMESHEETS.test(plain));
+}
+
+function classifyLocationIntent(plain) {
+  if (!LOCATION_QUESTION.test(plain)) return null;
+  const lookUp = LOOK_UP_ACTION.test(plain);
+  const status = STATUS_TERMS.test(plain);
+  // Only where or look-up questions: "How long do I have to approve timesheets?" stays a policy question.
+  if ((lookUp || plain.startsWith('where')) && TIMESHEET_SUBJECT.test(plain) && asksAboutTeamTimesheets(plain)) {
+    return 'TIMESHEET_REVIEW';
+  }
+  if (lookUp && status && TIMESHEET_SUBJECT.test(plain)) return 'TIMESHEET_STATUS';
+  // Mirrors the backend: "Where do I see my document requests?" asks where the list is, even without a status word.
+  if (lookUp && (status || plain.startsWith('where')) && DOCUMENT_REQUEST_SUBJECT.test(plain)) return 'DOCUMENT_REQUEST_STATUS';
+  if (UPLOAD_ACTION.test(plain) && ONBOARDING_SUBJECT.test(plain)) return 'ONBOARDING_UPLOAD';
+  return null;
+}
+
+function classifyWorkflowIntent(normalized, rawPlain) {
+  const plain = rawPlain.trim().replace(/[?.!]+$/, '').replace(/\s+/g, ' ');
+  if (GROUP_ELIGIBILITY_QUESTION.test(normalized)) return null;
+  if (TIMESHEET_SUBMISSION_DATE_QUESTION.test(plain)) return 'TIMESHEET_STATUS';
+  // Where to find something is answered with its location even when it mentions a status; policy questions are not.
+  const location = POLICY_REFERENCE.test(plain) ? null : classifyLocationIntent(plain);
+  if (location) return location;
+  if (WORKFLOW_POLICY_TERMS.test(normalized)) return null;
+  if (OWN_REJECTED_TIMESHEET.test(plain)) return 'TIMESHEET_STATUS';
+  const changeAction = WORKFLOW_CHANGE_ACTION.test(normalized);
+  const correction = changeAction || TIMESHEET_RESUBMIT_ACTION.test(normalized);
+  const review = TIMESHEET_REVIEW_ACTION.test(plain);
+  const timesheet = TIMESHEET_SUBJECT.test(normalized)
+    && (correction || review || TIMESHEET_ENTRY_ACTION.test(normalized));
+  const profile = changeAction && PROFILE_SUBJECT.test(normalized);
+  const offerLetter = OFFER_LETTER.test(normalized);
+  const document = offerLetter || DOCUMENT_REQUEST.test(normalized);
+  if (Number(timesheet) + Number(profile) + Number(document) !== 1) return null;
+  // Fixing a rejected timesheet is a correction, even though "reject" is also a review verb.
+  if (timesheet) return correction ? 'TIMESHEET_CORRECTION' : review ? 'TIMESHEET_REVIEW' : 'TIMESHEET_ENTRY';
+  if (profile) return 'PROFILE_CHANGE';
+  // Downloading, viewing or signing an existing letter is not a request for a new one.
+  if (offerLetter) return DOCUMENT_RETRIEVAL_ACTION.test(plain) ? 'OFFER_LETTER_COPY' : 'OFFER_LETTER';
+  return 'DOCUMENT_REQUEST';
+}
+
+// Existing role-protected pages only; Company Admin is sent to review/approval pages, never a self-request form.
+function workflowActions(intent, role, basePath) {
+  switch (intent) {
+    case 'TIMESHEET_ENTRY':
+    case 'TIMESHEET_CORRECTION':
+      if (role === 'EMPLOYEE') return [{ label: 'Enter Timesheet', path: '/myhr/employee/timesheets' }];
+      if (role === 'COMPANY_ADMIN') return [{ label: 'Review Timesheets', path: '/myhr/admin/timesheets' }];
+      return [{ label: 'My Timesheets', path: '/myhr/hr/timesheets?view=mine' }];
+    case 'TIMESHEET_REVIEW':
+      if (role === 'EMPLOYEE') return [{ label: 'View Timesheets', path: '/myhr/employee/timesheets' }];
+      if (role === 'COMPANY_ADMIN') return [{ label: 'Review Timesheets', path: '/myhr/admin/timesheets' }];
+      return [{ label: 'Review Team Timesheets', path: '/myhr/hr/timesheets?view=team' }];
+    case 'PROFILE_CHANGE':
+      return [{
+        label: role === 'EMPLOYEE' ? 'Request Profile Update' : 'Review Profile Change Requests',
+        path: `${basePath}/profile-change-requests`
+      }];
+    case 'OFFER_LETTER':
+    case 'DOCUMENT_REQUEST':
+      if (role === 'EMPLOYEE') return [{ label: 'Request a Document', path: '/myhr/employee/document-requests/new' }];
+      if (role === 'COMPANY_ADMIN') {
+        return intent === 'OFFER_LETTER'
+          ? [{ label: 'Document Approvals', path: '/myhr/admin/offer-letter-approvals' }]
+          : [{ label: 'Request Documents', path: '/myhr/admin/document-requests' }];
+      }
+      return intent === 'OFFER_LETTER'
+        ? [{ label: 'Request for Myself', path: '/myhr/hr/document-requests/request-from-manager' }]
+        : [{ label: 'Request Documents', path: '/myhr/hr/document-requests' }];
+    case 'TIMESHEET_STATUS':
+      if (role === 'EMPLOYEE') return [{ label: 'Submitted Timesheets', path: '/myhr/employee/timesheets?mode=history' }];
+      if (role === 'COMPANY_ADMIN') return [{ label: 'Review Timesheets', path: '/myhr/admin/timesheets' }];
+      return [{ label: 'Submitted Timesheets', path: '/myhr/hr/timesheets?view=mine&mode=history' }];
+    case 'DOCUMENT_REQUEST_STATUS':
+    case 'OFFER_LETTER_COPY':
+      if (role === 'EMPLOYEE') return [{ label: 'Document Requests', path: '/myhr/employee/document-requests' }];
+      if (role === 'COMPANY_ADMIN') return [{ label: 'Request Documents', path: '/myhr/admin/document-requests' }];
+      return [{ label: 'My Requests', path: '/myhr/hr/document-requests?view=requested' }];
+    case 'ONBOARDING_UPLOAD':
+      if (role === 'EMPLOYEE') return [{ label: 'Document Requests', path: '/myhr/employee/document-requests' }];
+      return [{ label: 'Request Documents', path: `${basePath}/document-requests` }];
+    default:
+      return [];
+  }
+}
+
+// Shortcuts lead to the signed-in user's own workflows. A question about another person's record, or one that
+// tries to override the assistant's instructions, is refused by the assistant, so it gets no shortcut at all.
+const EMPLOYEE_IDENTIFIER = /\b[a-z]{2,}[-_]?\d{2,}\b/;
+const PROMPT_INJECTION = /\b(?:ignore|disregard|forget|override|bypass)\b.*\b(?:instructions?|rules?|prompts?|guardrails?|restrictions?)\b|\b(?:system prompt|developer mode|jailbreak|you are now)\b|\bact as (?:an? |the )?(?:admin|administrator|hr|root|developer|system)\b|\bpretend (?:to be|you are|that you)\b/;
+const POSSESSIVE = /(?:^|[^a-z0-9.@_-])([a-z][a-z0-9.@_-]*)'s\b/g;
+// Not a named third party: contractions ("what's", "it's") and generic possessives ("today's", "the company's").
+const OWN_OR_GENERIC_POSSESSOR = /^(?:what|who|where|when|why|how|it|that|this|there|here|let|he|she|one|today|tomorrow|yesterday|week|month|year|day|company|organization|organisation|team|employee|employees|manager|hr|waypoint|wavi|everyone|someone)$/;
+const DETERMINER_BEFORE = /(?:^|\s)(?:my|your|our|an?|the|this|that|each|every|any|their|his|her)\s+$/;
+
+// Workflows that act on other people's records, for the roles allowed to use them; every other shortcut is the
+// signed-in user's own page. Reviewing a timesheet keeps its existing role-specific button for every role.
+function managesOtherPeople(workflow, role) {
+  if (!workflow) return false;
+  if (workflow === 'TIMESHEET_REVIEW') return true;
+  if (role === 'COMPANY_ADMIN') return workflow !== 'OFFER_LETTER_COPY' && workflow !== 'DOCUMENT_REQUEST_STATUS';
+  if (role === 'HR') return ['PROFILE_CHANGE', 'DOCUMENT_REQUEST', 'ONBOARDING_UPLOAD'].includes(workflow);
+  return false;
+}
+
+function asksAboutAnotherPerson(plain) {
+  if (EMPLOYEE_IDENTIFIER.test(plain)) return true;
+  for (const match of plain.matchAll(POSSESSIVE)) {
+    const possessor = match[1];
+    const before = plain.slice(0, match.index + match[0].length - possessor.length - 2);
+    if (!OWN_OR_GENERIC_POSSESSOR.test(possessor) && !DETERMINER_BEFORE.test(before)) return true;
+  }
+  return false;
+}
+
+/**
+ * Shortcuts for what the backend answers. As on the backend, the question as typed is tried first; only when it
+ * matches nothing are natural, misspelled or follow-up wordings tried, through the same rules (waviIntents.js
+ * mirrors the backend's interpreter). earlierQuestions are the user's own previous questions, oldest first.
+ */
+export function getRelevantNavigationActions(input, role = 'HR', earlierQuestions = []) {
+  if (!input?.trim()) return [];
+  const plainQuestion = input.toLowerCase().replace(/[’‘]/g, "'").replace(/\s+/g, ' ').trim();
+  if (PROMPT_INJECTION.test(plainQuestion)) return [];
+  const direct = directNavigationActions(input, role);
+  if (direct.length) return direct;
+  // A field Wavi does not show is answered with where to see it.
+  const unsupported = classifyUnsupportedField(input);
+  if (unsupported) {
+    const basePath = role === 'COMPANY_ADMIN' ? '/myhr/admin' : role === 'HR' ? '/myhr/hr' : '/myhr/employee';
+    return unsupported === 'PAY' ? [] : [{ label: 'My Profile', path: `${basePath}/profile` }];
+  }
+  const interpreted = interpretWaviQuestion(input, earlierQuestions);
+  return interpreted ? directNavigationActions(interpreted, role) : [];
+}
+
+// "Navigate to Document Requests", "take me to my timesheets": an explicit request to open a page every MyHR role has.
+// Keep in step with the backend (MyHrConversationIntents.NAVIGATION), whose reply points to this button by label.
+const PAGE_NAVIGATION_COMMAND = /^(?:please |can you |could you )?(?:navigate|go|take me|bring me|open|show me|redirect me|move me)(?: (?:me )?to)?(?: the| my)? (document requests?|doc requests?|timesheets?|time sheets?|my timesheets?|profile change requests?|profile changes?|profile|my profile)(?: page| section| tab| screen)?(?: please)?$/;
+
+// Small misspellings of navigation words ("nagivate", "documnet") are read as the word meant. Same rule as the backend
+// (MyHrConversationIntents.correctNavigationWords): one edit for words up to six letters, two for longer ones.
+const NAVIGATION_WORDS = ['navigate', 'document', 'documents', 'request', 'requests', 'timesheet', 'timesheets', 'profile', 'change', 'changes'];
+
+function editDistance(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j += 1) d[0][j] = j;
+  for (let i = 1; i <= a.length; i += 1) {
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+    }
+  }
+  return d[a.length][b.length];
+}
+
+export function correctNavigationWords(question) {
+  return question.split(' ').map((word) => {
+    if (word.length < 4 || NAVIGATION_WORDS.includes(word)) return word;
+    let best = null;
+    let bestDistance = Infinity;
+    for (const candidate of NAVIGATION_WORDS) {
+      const distance = editDistance(word, candidate);
+      if (distance <= (candidate.length <= 6 ? 1 : 2) && distance < bestDistance) {
+        best = candidate;
+        bestDistance = distance;
+      }
+    }
+    return best ?? word;
+  }).join(' ');
+}
+
+// Timesheet upload trouble ("facing issue uploading the document in the timesheets"): the upload is in Timesheets.
+// Mirrors the backend's MyHrConversationIntents.isTimesheetUploadHelp.
+const TIMESHEET_WORD = /\b(?:time ?sheets?|time ?cards?)\b/;
+const UPLOAD_WORD = /\b(?:upload(?:ed|ing|s)?|attach(?:ed|ing|ment)?|import(?:ed|ing)?|file|files|document|pdf|excel|xlsx|xls|csv|scan(?:ned)?|photo|image|picture)\b/;
+const UPLOAD_TROUBLE_WORD = /\b(?:fail(?:s|ed|ing|ure)?|error|errors|not working|doesn't work|does not work|won't|wont|can't|cannot|can not|unable|problem|issue|issues|why|stuck|rejected|format|formats|types?|size|limit|limits|supported|accept(?:ed|s)?|allowed|maximum|max|how (?:do|can|to) i)\b/;
+
+function isTimesheetUploadHelp(question) {
+  return TIMESHEET_WORD.test(question) && UPLOAD_WORD.test(question) && UPLOAD_TROUBLE_WORD.test(question);
+}
+
+function pageNavigationAction(queueQuestion, basePath) {
+  const match = PAGE_NAVIGATION_COMMAND.exec(correctNavigationWords(queueQuestion));
+  if (!match) return null;
+  const target = match[1];
+  if (target.startsWith('doc')) return { label: 'Document Requests', path: `${basePath}/document-requests` };
+  if (target.startsWith('profile change')) return { label: 'Profile Change Requests', path: `${basePath}/profile-change-requests` };
+  if (target.includes('profile')) return { label: 'My Profile', path: `${basePath}/profile` };
+  return { label: 'Timesheets', path: `${basePath}/timesheets` };
+}
+
+function directNavigationActions(input, role) {
+  const plainQuestion = input.toLowerCase().replace(/[’‘]/g, "'").replace(/\s+/g, ' ').trim();
+  const queueQuestion = plainQuestion.replace(/[?.!]+$/, '');
+
+  const normalized = normalizeInput(input);
+  const basePath = role === 'COMPANY_ADMIN' ? '/myhr/admin' : role === 'HR' ? '/myhr/hr' : '/myhr/employee';
+  const pageCommand = pageNavigationAction(queueQuestion, basePath);
+  if (pageCommand) return [pageCommand];
+  if (isTimesheetUploadHelp(queueQuestion)) return [{ label: 'Timesheets', path: `${basePath}/timesheets` }];
+  const ownQueueActions = myQueueActions(queueQuestion, role);
+  if (ownQueueActions) return ownQueueActions;
+  if (DOCUMENT_APPROVAL_WORKFLOW.test(queueQuestion)) {
+    return role === 'COMPANY_ADMIN'
+      ? [{ label: 'Document Approvals', path: '/myhr/admin/offer-letter-approvals' }]
+      : [];
+  }
+  const documentApprovalQueueQuestion = /\b(?:document approvals?|(?:administrator|company admin) approval)\b/.test(plainQuestion)
+    || /\bdocuments?\s+(?:are\s+)?(?:waiting|awaiting)\s+for\s+my\s+approval\b/.test(plainQuestion);
+  if (documentApprovalQueueQuestion && role === 'COMPANY_ADMIN') {
+    return [{ label: 'Document Approvals', path: '/myhr/admin/offer-letter-approvals' }];
+  }
+  // This is an organization-wide Company Admin queue. Do not let HR or employees fall through to a
+  // generic document shortcut that implies they can open the approval queue.
+  if (documentApprovalQueueQuestion) return [];
+  const adminDocumentRequestQueueQuestion = /^how many\s+(?:(?:document\s+)?requests?\s+(?:are\s+)?pending|pending\s+(?:document\s+)?requests?\s+(?:are|are there)|(?:document\s+)?requests?\s+(?:were|have been|are)\s+(?:completed|fulfilled)|(?:completed|fulfilled)\s+document\s+requests?\s+(?:are|are there))(?:\s+in\s+(?:my|the)\s+organization)?$/.test(queueQuestion);
+  if (adminDocumentRequestQueueQuestion && role === 'COMPANY_ADMIN') {
+    return [{ label: 'Request Documents', path: '/myhr/admin/document-requests' }];
+  }
+  if (adminDocumentRequestQueueQuestion) return [];
+  if (TIMESHEET_REVIEW_LOCATION_QUESTION.test(queueQuestion)) return workflowActions('TIMESHEET_REVIEW', role, basePath);
+  if (HR_TIMESHEET_QUEUE_QUESTION.test(queueQuestion)) {
+    return role === 'HR'
+      ? [{ label: 'Review Team Timesheets', path: '/myhr/hr/timesheets?view=team' }]
+      : [];
+  }
+  if (ADMIN_TIMESHEET_QUEUE_QUESTION.test(queueQuestion)) {
+    return role === 'COMPANY_ADMIN'
+      ? [{ label: 'Review Timesheets', path: '/myhr/admin/timesheets' }]
+      : [];
+  }
+  // Do this before own-record routing so "my previous timesheets" does not become a latest-status lookup.
+  if (TIMESHEET_HISTORY_NAVIGATION.test(plainQuestion) && !asksAboutTeamTimesheets(plainQuestion)) {
+    return workflowActions('TIMESHEET_STATUS', role, basePath);
+  }
+  const ownRecord = ownRecordActions(input, role);
+  if (ownRecord) return ownRecord;
+  const workflow = classifyWorkflowIntent(normalized, input.toLowerCase());
+  // "Show me TARDU004's timesheet status": the user's own shortcuts would not match what was asked.
+  if (asksAboutAnotherPerson(plainQuestion) && !managesOtherPeople(workflow, role)) return [];
+  if (workflow) return workflowActions(workflow, role, basePath);
+
+  if (/\b(deadline|due date|when submit|when should i submit|submission date|cutoff)\b/.test(normalized)
+      && /\b(timesheet|timesheets|submit)\b/.test(normalized)) {
+    return [{
+      label: role === 'EMPLOYEE' ? 'Enter Timesheet Now' : 'Check Timesheets',
+      path: `${basePath}/timesheets`
+    }];
+  }
+
+  const asksForTimesheetStatus = /\b(status|latest|current|recent|submitted|history|view|check)\b/.test(normalized)
+    && /\b(timesheet|timesheets)\b/.test(normalized);
+  if (asksForTimesheetStatus) {
+    return [{ label: 'View Timesheets', path: `${basePath}/timesheets` }];
+  }
+
+  const intentsWithNavigation = [
+    ['express clearance', 'Review & Clear Timesheets', `${basePath}/timesheets?view=team&subtab=actions`],
+    ['payroll cutoff', role === 'EMPLOYEE' ? 'Check My Timesheets' : 'Check Payroll Gate', `${basePath}/timesheets${role === 'EMPLOYEE' ? '' : '?view=payroll'}`],
+    ['profile', role === 'EMPLOYEE' ? 'Request Profile Update' : 'Review Profile Change Requests', `${basePath}/profile-change-requests`],
+    ['document', 'Document Vault', `${basePath}/document-requests`],
+  ];
+  // A policy question about profiles must not get the profile-update action meant for how-to requests.
+  const matchedIntent = intentsWithNavigation.find(([phrase]) => normalized.includes(phrase)
+    && !(phrase === 'profile' && WORKFLOW_POLICY_TERMS.test(normalized)));
+  return matchedIntent ? [{ label: matchedIntent[1], path: matchedIntent[2] }] : [];
 }
