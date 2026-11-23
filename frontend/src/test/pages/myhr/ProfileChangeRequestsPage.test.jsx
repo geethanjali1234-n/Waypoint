@@ -427,14 +427,15 @@ describe('ProfileChangeRequestsPage (EMPLOYEE/HR self-service)', () => {
     await screen.findByText('No profile change requests available.');
   });
 
-  it('shows the inline Request a Profile Change form for HR after opening the card', async () => {
+  it('uses the same request modal for HR and employees after opening the HR request workspace', async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><ProfileChangeRequestsPage role="HR" /></MemoryRouter>);
     await user.click(await screen.findByRole('button', { name: /Request a Change/ }));
+    await user.click(screen.getByRole('button', { name: 'Request a Change' }));
 
-    expect(screen.getByRole('heading', { name: 'Request a Profile Change' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Request a Profile Change' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Submit Request' })).toBeInTheDocument();
-    await screen.findByText("You haven't submitted any profile change requests yet.");
+    await screen.findByText('No profile change requests available.');
   });
 
   it('loads the requester\'s own submission history from the real mine API', async () => {
@@ -599,11 +600,12 @@ describe('ProfileChangeRequestsPage (EMPLOYEE/HR self-service)', () => {
         'ADDRESS', { zipCode: '60603' }, undefined));
   });
 
-  it('submits a new request through HR\'s inline form and refreshes history', async () => {
+  it('submits a new request through HR\'s request modal and refreshes history', async () => {
     myHrProfileChangeApi.create.mockResolvedValue({ data: { data: { id: 'request-2', status: 'PENDING' } } });
     const user = userEvent.setup();
     render(<MemoryRouter><ProfileChangeRequestsPage role="HR" /></MemoryRouter>);
     await user.click(await screen.findByRole('button', { name: /Request a Change/ }));
+    await user.click(screen.getByRole('button', { name: 'Request a Change' }));
 
     await user.selectOptions(screen.getByLabelText('Field Name'), 'PERSONAL_EMAIL');
     await user.type(screen.getByLabelText('Requested Value'), 'new.email@example.com');
@@ -613,20 +615,22 @@ describe('ProfileChangeRequestsPage (EMPLOYEE/HR self-service)', () => {
     expect(myHrProfileChangeApi.listMine).toHaveBeenCalledTimes(2);
   });
 
-  it('Cancel clears the inline form fields without submitting', async () => {
+  it('closing the HR request modal discards unsent fields without submitting', async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><ProfileChangeRequestsPage role="HR" /></MemoryRouter>);
     await user.click(await screen.findByRole('button', { name: /Request a Change/ }));
+    await user.click(screen.getByRole('button', { name: 'Request a Change' }));
 
     await user.selectOptions(screen.getByLabelText('Field Name'), 'PERSONAL_EMAIL');
     await user.type(screen.getByLabelText('Requested Value'), 'new.email@example.com');
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await user.click(screen.getByRole('button', { name: 'Request a Change' }));
 
     expect(screen.getByLabelText('Field Name').value).toBe('');
     expect(myHrProfileChangeApi.create).not.toHaveBeenCalled();
   });
 
-  describe('My Previous Requests (HR own history)', () => {
+  describe('Request History (HR own history)', () => {
     const ownRequests = () => ({
       data: {
         data: [
@@ -660,8 +664,8 @@ describe('ProfileChangeRequestsPage (EMPLOYEE/HR self-service)', () => {
       const user = userEvent.setup();
       render(<MemoryRouter><ProfileChangeRequestsPage role="HR" /></MemoryRouter>);
       await user.click(await screen.findByRole('button', { name: /Request a Change/ }));
-      await screen.findByText('My Previous Requests');
-      const history = screen.getByText('My Previous Requests').closest('section');
+      await screen.findByText('Request History');
+      const history = screen.getByText('Request History').closest('section');
 
       expect(within(history).getByText('Pending')).toBeInTheDocument();
       expect(within(history).getByText('Phone Number')).toBeInTheDocument();

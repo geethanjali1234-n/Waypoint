@@ -61,7 +61,7 @@ public class OrganizationRegistrationRequest {
     // Lombok would otherwise expose this as "everifyNumber"; keep the name the settings API uses.
     @JsonProperty("eVerifyNumber")
     @NotBlank(message = "E-Verify number is required")
-    @Size(max = 30, message = "E-Verify number must be 30 characters or fewer")
+    @Pattern(regexp = "^\\d{4,7}$", message = "E-Verify number must be 4 to 7 digits")
     private String eVerifyNumber;
 
     @NotNull(message = "Payroll period is required")

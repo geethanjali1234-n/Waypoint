@@ -219,12 +219,12 @@ class AuthControllerTest {
                                 {"organizationName":"Acme Health","organizationEmail":"contact@acme.example",
                                  "phoneNumber":"555-0100","state":"IL","city":"Chicago",
                                  "streetAddress":"100 Main St","zipCode":"60601","organizationSize":"MEDIUM",
-                                 "einNumber":"12-34","adminEmail":"admin@acme.example"}
+                                 "einNumber":"12-34","eVerifyNumber":"abc","adminEmail":"admin@acme.example"}
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.data.industry").exists())
                 .andExpect(jsonPath("$.data.einNumber").value("EIN must be 9 digits, e.g. 12-3456789"))
-                .andExpect(jsonPath("$.data.eVerifyNumber").value("E-Verify number is required"))
+                .andExpect(jsonPath("$.data.eVerifyNumber").value("E-Verify number must be 4 to 7 digits"))
                 .andExpect(jsonPath("$.data.payrollPeriod").exists())
                 .andExpect(jsonPath("$.data.adminName").exists())
                 .andExpect(jsonPath("$.data.adminPhoneNumber").exists());

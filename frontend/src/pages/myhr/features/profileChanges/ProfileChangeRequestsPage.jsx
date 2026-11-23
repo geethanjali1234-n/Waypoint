@@ -1,7 +1,7 @@
 import { formatReportingManager } from '../../../../utils/reportingManagerLabel';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ActionCard, Button, Card, Dropdown, EmailInput, EmptyState, Loader, Modal, PhoneInput, SearchInput, StatusTag, TextArea, TextInput } from '../../../../components';
+import { ActionCard, Button, Dropdown, EmailInput, EmptyState, Loader, Modal, PhoneInput, SearchInput, StatusTag, TextArea, TextInput } from '../../../../components';
 import { searchAddressSuggestions } from '../../../../api/addressAutocompleteApi';
 import myHrProfileChangeApi from '../../../../api/myHrProfileChangeApi';
 import { formatDateTime } from '../../../../utils/dateFormat';
@@ -104,7 +104,7 @@ function normalizeUsPhone(value) {
 // Field-specific structured inputs, never a generic JSON/object input:
 // NAME collects firstName/lastName, ADDRESS collects its four allowed keys,
 // PERSONAL_EMAIL/PHONE_NUMBER collect a single typed scalar value.
-function RequestForm({ onSubmit, showCancel = false }) {
+function RequestForm({ onSubmit }) {
   const [fieldName, setFieldName] = useState('');
   const [scalarValue, setScalarValue] = useState('');
   const [firstName, setFirstName] = useState(''); const [lastName, setLastName] = useState('');
@@ -133,16 +133,6 @@ function RequestForm({ onSubmit, showCancel = false }) {
     }, 400);
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [fieldName, streetAddress]);
-
-  // Only relevant when the form is an always-visible inline panel (HR's own
-  // Request a Change view) rather than a dismissable modal (EMPLOYEE) -
-  // there's nothing to close, so Cancel just clears the fields back out.
-  const resetForm = () => {
-    setFieldName(''); setScalarValue('');
-    setFirstName(''); setLastName('');
-    setStreetAddress(''); setCity(''); setState(''); setZipCode('');
-    setRequestReason(''); setError(''); setFieldErrors({}); setAddressSuggestions([]);
-  };
 
   const updateScalarValue = (value) => {
     setScalarValue(value);
@@ -215,7 +205,6 @@ function RequestForm({ onSubmit, showCancel = false }) {
     <TextArea name="requestReason" label="Reason for Request (Optional)" value={requestReason} onChange={(event) => setRequestReason(event.target.value)} error={fieldErrors.requestReason} maxLength={1000} />
     {error && <p className="profile-changes__feedback" role="alert">{error}</p>}
     <div className="profile-changes__form-actions">
-      {showCancel && <Button type="button" variant="secondary" onClick={resetForm} disabled={submitting}>Cancel</Button>}
       <Button type="submit" variant="primary" disabled={submitting}>{submitting ? 'Submitting…' : 'Submit Request'}</Button>
     </div>
   </form>;
@@ -550,36 +539,28 @@ export default function ProfileChangeRequestsPage({ role, defaultHrView = null }
   };
 
   const dashboardBackRoute = isEmployee ? '/myhr/employee/dashboard' : isAdmin ? '/myhr/admin/dashboard' : '/myhr/hr/dashboard';
-  const employeeRequestAction = isEmployee ? (
+  // HR uses the same modal request form as employees. Its review queue remains
+  // available through the separate Assigned Requests workspace.
+  const requestAction = showRequestSection ? (
     <Button type="button" variant="primary" className="profile-changes__request-button" onClick={() => setShowRequest(true)}>
       Request a Change
     </Button>
   ) : undefined;
 
-  const pageTitle = role === 'HR' || role === 'COMPANY_ADMIN' ? undefined : 'Profile Change Requests';
+  const pageTitle = isEmployee || (isHr && showRequestSection) ? 'Profile Change Requests' : undefined;
   const pageDescription = isEmployee ? null : role === 'HR' || role === 'COMPANY_ADMIN' ? undefined : 'Review profile changes across the organization.';
 
-  return <MyHrFeaturePage className="profile-changes__feature" title={pageTitle} description={pageDescription} backTo={dashboardBackRoute} headerAction={employeeRequestAction}>
+  return <MyHrFeaturePage className="profile-changes__feature" title={pageTitle} description={pageDescription} backTo={dashboardBackRoute} headerAction={requestAction}>
     {showCards && <div className="profile-changes__cards">
       <ActionCard icon={<ProfileChangeActionIcon type="request" />} eyebrow="My profile" title="Request a Change" description="Submit and track your own profile change requests." onClick={() => setHrView('request')} />
       <ActionCard icon={<ProfileChangeActionIcon type="assigned" />} eyebrow="Review queue" title="Assigned Requests" description="Review and act on requests assigned to you." onClick={() => setHrView('assigned')} />
     </div>}
-    {/* HR's own request flow is an always-visible inline form (no trigger
-        button/modal) - EMPLOYEE keeps the existing button + modal below. */}
-    {showRequestSection && isHr && <>
-      <div className="profile-changes__section-head"><div><h2>Request a Profile Change</h2><p>Submit a change to your own profile for your reporting manager to review.</p></div></div>
-      <Card title="Request Form" className="profile-changes__form-card"><RequestForm onSubmit={submitOwnRequest} showCancel /></Card>
-    </>}
-    {showRequestSection && !isHr && !isEmployee && (
-      <div className="profile-changes__section-head"><div><h2>My Requests</h2><p>Controlled changes remain pending until processed.</p></div><Button type="button" variant="primary" className="profile-changes__button--sm" onClick={() => setShowRequest(true)}>Request a Change</Button></div>
-    )}
     {submitted && <p className="profile-changes__feedback"><StatusTag status="Pending" tone="warning" /> Request for {FIELD_LABELS[submitted.fieldName]} submitted.</p>}
     {showRequestSection && <section className="profile-changes__history">
-      <h2>{isHr ? 'My Previous Requests' : 'Request History'}</h2>
-      {isHr && <p className="profile-changes__history-subtitle">Your submitted profile change requests.</p>}
+      <h2>Request History</h2>
       {myLoadState === 'loading' && <Loader label="Loading your requests…" />}
       {myLoadState === 'error' && <EmptyState title="Couldn't load your requests" description="Something went wrong loading your profile change requests." action={<Button type="button" variant="secondary" onClick={loadMyRequests}>Try Again</Button>} />}
-      {myLoadState === 'success' && myRequests.length === 0 && <EmptyState title={isHr ? "You haven't submitted any profile change requests yet." : 'No profile change requests available.'} />}
+      {myLoadState === 'success' && myRequests.length === 0 && <EmptyState title="No profile change requests available." />}
       {myLoadState === 'success' && historyPageItems.map((request) => <RequestCard key={request.id} request={request} onReview={(clicked) => { setSelectedIsOwn(true); setSelected(clicked); }} employeeView />)}
       {myLoadState === 'success' && historyPages > 1 && <MyHrPagination currentPage={historyPage} totalPages={historyPages} onPageChange={setHistoryPage} />}
     </section>}
@@ -610,7 +591,7 @@ export default function ProfileChangeRequestsPage({ role, defaultHrView = null }
   </MyHrFeaturePage>;
 }
 
-// One shared card for both "My Previous Requests" (own history, employeeView)
+// One shared card for both "Request History" (own history, employeeView)
 // and "Assigned Requests" (reviewer queue) - same border/spacing/typography/
 // status badge/field grid/action placement either way, so the two sections
 // read as one component rather than two different designs. employeeView

@@ -64,6 +64,26 @@ describe('OrganizationRegistrationPage', () => {
     expect(authApi.startOrganizationRegistration).not.toHaveBeenCalled();
   });
 
+  it('limits the EIN to nine digits and formats it as the user types', async () => {
+    const user = userEvent.setup();
+    render(<MemoryRouter><OrganizationRegistrationPage /></MemoryRouter>);
+
+    const ein = screen.getByLabelText('EIN number');
+    await user.type(ein, '12ab345678999');
+
+    expect(ein).toHaveValue('12-3456789');
+  });
+
+  it('limits the E-Verify number to seven digits and removes non-numeric characters', async () => {
+    const user = userEvent.setup();
+    render(<MemoryRouter><OrganizationRegistrationPage /></MemoryRouter>);
+
+    const eVerify = screen.getByLabelText('E-Verify number');
+    await user.type(eVerify, '12ab3456789');
+
+    expect(eVerify).toHaveValue('1234567');
+  });
+
   it('sends an optional PNG logo with the registration', async () => {
     authApi.startOrganizationRegistration.mockResolvedValue({ data: { data: {
       registrationId: 'registration-1', adminEmail: 'admin@acme.example',

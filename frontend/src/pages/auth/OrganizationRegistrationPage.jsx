@@ -37,7 +37,7 @@ const schema = z.object({
   website: z.string(),
   description: z.string().max(2000, 'Description must be 2000 characters or fewer'),
   einNumber: z.string().trim().regex(/^\d{2}-?\d{7}$/, 'EIN must be 9 digits, e.g. 12-3456789'),
-  eVerifyNumber: z.string().trim().min(1, 'E-Verify number is required'),
+  eVerifyNumber: z.string().trim().min(1, 'E-Verify number is required').regex(/^\d{4,7}$/, 'E-Verify number must be 4 to 7 digits'),
   payrollPeriod: z.enum(PAYROLL_PERIOD_OPTIONS.map((option) => option.value), { message: 'Payroll period is required' }),
   adminName: z.string().trim().min(1, 'Admin name is required'),
   adminEmail: z.string().trim().email('Enter a valid Admin email'),
@@ -53,6 +53,11 @@ const defaults = {
 
 const LOGO_TYPES = ['image/png', 'image/jpeg'];
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+const formatEin = (value) => {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 9);
+  return digits.length > 2 ? `${digits.slice(0, 2)}-${digits.slice(2)}` : digits;
+};
+const formatEVerifyNumber = (value) => String(value || '').replace(/\D/g, '').slice(0, 7);
 const orgInitials = (name) => name?.trim() ? name.trim().split(/\s+/).slice(0, 2).map((word) => word[0]?.toUpperCase()).join('') : '';
 
 const fieldError = (error) => error?.response?.data?.message || 'Unable to complete registration. Please try again.';
@@ -164,8 +169,8 @@ export default function OrganizationRegistrationPage() {
             <TextArea {...field} label="Organization description (optional)" rows={3} maxLength={2000} error={errors.description?.message} />} />
           <h2>Compliance</h2>
           <div className="wp-organization-registration__pair">
-            <Field control={control} errors={errors} name="einNumber" label="EIN number" />
-            <Field control={control} errors={errors} name="eVerifyNumber" label="E-Verify number" />
+            <EinField control={control} errors={errors} />
+            <EVerifyNumberField control={control} errors={errors} />
           </div>
           <h2>Payroll &amp; Timesheets</h2>
           <Controller name="payrollPeriod" control={control} render={({ field }) =>
@@ -192,4 +197,18 @@ function Field({ control, errors, name, label, required = true }) {
 function EmailField({ control, errors, name, label }) {
   return <Controller name={name} control={control} render={({ field }) =>
     <EmailInput {...field} label={label} error={errors[name]?.message} required />} />;
+}
+
+function EinField({ control, errors }) {
+  return <Controller name="einNumber" control={control} render={({ field }) =>
+    <TextInput {...field} label="EIN number" error={errors.einNumber?.message} maxLength={10}
+      placeholder="12-3456789" hint="9 digits, e.g. 12-3456789"
+      onChange={(event) => field.onChange(formatEin(event.target.value))} required />} />;
+}
+
+function EVerifyNumberField({ control, errors }) {
+  return <Controller name="eVerifyNumber" control={control} render={({ field }) =>
+    <TextInput {...field} label="E-Verify number" error={errors.eVerifyNumber?.message} maxLength={7}
+      placeholder="1234567" hint="4 to 7 digits"
+      onChange={(event) => field.onChange(formatEVerifyNumber(event.target.value))} required />} />;
 }
