@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import WaypointChatbot from '../../components/chatbot/WaypointChatbot';
 import { WaviConversationProvider } from '../../components/chatbot/WaviConversationContext';
-import { expireMyHrAuthentication } from '../../auth/myHrSession';
+import { clearMyHrAuthentication, expireMyHrAuthentication, saveMyHrAuthentication } from '../../auth/myHrSession';
 import { sendMyHrChatMessage } from '../../api/myHrChatApi';
 
 vi.mock('../../api/myHrChatApi', () => ({ sendMyHrChatMessage: vi.fn() }));
@@ -90,6 +90,22 @@ it('clears shared conversation and drops a late answer after account switching o
 
   expireMyHrAuthentication();
   expect(screen.getByRole('heading', { name: /Hey! I'm Wavy/i })).toBeInTheDocument();
+});
+
+it('clears the conversation on same-tab account switches and logout', async () => {
+  sendMyHrChatMessage.mockResolvedValue({ message: 'Private answer.' });
+  renderMyHrRoutes();
+  openChat();
+  send('What is my timesheet status?');
+  expect(await screen.findByText('Private answer.')).toBeInTheDocument();
+
+  act(() => saveMyHrAuthentication('other-token', OTHER_ORG_EMPLOYEE));
+  expect(screen.queryByText('Private answer.')).not.toBeInTheDocument();
+
+  send('What is my timesheet status?');
+  expect(await screen.findByText('Private answer.')).toBeInTheDocument();
+  act(() => clearMyHrAuthentication());
+  expect(screen.queryByText('Private answer.')).not.toBeInTheDocument();
 });
 
 it('sends a question once when it is submitted twice before the first reply renders, then accepts the next one', async () => {

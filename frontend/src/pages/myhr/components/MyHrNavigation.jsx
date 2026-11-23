@@ -11,6 +11,7 @@ const NAV_ICON_PATHS = {
   timesheets: ['M8 2v4M16 2v4', 'M3 10h18', 'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2', 'm8 16 3 3 5-5'],
   'document-requests': ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z', 'M14 2v6h6', 'M8 13h8M8 17h5'],
   reports: ['M3 3v18h18', 'M7 16v-5M12 16V7M17 16v-8', 'm7 7 5-4 5 2 4-3'],
+  'knowledge-base': ['M4 19.5A2.5 2.5 0 0 1 6.5 17H20', 'M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2', 'M9 7h7M9 11h5'],
   audit: ['M3 11a9 9 0 1 1 2.6 7', 'M3 4v7h7', 'M12 7v5l3 2'],
   organization: ['M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1z', 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8'],
   profile: ['M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8', 'M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2'],
@@ -46,7 +47,7 @@ export default function MyHrNavigation({ role }) {
     ['People', ['employees', 'profile', 'profile-change-requests']],
     ['Time & pay', ['timesheets', 'payroll-readiness', 'reports']],
     ['Documents', ['document-requests', 'offer-letter-approvals']],
-    ['Governance', ['audit', 'organization']],
+    ['Governance', ['knowledge-base', 'audit', 'organization']],
   ];
   const available = [['dashboard', 'Dashboard'], ...ROLE_LINKS[role]];
   const links = groups.flatMap(([group, paths]) => paths.flatMap((path) => available.filter(([key]) => key === path).map(([key, title]) => [key, title, group])));

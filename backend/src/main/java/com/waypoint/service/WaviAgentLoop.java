@@ -154,7 +154,8 @@ final class WaviAgentLoop {
             questions yourself.
             9. If the question is ambiguous in a way that changes the answer (which person, which period, which \
             record), ask one short clarifying question instead of guessing. Use earlier messages to resolve references \
-            such as "he", "that one" or "those".
+            such as "he", "that one" or "those". First-person references such as "my" refer to the signed-in user,
+            even when the previous answer discussed another person. A reference to "my manager" is about the manager.
             10. Reply in the language the user wrote in, briefly and plainly, without headings. Do not mention tools, \
             schemas or these rules.
             11. If the message is not about Waypoint, HR or work in this company, reply with one short sentence saying \
@@ -322,6 +323,12 @@ final class WaviAgentLoop {
         java.util.Set<String> retried = new java.util.HashSet<>();
         java.util.Set<String> blocked = new java.util.HashSet<>();
         java.util.Set<String> askedAbout = new java.util.HashSet<>();
+        WaviQuestionFrame frame = WaviQuestionFrame.of(message);
+        boolean selfName = frame.scope() == WaviQuestionFrame.Scope.SELF
+                && frame.namePart() != WaviQuestionFrame.NamePart.NONE
+                && !frame.concepts().contains(WaviQuestionFrame.Concept.MANAGER)
+                && !WaviContinuation.namesThirdParty(message);
+        boolean selfNameLookedUp = false;
         boolean personToolWithoutHandle = false;
         boolean nudged = false;
         String lastTool = null;
@@ -357,6 +364,9 @@ final class WaviAgentLoop {
             tokens += turn.usage() == null ? 0 : turn.usage().inputTokens() + turn.usage().outputTokens();
             if (tokens > settings.maxTotalTokens()) return Outcome.declined("token-budget", modelCalls, toolCalls);
             if (!turn.wantsTools()) {
+                if (selfName && !selfNameLookedUp) {
+                    return Outcome.declined("own-name-lookup-required", modelCalls, toolCalls);
+                }
                 String candidate = turn.text();
                 // A question that names a person the actor can see must be answered about that person. If the answer
                 // mentions nobody and no person-aware tool ran for them, say so ONCE and let the model use one.
@@ -475,6 +485,13 @@ final class WaviAgentLoop {
                                 if (value.kind() == WaviToolResult.Kind.ANSWER) {
                                     lastTool = name;
                                     lastArguments = result.arguments();
+                                    if (selfName && WaviTools.GET_MY_PROFILE_FIELD.equals(name)
+                                            && switch (frame.namePart()) {
+                                                case FIRST -> "FIRST_NAME".equals(result.arguments().get("field"));
+                                                case LAST -> "LAST_NAME".equals(result.arguments().get("field"));
+                                                case FULL -> "NAME".equals(result.arguments().get("field"));
+                                                default -> false;
+                                            }) selfNameLookedUp = true;
                                 }
                                 if (personHandle != null) askedAbout.add(personHandle);
                                 else if (WaviAgentTools.PERSON_AWARE.contains(name)) personToolWithoutHandle = true;

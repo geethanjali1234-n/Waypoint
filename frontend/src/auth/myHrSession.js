@@ -2,6 +2,11 @@ const MY_HR_SESSION_KEY = 'myHrAuthenticatedUser';
 const ACCESS_TOKEN_KEY = 'accessToken';
 
 export const MY_HR_AUTHENTICATION_CLEARED_EVENT = 'waypoint:myhr-authentication-cleared';
+export const MY_HR_SESSION_CHANGED_EVENT = 'waypoint:myhr-session-changed';
+
+function announceSessionChange() {
+  window.dispatchEvent(new Event(MY_HR_SESSION_CHANGED_EVENT));
+}
 
 export const MY_HR_ROLES = ['COMPANY_ADMIN', 'HR', 'EMPLOYEE'];
 export const WAYPOINT_WORKSPACE_ROLES = [...MY_HR_ROLES, 'WAYPOINT_ADMIN'];
@@ -20,6 +25,7 @@ export function getWorkspaceHomePath(role) {
 
 export function saveMyHrSession(user) {
   localStorage.setItem(MY_HR_SESSION_KEY, JSON.stringify(user));
+  announceSessionChange();
 }
 
 export function saveMyHrAuthentication(accessToken, user) {
@@ -47,6 +53,7 @@ export function clearMyHrSession() {
 export function clearMyHrAuthentication() {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   clearMyHrSession();
+  announceSessionChange();
 }
 
 export function expireMyHrAuthentication() {

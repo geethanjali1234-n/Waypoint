@@ -32,11 +32,18 @@ it('shows only employee routes for employees', () => {
   expect(screen.getByRole('link', { name: 'My Timesheets' })).toHaveAttribute('href', '/myhr/employee/timesheets');
   expect(screen.queryByRole('link', { name: 'Organization Settings' })).not.toBeInTheDocument();
   expect(screen.queryByRole('link', { name: 'Payroll Readiness' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: 'Knowledge Base' })).not.toBeInTheDocument();
 });
 it('shows HR routes without company-admin controls', () => {
   show('HR', '/myhr/hr/reports');
   expect(screen.getByRole('link', { name: 'Reports' })).toHaveAttribute('aria-current', 'page');
   expect(screen.queryByRole('link', { name: 'Document Approvals' })).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Knowledge Base' })).toHaveAttribute('href', '/myhr/hr/knowledge-base');
+});
+
+it('shows Knowledge Base to company administrators', () => {
+  show();
+  expect(screen.getByRole('link', { name: 'Knowledge Base' })).toHaveAttribute('href', '/myhr/admin/knowledge-base');
 });
 
 it('collapses immediately and reveals labels without using toggle focus', () => {

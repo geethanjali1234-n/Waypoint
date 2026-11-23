@@ -245,6 +245,32 @@ class WaviAgentLoopTest {
     }
 
     @Test
+    void explicitOwnLastNameDoesNotReuseTheManagersName() {
+        Script claude = new Script(call -> say("Nair"));
+        var world = world(WaviEvaluationWorld.EMPLOYEE, claude, ALLOW_NAMES, DEFAULTS);
+        WaviAgentLoop.Outcome outcome = new WaviAgentLoop(claude, ALLOW_NAMES, DEFAULTS, Clock.systemUTC())
+                .run(world.actor, "What is my last name?", List.of(
+                        new MyHrChatHistoryMessage("user", "Who am I?"),
+                        new MyHrChatHistoryMessage("assistant", "Asha Rao"),
+                        new MyHrChatHistoryMessage("user", "Whom should I report to?"),
+                        new MyHrChatHistoryMessage("assistant", "Priya Nair")), null, TODAY, world.service.toolLayer());
+        assertThat(outcome.answered()).isFalse();
+        assertThat(outcome.reason()).isEqualTo("own-name-lookup-required");
+        assertThat(ask(world, "What is my last name?")).contains("Rao").doesNotContain("Nair");
+    }
+
+    @Test
+    void managerNameQuestionKeepsTheExistingManagerLookup() {
+        Script claude = new Script(call -> call == 1
+                ? use(WaviTools.GET_MY_PROFILE_FIELD, Map.of("field", "REPORTING_MANAGER"))
+                : say("Your manager is Priya Nair."));
+        var world = world(WaviEvaluationWorld.EMPLOYEE, claude, ALLOW_NAMES, DEFAULTS);
+        WaviAgentLoop.Outcome outcome = new WaviAgentLoop(claude, ALLOW_NAMES, DEFAULTS, Clock.systemUTC())
+                .run(world.actor, "What is my manager's last name?", List.of(), null, TODAY, world.service.toolLayer());
+        assertThat(outcome.reason()).isNotEqualTo("own-name-lookup-required");
+    }
+
+    @Test
     void anInventedFigureIsNeverShown() {
         Script claude = new Script(call -> call == 1
                 ? use(WaviTools.GET_MY_PROFILE_FIELD, Map.of("field", "JOB_TITLE"))
