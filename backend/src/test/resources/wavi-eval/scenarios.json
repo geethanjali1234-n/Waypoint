@@ -90,8 +90,8 @@
 
     {"id": "DR-01", "category": "direct reports", "message": "who reports to me?",
       "byRole": {"EMPLOYEE": {"route": "FIXED", "noData": true, "contains": ["don't have direct reports"]},
-        "HR": {"route": "LOOKUP", "calls": ["EmployeeManagementService.list"], "contains": ["Asha Rao", "Ravi Teja"]},
-        "COMPANY_ADMIN": {"route": "FIXED", "noData": true, "contains": ["can't list"]}}},
+        "HR": {"route": "LOOKUP", "calls": ["EmployeeManagementService.listDirectReports"], "contains": ["Asha Rao", "Ravi Teja"]},
+        "COMPANY_ADMIN": {"route": "LOOKUP", "calls": ["EmployeeManagementService.listDirectReports"], "noCalls": ["EmployeeManagementService.list"], "contains": ["No one currently reports to you"]}}},
     {"id": "DR-02", "category": "direct reports", "message": "show my team members",
       "byRole": {"EMPLOYEE": {"route": "FIXED", "noData": true}, "HR": {"route": "LOOKUP", "contains": ["Asha Rao", "Ravi Teja"]}, "COMPANY_ADMIN": {"noCalls": ["EmployeeManagementService.list"]}}},
     {"id": "DR-03", "category": "direct reports", "message": "how many people report to me", "roles": ["HR"],

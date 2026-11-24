@@ -94,6 +94,34 @@ class EmployeeManagementServiceTest {
     }
 
     @Test
+    void aCompanyAdminsDirectReportsAreOnlyThePeopleAssignedToThemNotTheWholeOrganization() {
+        actor("admin-1", UserRole.COMPANY_ADMIN);
+        when(reportingAssignmentRepository
+                .findByOrganizationIdAndReportingManagerUserIdAndRelationshipTypeAndIsActiveTrue(
+                        "org-1", "admin-1", RelationshipType.PRIMARY_REPORTING_MANAGER))
+                .thenReturn(List.of(active("emp-7", "admin-1"), active("emp-foreign", "admin-1")));
+        User foreign = user("emp-foreign", UserRole.EMPLOYEE, AccountStatus.ACTIVE);
+        foreign.setOrganizationId("org-2");
+        when(userRepository.findByIdIn(any())).thenReturn(
+                List.of(user("emp-7", UserRole.EMPLOYEE, AccountStatus.ACTIVE), foreign));
+
+        assertThat(service.listDirectReports("admin-1")).extracting("userId").containsExactly("emp-7");
+        // The organization-wide query behind list() is never used for direct reports.
+        verify(userRepository, never()).findByOrganizationIdAndRoleIn(any(), any());
+    }
+
+    @Test
+    void aCompanyAdminWithNoAssignedReportsGetsAnEmptyList() {
+        actor("admin-1", UserRole.COMPANY_ADMIN);
+        when(reportingAssignmentRepository
+                .findByOrganizationIdAndReportingManagerUserIdAndRelationshipTypeAndIsActiveTrue(
+                        "org-1", "admin-1", RelationshipType.PRIMARY_REPORTING_MANAGER)).thenReturn(List.of());
+
+        assertThat(service.listDirectReports("admin-1")).isEmpty();
+        verify(userRepository, never()).findByOrganizationIdAndRoleIn(any(), any());
+    }
+
+    @Test
     void hrListsOnlyOwnDirectReports() {
         actor("hr-1", UserRole.HR);
         when(reportingAssignmentRepository

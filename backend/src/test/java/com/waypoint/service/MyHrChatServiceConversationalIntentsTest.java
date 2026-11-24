@@ -228,7 +228,8 @@ class MyHrChatServiceConversationalIntentsTest {
 
         assertThat(ask(hr, "did i fill my timesheet this week"))
                 .isEqualTo("I don't see a timesheet of yours covering this week (Mon Nov 2, 2026 to Sun Nov 8, 2026) "
-                        + "yet. If you worked those days, open Timesheets and choose Enter Timesheet to add and submit them.");
+                        + "yet. If you worked those days, open Timesheets and choose Enter Timesheet to add them, then "
+                        + "attach a supporting timesheet document and submit.");
         verify(timesheets).getOwnStatusesOverlapping("hr-81", MONDAY, SUNDAY);
         verify(timesheets, never()).getMostRecentStatusForUser(anyString());
     }
@@ -322,18 +323,18 @@ class MyHrChatServiceConversationalIntentsTest {
 
     @Test
     void hrSeesOnlyTheirOwnDirectReportsFromTheExistingAuthorizedLookup() {
-        when(employees.list("hr-81")).thenReturn(List.of(summary("Asha Rao", "Analyst"), summary("Ben Cole", null)));
+        when(employees.listDirectReports("hr-81")).thenReturn(List.of(summary("Asha Rao", "Analyst"), summary("Ben Cole", null)));
 
         assertThat(ask(hr, "Who reports to me?")).isEqualTo("2 people report to you: Asha Rao (Analyst), Ben Cole.");
-        verify(employees).list("hr-81");
+        verify(employees).listDirectReports("hr-81");
 
-        when(employees.list("hr-81")).thenReturn(List.of());
+        when(employees.listDirectReports("hr-81")).thenReturn(List.of());
         assertThat(ask(hr, "Who are my direct reports?")).isEqualTo("No one currently reports to you in Waypoint.");
     }
 
     @Test
-    void companyAdminsAreToldTheLookupIsMissingAndEmployeesHaveNone() {
-        assertThat(ask(admin, "Who reports to me?")).startsWith("I can't list who reports directly to you");
+    void companyAdminsGetTheirOwnAssignedReportsAndEmployeesHaveNone() {
+        assertThat(ask(admin, "Who reports to me?")).isEqualTo("No one currently reports to you in Waypoint.");
         assertThat(ask(employee, "Who reports to me?")).startsWith("Employee accounts don't have direct reports");
         verify(employees, never()).list(anyString());
         verifyNoInteractions(claude, ollama);

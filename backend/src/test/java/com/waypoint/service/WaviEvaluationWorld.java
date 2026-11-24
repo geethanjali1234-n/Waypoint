@@ -435,6 +435,13 @@ final class WaviEvaluationWorld {
                         null, null, EMPLOYEE.jobTitle(), null, null, HR.name(), null),
                 new EmployeeSummaryResponse(COLLEAGUE.userId(), COLLEAGUE.employeeId(), COLLEAGUE.name(), "EMPLOYEE",
                         null, null, COLLEAGUE.jobTitle(), null, null, HR.name(), null)));
+        // Direct reports: HR's are exactly its list above; this Company Admin manages no one directly.
+        when(employees.listDirectReports(HR.userId())).thenReturn(List.of(
+                new EmployeeSummaryResponse(EMPLOYEE.userId(), EMPLOYEE.employeeId(), EMPLOYEE.name(), "EMPLOYEE",
+                        null, null, EMPLOYEE.jobTitle(), null, null, HR.name(), null),
+                new EmployeeSummaryResponse(COLLEAGUE.userId(), COLLEAGUE.employeeId(), COLLEAGUE.name(), "EMPLOYEE",
+                        null, null, COLLEAGUE.jobTitle(), null, null, HR.name(), null)));
+        when(employees.listDirectReports(ADMIN.userId())).thenReturn(List.of());
 
         boolean submits = person.role() != UserRole.COMPANY_ADMIN && !options.noTimesheets;
         List<MyHrTimesheetPeriodStatus> own = submits ? TIMESHEETS : List.of();

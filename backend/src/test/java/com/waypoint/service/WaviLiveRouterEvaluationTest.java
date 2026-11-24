@@ -34,9 +34,9 @@ class WaviLiveRouterEvaluationTest {
         var catalog = new WaviEvaluationWorld(WaviEvaluationWorld.EMPLOYEE, options).service.toolLayer().registry().all();
         long input = WaviLiveRouterEvaluation.promptTokenUpperBound(catalog);
         int output = WaviLiveRouterEvaluation.evaluationSettings(2).maxOutputTokens();
-        var cap = WaviLiveRouterEvaluation.spendLimit(WaviLiveRouterEvaluation.Mode.SAMPLE, "0.10");
+        var cap = WaviLiveRouterEvaluation.spendLimit(WaviLiveRouterEvaluation.Mode.SAMPLE, "0.11");
         assertThatIllegalArgumentException().isThrownBy(() ->
-                WaviLiveRouterEvaluation.spendLimit(WaviLiveRouterEvaluation.Mode.SAMPLE, "0.100001"));
+                WaviLiveRouterEvaluation.spendLimit(WaviLiveRouterEvaluation.Mode.SAMPLE, "0.110001"));
         var budget = new WaviLiveRouterEvaluation.SampleBudget("claude-haiku-5-5", cap, input, output);
         budget.requireCovers(20);
         StringBuilder report = new StringBuilder("OFFLINE Phase 2 pilot preflight; no external requests.\n")
@@ -49,7 +49,7 @@ class WaviLiveRouterEvaluationTest {
                 .append("; 20-attempt input/output bounds: ").append(input * 20).append('/').append(output * 20).append(".\n")
                 .append("Local reservation per attempt USD: ").append(budget.conservativeAttemptUsd())
                 .append("; 20-attempt reservation USD: ").append(budget.conservativeAttemptUsd().multiply(new BigDecimal("20")))
-                .append("; approved configuration ceiling USD: 0.10; stop before USD: 0.08.\n")
+                .append("; approved configuration ceiling USD: 0.11; stop before USD: 0.088.\n")
                 .append("Prices are repository estimates, not independently verified billing rates.\n")
                 .append("Fixtures (unchanged):\n");
         for (var sample : WaviLiveRouterEvaluation.SAMPLE_CASES) {
@@ -674,8 +674,8 @@ class WaviLiveRouterEvaluationTest {
 
         new WaviLiveRouterEvaluation.SampleBudget("claude-haiku-5-5", new BigDecimal("0.05"), promptTokens,
                 outputTokens).requireCovers(WaviLiveRouterEvaluation.SMOKE_HTTP_ATTEMPTS);
-        // The scripted pilot default (run-wavi-live-router-evaluation.ps1: $0.10, 20 attempts) must still start.
-        new WaviLiveRouterEvaluation.SampleBudget("claude-haiku-5-5", new BigDecimal("0.10"), promptTokens,
+        // The approved SAMPLE pilot budget ($0.11, 20 attempts) must still start.
+        new WaviLiveRouterEvaluation.SampleBudget("claude-haiku-5-5", new BigDecimal("0.11"), promptTokens,
                 outputTokens).requireCovers(WaviLiveRouterEvaluation.SAMPLE_MAX_HTTP_ATTEMPTS);
         new WaviLiveRouterEvaluation.SampleBudget("claude-haiku-5-5", new BigDecimal("1.00"), promptTokens,
                 outputTokens).requireCovers(WaviLiveRouterEvaluation.GOLD_MAX_HTTP_ATTEMPTS);

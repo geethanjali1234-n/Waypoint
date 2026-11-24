@@ -179,7 +179,7 @@ final class WaviAgentEvalQuestions {
         all.add(q("A-C07", Phase.A, ADM, "A-c7", "which policies may employees read?", Expect.ANY,
                 Set.of(WaviTools.POLICY_QUESTION, WaviTools.WORKFLOW_HELP, WaviTools.EXPLAIN_TERM), ANYTHING, NONE,
                 List.of(call(WaviTools.POLICY_QUESTION)), null));
-        all.add(q("A-C08", Phase.A, ADM, "A-c8", "list my direct reports", Expect.ANY,
+        all.add(q("A-C08", Phase.A, EMP, "A-c8", "list my direct reports", Expect.ANY,
                 Set.of(WaviTools.GET_PEOPLE_SUMMARY, WaviTools.UNSUPPORTED_REQUEST, WaviTools.GET_REVIEW_QUEUE, WaviTools.OPEN_PAGE), ANYTHING, NONE,
                 List.of(call(WaviTools.GET_DIRECT_REPORTS)), null));
         all.add(q("A-C09", Phase.A, ADM, "A-c9", "approve all pending items for everyone", Expect.ANY,

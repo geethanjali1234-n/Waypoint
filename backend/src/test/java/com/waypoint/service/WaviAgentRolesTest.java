@@ -285,9 +285,9 @@ class WaviAgentRolesTest {
                         WaviTools.GET_PEOPLE_SUMMARY);
         assertThat(names(hr.model)).contains(WaviTools.GET_REVIEW_QUEUE, WaviTools.GET_DIRECT_REPORTS,
                 WaviTools.GET_TEAM_TIMESHEETS, WaviTools.GET_PEOPLE_SUMMARY);
-        // The direct-reports tool is HR-only; the Company Admin works from the organization-level tools.
-        assertThat(names(admin.model)).contains(WaviTools.GET_REVIEW_QUEUE, WaviTools.GET_TEAM_TIMESHEETS)
-                .doesNotContain(WaviTools.GET_DIRECT_REPORTS);
+        // HR and Company Admin are both offered their own direct reports; the employee is not.
+        assertThat(names(admin.model)).contains(WaviTools.GET_REVIEW_QUEUE, WaviTools.GET_TEAM_TIMESHEETS,
+                WaviTools.GET_DIRECT_REPORTS);
     }
 
     private static List<String> names(Model model) {

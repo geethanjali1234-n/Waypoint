@@ -73,6 +73,7 @@ class WaviPeopleAndHistoryMatrixTest {
                     reviewer.name(), null));
         }
         when(world.employees.list(reviewer.userId())).thenReturn(people);
+        when(world.employees.listDirectReports(reviewer.userId())).thenReturn(people);
         return new Chat(world);
     }
 

@@ -41,7 +41,7 @@ final class WaviExternalDisclosure {
             WaviTools.GET_MY_TIMESHEETS, WaviTools.LIST_MY_TIMESHEETS,
             WaviTools.GET_MY_REQUESTS, WaviTools.LIST_MY_REQUESTS, WaviTools.GET_PEOPLE_SUMMARY, WaviTools.GET_MY_ROLE);
     private static final Set<String> NAMED_TOOLS = Set.of(WaviAgentTools.LIST_PEOPLE, WaviTools.GET_DIRECT_REPORTS, WaviTools.GET_TEAM_TIMESHEETS,
-            WaviTools.GET_MY_REVIEW_HISTORY);
+            WaviTools.GET_MY_REVIEW_HISTORY, WaviTools.FIND_PEOPLE, WaviTools.GET_PAYROLL_READINESS);
 
     /** Per tool, the argument values (of its "field" argument) that put the answer in a stricter level. */
     private static final Map<String, Map<String, Level>> FIELD_LEVELS = Map.of(

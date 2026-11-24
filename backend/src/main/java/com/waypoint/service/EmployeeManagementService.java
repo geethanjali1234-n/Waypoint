@@ -77,7 +77,21 @@ public class EmployeeManagementService {
                 ? directReportUsers(actor)
                 : userRepository.findByOrganizationIdAndRoleIn(
                         actor.organizationId(), List.of(UserRole.HR, UserRole.EMPLOYEE));
+        return summaries(people);
+    }
 
+    /**
+     * Only the people whose active primary reporting assignment, in the caller's own organization, names the caller as
+     * manager. For HR this equals {@link #list}; for a Company Admin it is their direct reports, not the organization.
+     */
+    public List<EmployeeSummaryResponse> listDirectReports(String actorUserId) {
+        AuthenticatedMyHrUser actor = requireManager(actorUserId);
+        return summaries(directReportUsers(actor).stream()
+                .filter(user -> user != null && actor.organizationId().equals(user.getOrganizationId()))
+                .toList());
+    }
+
+    private List<EmployeeSummaryResponse> summaries(List<User> people) {
         Map<String, EmployeeProfile> profiles = profilesByUserId(userIds(people));
 
         Map<String, ReportingAssignment> activeByEmployee = activeAssignmentsFor(userIds(people));

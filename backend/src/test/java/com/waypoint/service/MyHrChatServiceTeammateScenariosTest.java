@@ -109,13 +109,13 @@ class MyHrChatServiceTeammateScenariosTest {
     // 3. "who reports to me?"
     @Test
     void whoReportsToMeFollowsEachRolesActualCapability() {
-        when(employees.list("hr-11")).thenReturn(List.of(new EmployeeSummaryResponse("u-1", null, "Asha Rao", "EMPLOYEE",
+        when(employees.listDirectReports("hr-11")).thenReturn(List.of(new EmployeeSummaryResponse("u-1", null, "Asha Rao", "EMPLOYEE",
                 null, null, "Analyst", null, null, "HR User", null)));
 
         assertThat(ask(employee, "who reports to me?")).startsWith("Employee accounts don't have direct reports");
         assertThat(ask(hr, "who reports to me?")).isEqualTo("1 person reports to you: Asha Rao (Analyst).");
-        assertThat(ask(admin, "who reports to me?")).startsWith("I can't list who reports directly to you");
-        verify(employees).list("hr-11");
+        assertThat(ask(admin, "who reports to me?")).isEqualTo("No one currently reports to you in Waypoint.");
+        verify(employees).listDirectReports("hr-11");
         verify(employees, never()).list("employee-11");
         verify(employees, never()).list("admin-11");
         verifyNoInteractions(claude, ollama, retrieval);

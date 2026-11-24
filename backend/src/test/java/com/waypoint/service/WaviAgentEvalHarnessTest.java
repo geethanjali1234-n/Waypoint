@@ -64,7 +64,7 @@ class WaviAgentEvalHarnessTest {
                 if (!result.answerOk()) wrongAnswer.add(result.question().id() + " -> " + result.answer());
             });
         }
-        // The ONLY tool-selection miss is the planted one: A-C08 asks an Admin for a tool the Admin role is not offered.
+        // The ONLY tool-selection miss is the planted one: A-C08 asks an Employee for a tool the Employee role is not offered.
         // The harness must report it as an unexpected tool choice, and nothing may have been read for it.
         assertThat(wrongTool).as("tool selection").containsExactly("A-C08 [get_direct_reports]");
         var planted = a.results().stream().filter(result -> result.question().id().equals("A-C08")).findFirst().orElseThrow();

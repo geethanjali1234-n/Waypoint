@@ -54,7 +54,7 @@ describe('Knowledge Base page visibility', () => {
     render(<KnowledgeBasePage />);
     expect(await screen.findByText('AI Processing Permissions')).toBeInTheDocument();
     expect(screen.getByLabelText('Search policies')).toBeInTheDocument();
-    expect(api.getExternalProcessing).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(api.getExternalProcessing).toHaveBeenCalledTimes(1));
   });
 
   it.each([['HR'], ['EMPLOYEE'], [null]])('hides the section and never requests approvals for role %s', async (role) => {

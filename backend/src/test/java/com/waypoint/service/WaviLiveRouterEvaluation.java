@@ -98,7 +98,7 @@ class WaviLiveRouterEvaluation {
     static final BigDecimal MAX_RESERVATION_USD = new BigDecimal("0.50");
     /** Upper bounds for -Dwavi.live.max-spend-usd per mode: a larger value is refused before any request. */
     static final Map<Mode, BigDecimal> MAX_SPEND_CEILING_USD = Map.of(Mode.SMOKE, new BigDecimal("0.05"),
-            Mode.SAMPLE, new BigDecimal("0.10"), Mode.GOLD, new BigDecimal("1.00"), Mode.FULL, new BigDecimal("6.00"),
+            Mode.SAMPLE, new BigDecimal("0.11"), Mode.GOLD, new BigDecimal("1.00"), Mode.FULL, new BigDecimal("6.00"),
             Mode.UNSEEN, new BigDecimal("0.05"));
     /** Structured-output overhead the API adds to the prompt (not published); measured prefix was ~3,000 above chars/3. */
     static final long STRUCTURED_OUTPUT_OVERHEAD_TOKENS = 4_000;

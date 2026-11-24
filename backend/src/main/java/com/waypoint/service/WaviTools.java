@@ -47,13 +47,15 @@ final class WaviTools {
     static final String LIST_MY_REQUESTS = "list_my_requests";
     static final String GET_MY_REVIEW_HISTORY = "get_my_review_history";
     static final String GET_PEOPLE_SUMMARY = "get_people_summary";
+    static final String GET_PAYROLL_READINESS = "get_payroll_readiness";
+    static final String FIND_PEOPLE = "find_people";
 
     enum ReviewHistoryQueue { TIMESHEETS, PROFILE_CHANGES }
 
     enum ReviewDecision { ANY, APPROVED, REJECTED }
 
     /** The work details of a person in the reviewer's scope that chat shows. Never personal contact, pay or dates. */
-    enum TeamField { SUMMARY, JOB_TITLE, EMPLOYEE_ID, ROLE, REPORTING_MANAGER, WORK_EMAIL }
+    enum TeamField { SUMMARY, JOB_TITLE, EMPLOYEE_ID, ROLE, REPORTING_MANAGER, WORK_EMAIL, START_DATE }
 
     enum TimesheetStatusFilter { ANY, NEEDS_ACTION, DRAFT, SUBMITTED, APPROVED, REJECTED }
 
@@ -63,7 +65,11 @@ final class WaviTools {
 
     /** The user's own profile details the existing profile route answers. */
     enum ProfileField { PROFILE, NAME, FIRST_NAME, LAST_NAME, EMPLOYEE_ID, JOB_TITLE, DEPARTMENT, WORK_EMAIL,
-        REPORTING_MANAGER }
+        REPORTING_MANAGER, ORGANIZATION_NAME, ORGANIZATION_CODE, ORGANIZATION_EMAIL, ACCOUNT_EMAIL }
+
+    enum PayrollReadinessAsk { SUMMARY, CUTOFF, NOT_READY }
+
+    enum PeopleFilter { ALL, JOINED, JOB_TITLE, REPORTS_TO, MISSING_DETAILS, DEPARTMENT }
 
     enum ReviewQueue { TIMESHEETS, PROFILE_CHANGES, DOCUMENT_REQUESTS }
 
@@ -219,7 +225,7 @@ final class WaviTools {
                 }, null));
 
         tools.add(new Definition(GET_MY_PROFILE_FIELD,
-                "One detail of the user's OWN profile (name, employee ID, job title, reporting manager) or a summary. Never "
+                "One detail of the user's OWN profile (name, employee ID, job title, reporting manager, organization) or a summary. Never "
                         + "another person's profile; not phone, email, address, pay or leave balance (see unsupported_field).",
                 Schema.of(Spec.enumOf("field", true, ProfileField.class, "The detail asked about")),
                 ALL_ROLES, WaviTool.DataClass.PERSONAL, false, null,
@@ -298,9 +304,8 @@ final class WaviTools {
                     return WaviToolResult.answer(response.message(), response.actions());
                 }, null));
 
-        tools.add(new Definition(GET_DIRECT_REPORTS, "HR: the names of the people who currently report directly to the user. Not their records, timesheets or "
-                        + "submissions.",
-                Schema.NONE, HR_ONLY, WaviTool.DataClass.ORG_AGGREGATE, false, null,
+        tools.add(new Definition(GET_DIRECT_REPORTS, "Names of people reporting directly to the user. No records.",
+                Schema.NONE, REVIEWERS, WaviTool.DataClass.ORG_AGGREGATE, false, null,
                 (actor, arguments, context) -> WaviToolResult.answer(answers.directReports(actor), List.of(EMPLOYEES_PAGE)),
                 (role, arguments, context) -> WaviToolResult.notAvailable("NO_DIRECT_REPORTS_LOOKUP",
                         answers.directReportsOutsideRole(role),
@@ -454,6 +459,29 @@ final class WaviTools {
                 (actor, arguments, context) -> listed(answers.peopleSummary(actor)),
                 (role, arguments, context) -> WaviToolResult.notAvailable("UNSUPPORTED_PEOPLE_AGGREGATE",
                         PEOPLE_AGGREGATE_REPLY, List.of())));
+
+        tools.add(new Definition(GET_PAYROLL_READINESS, "HR/Admin payroll readiness.",
+                Schema.of(Spec.enumOf("ask", false, PayrollReadinessAsk.class, ""),
+                        Spec.month("month", false, 12, 1, "")),
+                REVIEWERS, WaviTool.DataClass.ORG_AGGREGATE, false, null,
+                (actor, arguments, context) -> WaviToolResult.answer(answers.payrollReadiness(actor,
+                        arguments.has("ask") ? arguments.enumValue("ask", PayrollReadinessAsk.class) : PayrollReadinessAsk.SUMMARY,
+                        arguments.has("month") ? arguments.month("month") : null),
+                        List.of(MyHrConversationIntents.Page.PAYROLL_READINESS.name())),
+                (role, arguments, context) -> WaviToolResult.notAvailable("PAYROLL_READINESS_REVIEWERS",
+                        "Payroll readiness is available only to HR and Company Admin accounts.", List.of())));
+
+        tools.add(new Definition(FIND_PEOPLE, "HR/Admin people list, filterable.",
+                Schema.of(Spec.enumOf("filter", false, PeopleFilter.class, ""),
+                        Spec.dateRange("joined", false, 36500, 366, "")),
+                REVIEWERS, WaviTool.DataClass.ORG_AGGREGATE, false, null,
+                (actor, arguments, context) -> WaviToolResult.answer(answers.findPeople(actor,
+                        arguments.has("filter") ? arguments.enumValue("filter", PeopleFilter.class) : PeopleFilter.ALL,
+                        arguments.dateRange("joined") == null ? null
+                                : arguments.dateRange("joined").from() + "/" + arguments.dateRange("joined").to(),
+                        context.message()), List.of(EMPLOYEES_PAGE)),
+                (role, arguments, context) -> WaviToolResult.notAvailable("PEOPLE_DIRECTORY_REVIEWERS",
+                        "The employee directory is available only to HR and Company Admin accounts.", List.of())));
 
         tools.add(new Definition(GET_MY_REVIEW_HISTORY,
                 "HR and Company Admin: reviews the user ALREADY DID - timesheets they approved or rejected, or profile "

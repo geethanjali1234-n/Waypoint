@@ -108,6 +108,8 @@ class WaviToolLayerTest {
         SAMPLES.put(WaviTools.CLARIFY, List.of(Map.of()));
         SAMPLES.put(WaviTools.OUT_OF_SCOPE, List.of(Map.of()));
         SAMPLES.put(WaviTools.GET_PEOPLE_SUMMARY, List.of(Map.of()));
+        SAMPLES.put(WaviTools.GET_PAYROLL_READINESS, List.of(Map.of(), Map.of("ask", "NOT_READY")));
+        SAMPLES.put(WaviTools.FIND_PEOPLE, List.of(Map.of(), Map.of("filter", "MISSING_DETAILS")));
         SAMPLES.put(WaviTools.GET_TEAM_MEMBER, List.of(Map.of("field", "JOB_TITLE"), Map.of("ordinal", 2)));
         SAMPLES.put(WaviTools.GET_TEAM_TIMESHEETS, List.of(Map.of(), Map.of("status", "REJECTED")));
         SAMPLES.put(WaviTools.LIST_MY_TIMESHEETS, List.of(Map.of("status", "NEEDS_ACTION")));
@@ -135,7 +137,8 @@ class WaviToolLayerTest {
             assertThat(tool.description()).isNotBlank();
             assertThat(tool.allowedRoles()).isNotEmpty();
         }
-        assertThat(registry.find(WaviTools.GET_DIRECT_REPORTS).orElseThrow().allowedRoles()).containsExactly(UserRole.HR);
+        assertThat(registry.find(WaviTools.GET_DIRECT_REPORTS).orElseThrow().allowedRoles())
+                .containsExactlyInAnyOrder(UserRole.HR, UserRole.COMPANY_ADMIN);
         assertThat(registry.find(WaviTools.GET_REVIEW_QUEUE).orElseThrow().allowedRoles())
                 .containsExactlyInAnyOrder(UserRole.HR, UserRole.COMPANY_ADMIN);
         assertThat(registry.availableTo(UserRole.EMPLOYEE)).extracting(WaviTool::name)
@@ -337,7 +340,8 @@ class WaviToolLayerTest {
                     // Only the people tools, for reviewers, show someone else's work details - people the services
                     // already let that reviewer see. Every other tool, and every tool for an Employee, shows none.
                     boolean peopleTool = entry.getKey().equals(WaviTools.GET_TEAM_MEMBER)
-                            || entry.getKey().equals(WaviTools.GET_TEAM_TIMESHEETS);
+                            || entry.getKey().equals(WaviTools.GET_TEAM_TIMESHEETS)
+                            || entry.getKey().equals(WaviTools.FIND_PEOPLE);
                     boolean reviewer = person != WaviEvaluationWorld.EMPLOYEE;
                     if (!(peopleTool && reviewer)) {
                         assertThat(text).as(label).doesNotContain(WaviEvaluationWorld.COLLEAGUE.employeeId());
@@ -360,12 +364,14 @@ class WaviToolLayerTest {
 
     @Test
     void rolesOutsideAToolGetAFixedReplyWithoutAnyLookup() {
-        for (WaviEvaluationWorld.Person person : List.of(WaviEvaluationWorld.EMPLOYEE, WaviEvaluationWorld.ADMIN)) {
-            Run reports = run(person, fast(WaviTools.GET_DIRECT_REPORTS, Map.of()));
-            assertThat(reports.outcome().executed()).isFalse();
-            assertThat(reports.lookups()).isEmpty();
-            assertThat(reports.text()).doesNotContain("Ravi Teja").doesNotContain("Asha Rao");
-        }
+        Run employeeReports = run(WaviEvaluationWorld.EMPLOYEE, fast(WaviTools.GET_DIRECT_REPORTS, Map.of()));
+        assertThat(employeeReports.outcome().executed()).isFalse();
+        assertThat(employeeReports.lookups()).isEmpty();
+        assertThat(employeeReports.text()).doesNotContain("Ravi Teja").doesNotContain("Asha Rao");
+        // A Company Admin's direct reports are looked up from their own reporting assignments, never the organization.
+        Run adminReports = run(WaviEvaluationWorld.ADMIN, fast(WaviTools.GET_DIRECT_REPORTS, Map.of()));
+        assertThat(adminReports.lookups()).extracting(call -> call.getMethod().getName()).containsExactly("listDirectReports");
+        assertThat(adminReports.text()).isEqualTo("No one currently reports to you in Waypoint.");
         assertThat(run(WaviEvaluationWorld.EMPLOYEE, fast(WaviTools.GET_DIRECT_REPORTS, Map.of())).text())
                 .startsWith("Employee accounts don't have direct reports");
         for (WaviTools.ReviewQueue queue : WaviTools.ReviewQueue.values()) {
@@ -387,7 +393,7 @@ class WaviToolLayerTest {
     void recordAnswersComeFromTheActorsOwnSyntheticRecords() {
         Run hrReports = run(WaviEvaluationWorld.HR, fast(WaviTools.GET_DIRECT_REPORTS, Map.of()));
         assertThat(hrReports.text()).contains("Asha Rao", "Ravi Teja");
-        assertThat(hrReports.lookups()).extracting(call -> call.getMethod().getName()).containsExactly("list");
+        assertThat(hrReports.lookups()).extracting(call -> call.getMethod().getName()).containsExactly("listDirectReports");
         assertThat((Object) hrReports.lookups().getFirst().getArgument(0)).isEqualTo(WaviEvaluationWorld.HR.userId());
 
         Run october = run(WaviEvaluationWorld.EMPLOYEE, fast(WaviTools.GET_MY_TIMESHEETS,

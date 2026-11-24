@@ -101,8 +101,23 @@ class WaviContinuationTest {
         MyHrChatHistoryProvenance.Session session = StampedHistory.SESSION;
 
         Conversation(WaviEvaluationWorld.Person person) {
-            world = new WaviEvaluationWorld(person, new WaviEvaluationWorld.Options());
+            this(person, false);
+        }
+
+        /** toolLayer: also build the router's tool layer, so a router decision can be executed directly. */
+        Conversation(WaviEvaluationWorld.Person person, boolean toolLayer) {
+            this(person, options(toolLayer));
+        }
+
+        Conversation(WaviEvaluationWorld.Person person, WaviEvaluationWorld.Options options) {
+            world = new WaviEvaluationWorld(person, options);
             actor = world.actor;
+        }
+
+        private static WaviEvaluationWorld.Options options(boolean toolLayer) {
+            WaviEvaluationWorld.Options options = new WaviEvaluationWorld.Options();
+            options.toolLayer = toolLayer;
+            return options;
         }
 
         Answer ask(String message) {
@@ -250,6 +265,430 @@ class WaviContinuationTest {
                 verify(chat.world.claude, never()).chat(anyString(), anyList());
             }
         });
+    }
+
+    @Test
+    void afterAManagerAnswerMyNameQuestionsAreAboutTheSignedInUser() {
+        Conversation chat = new Conversation(WaviEvaluationWorld.EMPLOYEE);
+        assertThat(chat.ask("who is my reporting manager?").text()).contains("Priya Nair");
+
+        Answer last = chat.ask("What is my last name?");
+        assertThat(last.text()).contains("Rao").doesNotContain("Nair");
+
+        assertThat(chat.ask("who is my reporting manager?").text()).contains("Priya Nair");
+        Answer first = chat.ask("What is my first name?");
+        assertThat(first.text()).contains("Asha").doesNotContain("Priya");
+    }
+
+    @Test
+    void anExplicitSelfReferenceGetsTheSameAnswerWithOrWithoutAPreviousSubject() {
+        for (String own : List.of("What is my last name?", "What is my first name?", "What is my name?")) {
+            String fresh = new Conversation(WaviEvaluationWorld.EMPLOYEE).ask(own).text();
+            Conversation afterManager = new Conversation(WaviEvaluationWorld.EMPLOYEE);
+            afterManager.ask("who is my reporting manager?");
+            assertThat(afterManager.ask(own).text()).as(own).isEqualTo(fresh);
+        }
+    }
+
+    @Test
+    void anExplicitTimesheetPeriodIsNotReplacedByThePreviousAnswersPeriod() {
+        for (String explicit : List.of("total hours for October 2026", "how many hours did I work in October 2026?")) {
+            String fresh = new Conversation(WaviEvaluationWorld.EMPLOYEE).ask(explicit).text();
+            Conversation afterDay = new Conversation(WaviEvaluationWorld.EMPLOYEE);
+            afterDay.ask("how many hours did I work on October 12, 2026?");
+            assertThat(afterDay.ask(explicit).text()).as(explicit).isEqualTo(fresh);
+        }
+    }
+
+    // --- Self-identity and Company Admin profile ------------------------------------------------------------------
+
+    @Test
+    void anOwnProfileQuestionNeverInheritsThePreviousAnswersContext() {
+        Map<WaviEvaluationWorld.Person, String> previous = Map.of(
+                WaviEvaluationWorld.ADMIN, "what needs my approval?",
+                WaviEvaluationWorld.HR, "what needs my approval?",
+                WaviEvaluationWorld.EMPLOYEE, "who is my reporting manager?");
+        previous.forEach((person, first) -> {
+            for (String own : List.of("Who am I?", "What is my name?", "What is my employee ID?")) {
+                String fresh = new Conversation(person).ask(own).text();
+                Conversation chat = new Conversation(person);
+                chat.ask(first);
+                assertThat(chat.ask(own).text()).as(person.role() + " after \"" + first + "\": " + own).isEqualTo(fresh);
+            }
+        });
+    }
+
+    @Test
+    void aCompanyAdminWithoutAnEmployeeProfileIsDescribedFromTheirAccountAndOrganization() {
+        Conversation chat = new Conversation(WaviEvaluationWorld.ADMIN);
+        Mockito.when(chat.world.employees.getOwnDetail(WaviEvaluationWorld.ADMIN.userId())).thenReturn(adminProfile(
+                "admin.login", "owner@acme.example", "Registered Owner", "owner@acme.example"));
+
+        assertThat(chat.ask("Who am I?").text()).contains("Name: Registered Owner", "Admin / Login ID: admin.login",
+                        "Role: Company Admin", "Account status: Active", "Organization: Acme Demo Org")
+                .doesNotContain("Employee ID", "Job title", "Department");
+        assertThat(chat.ask("What is my name?").text()).isEqualTo("Your name in Waypoint is Registered Owner.");
+        assertThat(chat.ask("What is my employee ID?").text())
+                .isEqualTo("Company Admin accounts don't have an employee ID. Your Admin / Login ID is admin.login.");
+    }
+
+    @Test
+    void anotherCompanyAdminOfTheSameOrganizationNeverGetsTheRegisteredAdminsName() {
+        Conversation chat = new Conversation(WaviEvaluationWorld.ADMIN);
+        Mockito.when(chat.world.employees.getOwnDetail(WaviEvaluationWorld.ADMIN.userId())).thenReturn(adminProfile(
+                "second.admin", "second@acme.example", "Registered Owner", "owner@acme.example"));
+
+        assertThat(chat.ask("Who am I?").text()).contains("Name: second.admin", "Admin / Login ID: second.admin")
+                .doesNotContain("Registered Owner");
+        assertThat(chat.ask("What is my name?").text())
+                .isEqualTo("No name is recorded for your account; your Admin / Login ID is second.admin.");
+    }
+
+    @Test
+    void employeeAndHrProfileAnswersAreUnchanged() {
+        assertThat(new Conversation(WaviEvaluationWorld.EMPLOYEE).ask("Who am I?").text())
+                .startsWith("Your profile: Name: Asha Rao; Employee ID: WPT-1001; Job title: Senior Data Analyst");
+        assertThat(new Conversation(WaviEvaluationWorld.HR).ask("Who am I?").text())
+                .startsWith("Your profile: Name: Hari Kumar; Employee ID: WPT-2001; Job title: HR Business Partner");
+        assertThat(new Conversation(WaviEvaluationWorld.EMPLOYEE).ask("What is my employee ID?").text())
+                .isEqualTo("Your employee ID is WPT-1001.");
+    }
+
+    @Test
+    void phoneNumbersStayOutOfChatForEveryRole() {
+        for (WaviEvaluationWorld.Person person : List.of(WaviEvaluationWorld.EMPLOYEE, WaviEvaluationWorld.HR,
+                WaviEvaluationWorld.ADMIN)) {
+            assertThat(new Conversation(person).ask("What is my phone number?").text()).as(person.role().name())
+                    .contains("I don't show your current phone number in chat");
+        }
+    }
+
+    // --- Direct reports --------------------------------------------------------------------------------------------
+
+    @Test
+    void aCompanyAdminGetsOnlyTheirAssignedDirectReportsNeverTheWholeOrganization() {
+        Conversation chat = new Conversation(WaviEvaluationWorld.ADMIN);
+        Mockito.when(chat.world.employees.listDirectReports(WaviEvaluationWorld.ADMIN.userId())).thenReturn(List.of(
+                new com.waypoint.dto.myhr.EmployeeSummaryResponse("emp-direct", "WPT-3001", "Dana Direct", "EMPLOYEE",
+                        null, null, "Analyst", null, null, WaviEvaluationWorld.ADMIN.name(), null)));
+
+        assertThat(chat.ask("Who reports to me?").text()).isEqualTo("1 person reports to you: Dana Direct (Analyst).")
+                .doesNotContain(WaviEvaluationWorld.EMPLOYEE.name(), WaviEvaluationWorld.HR.name());
+        verify(chat.world.employees, never()).list(WaviEvaluationWorld.ADMIN.userId());
+    }
+
+    @Test
+    void aCompanyAdminWithNoDirectReportsIsToldSoAndHrAndEmployeeAnswersAreUnchanged() {
+        assertThat(new Conversation(WaviEvaluationWorld.ADMIN).ask("Who reports to me?").text())
+                .isEqualTo("No one currently reports to you in Waypoint.");
+        assertThat(new Conversation(WaviEvaluationWorld.HR).ask("Who reports to me?").text())
+                .startsWith("2 people report to you: ");
+        assertThat(new Conversation(WaviEvaluationWorld.EMPLOYEE).ask("Who reports to me?").text())
+                .startsWith("Employee accounts don't have direct reports in Waypoint.");
+    }
+
+    // --- Tools the semantic router chooses: executed exactly as a router decision is ------------------------------
+
+    /** Runs a router decision through the real tool layer (role checks, argument validation, executor). */
+    private static String tool(Conversation chat, String tool, Map<String, Object> arguments, String message) {
+        return chat.world.service.toolLayer().execute(WaviRouterDecision.fastPath(WaviRouterDecision.Intent.RECORD_LOOKUP,
+                tool, arguments), chat.actor, java.time.LocalDate.of(2026, 11, 5), message).result().text();
+    }
+
+    @Test
+    void organizationAndAccountFieldsComeFromTheSignedInUsersOwnProfileWithThePagesVisibility() {
+        Conversation admin = new Conversation(WaviEvaluationWorld.ADMIN, true);
+        Mockito.when(admin.world.employees.getOwnDetail(WaviEvaluationWorld.ADMIN.userId())).thenReturn(ownProfile(
+                UserRole.COMPANY_ADMIN, "owner@acme.example", "hello@acme.example"));
+        assertThat(tool(admin, WaviTools.GET_MY_PROFILE_FIELD, Map.of("field", "ORGANIZATION_CODE"), "org code?"))
+                .isEqualTo("Your organization code is ACME.");
+        assertThat(tool(admin, WaviTools.GET_MY_PROFILE_FIELD, Map.of("field", "ORGANIZATION_EMAIL"), "company email?"))
+                .isEqualTo("Your organization's email is hello@acme.example.");
+        assertThat(tool(admin, WaviTools.GET_MY_PROFILE_FIELD, Map.of("field", "ACCOUNT_EMAIL"), "account email?"))
+                .isEqualTo("Your account email is owner@acme.example.");
+        assertThat(tool(admin, WaviTools.GET_MY_PROFILE_FIELD, Map.of("field", "ORGANIZATION_NAME"), "which company?"))
+                .isEqualTo("Your organization is Acme Demo Org.");
+
+        Conversation employee = new Conversation(WaviEvaluationWorld.EMPLOYEE, true);
+        Mockito.when(employee.world.employees.getOwnDetail(WaviEvaluationWorld.EMPLOYEE.userId())).thenReturn(ownProfile(
+                UserRole.EMPLOYEE, "asha@acme.example", "hello@acme.example"));
+        assertThat(tool(employee, WaviTools.GET_MY_PROFILE_FIELD, Map.of("field", "ORGANIZATION_CODE"), "org code?"))
+                .isEqualTo("Your organization code is ACME.");
+        assertThat(tool(employee, WaviTools.GET_MY_PROFILE_FIELD, Map.of("field", "ORGANIZATION_EMAIL"), "org email?"))
+                .doesNotContain("hello@acme.example").contains("isn't shown in your profile");
+        assertThat(tool(employee, WaviTools.GET_MY_PROFILE_FIELD, Map.of("field", "ACCOUNT_EMAIL"), "login email?"))
+                .doesNotContain("asha@acme.example");
+        // The existing personal-contact privacy rule is unchanged.
+        assertThat(employee.ask("What is my email?").text()).contains("I don't show your current personal email in chat");
+    }
+
+    @Test
+    void findPeopleFiltersTheReviewersOwnScopeByWhatTheRouterAndTheMessageName() {
+        Conversation admin = directory(WaviEvaluationWorld.ADMIN);
+
+        assertThat(tool(admin, WaviTools.FIND_PEOPLE, Map.of("filter", "JOINED", "joined", "2026-10-01/2026-10-31"),
+                "Who joined in October 2026?")).startsWith("1 person who joined between 2026-10-01 and 2026-10-31 in your organization:")
+                .contains("Neha New (Analyst; joined 2026-10-05)").doesNotContain("Olga Old", "Ivan Incomplete");
+        assertThat(tool(admin, WaviTools.FIND_PEOPLE, Map.of("filter", "JOINED", "joined", "2026-01-01/2026-12-31"),
+                "list employees who joined this year")).contains("Neha New", "Ivan Incomplete").doesNotContain("Olga Old");
+        assertThat(tool(admin, WaviTools.FIND_PEOPLE, Map.of("filter", "JOINED"), "who joined recently?"))
+                .startsWith("Which period do you mean?");
+        assertThat(tool(admin, WaviTools.FIND_PEOPLE, Map.of("filter", "JOB_TITLE"), "Which employees are analysts?"))
+                .contains("Neha New").doesNotContain("Olga Old", "Ivan Incomplete");
+        assertThat(tool(admin, WaviTools.FIND_PEOPLE, Map.of("filter", "JOB_TITLE"), "who is a pilot?"))
+                .startsWith("I couldn't match that job title");
+        assertThat(tool(admin, WaviTools.FIND_PEOPLE, Map.of("filter", "REPORTS_TO"), "Who reports to Priya Nair?"))
+                .contains("reporting to Priya Nair", "Olga Old").doesNotContain("Neha New");
+        assertThat(tool(admin, WaviTools.FIND_PEOPLE, Map.of("filter", "MISSING_DETAILS"), "Which profiles are incomplete?"))
+                .contains("Ivan Incomplete", "missing employee ID, job title, reporting manager").doesNotContain("Neha New", "Olga Old");
+        assertThat(tool(admin, WaviTools.FIND_PEOPLE, Map.of("filter", "DEPARTMENT"), "Who is in Engineering?"))
+                .contains("doesn't record departments");
+        assertThat(tool(admin, WaviTools.FIND_PEOPLE, Map.of(), "list all employees")).startsWith("3 people in your organization:");
+    }
+
+    @Test
+    void findPeopleIsLimitedToReviewersAndToTheirExistingScope() {
+        assertThat(tool(new Conversation(WaviEvaluationWorld.EMPLOYEE, true), WaviTools.FIND_PEOPLE, Map.of(), "list all employees"))
+                .isEqualTo("The employee directory is available only to HR and Company Admin accounts.");
+        Conversation hr = new Conversation(WaviEvaluationWorld.HR, true);
+        assertThat(tool(hr, WaviTools.FIND_PEOPLE, Map.of("filter", "JOINED", "joined", "2026-10-01/2026-10-31"), "who joined?"))
+                .endsWith("among your active direct reports.");
+        verify(hr.world.employees, never()).list(WaviEvaluationWorld.ADMIN.userId());
+    }
+
+    @Test
+    void aPersonFollowUpAboutJoiningAnswersTheirStartDate() {
+        Conversation admin = directory(WaviEvaluationWorld.ADMIN);
+        admin.ask("who is Neha New?");
+
+        assertThat(admin.ask("when did she join?").text()).isEqualTo("Neha New joined on 2026-10-05.");
+    }
+
+    @Test
+    void payrollReadinessToolGivesTheSummaryCutoffAndNotReadyPeople() {
+        Conversation admin = payroll(WaviEvaluationWorld.ADMIN);
+        assertThat(tool(admin, WaviTools.GET_PAYROLL_READINESS, Map.of(), "Is payroll ready?")).isEqualTo(
+                "Payroll readiness for November 2026: 1 of 3 employees are ready for payroll; 1 are awaiting approval, "
+                        + "1 are missing a timesheet. The cutoff is 2026-11-25.");
+        assertThat(tool(admin, WaviTools.GET_PAYROLL_READINESS, Map.of("ask", "CUTOFF"), "When is the cutoff?"))
+                .isEqualTo("The payroll cutoff for November 2026 is 2026-11-25.");
+        assertThat(tool(admin, WaviTools.GET_PAYROLL_READINESS, Map.of("ask", "NOT_READY"), "Who is not ready?")).isEqualTo(
+                "2 people are not ready for payroll for November 2026:\n- Asha Rao: Awaiting approval\n- Ravi Teja: Missing timesheet");
+        assertThat(tool(admin, WaviTools.GET_PAYROLL_READINESS, Map.of("month", "2026-10"), "October readiness?"))
+                .startsWith("Payroll readiness for November 2026");
+        verify(readiness).getReadiness(WaviEvaluationWorld.ADMIN.userId(), java.time.LocalDate.of(2026, 10, 1), null, null,
+                "ALL", null, null, "EMPLOYEE_ASC", 0, 1);
+    }
+
+    @Test
+    void payrollReadinessStaysWithReviewersAndTheOriginalFixedPhrasesStillAnswer() {
+        Conversation employee = payroll(WaviEvaluationWorld.EMPLOYEE);
+        assertThat(tool(employee, WaviTools.GET_PAYROLL_READINESS, Map.of(), "Is payroll ready?"))
+                .isEqualTo("Payroll readiness is available only to HR and Company Admin accounts.");
+        verify(readiness, never()).getReadiness(anyString(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+                Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt(), Mockito.anyInt());
+        assertThat(payroll(WaviEvaluationWorld.HR).ask("When is the payroll cutoff?").text())
+                .isEqualTo("The payroll cutoff for November 2026 is 2026-11-25.");
+    }
+
+    // --- The semantic router sees, chooses and safely executes the new tools -------------------------------------
+
+    @Test
+    void theRouterPromptAndSchemaOfferTheNewToolsAndTheirStructuredArguments() {
+        for (UserRole role : List.of(UserRole.HR, UserRole.COMPANY_ADMIN)) {
+            WaviEvaluationWorld.Person person = role == UserRole.HR ? WaviEvaluationWorld.HR : WaviEvaluationWorld.ADMIN;
+            List<WaviTool> catalog = new Conversation(person, true).world.service.toolLayer().registry().all();
+            WaviRouterPrompt.Request prompt = WaviRouterPrompt.build(catalog, role, java.time.LocalDate.parse("2026-11-05"),
+                    null, "x");
+            String schema = prompt.schema().toString();
+            assertThat(prompt.system() + schema).as(role.name()).contains(WaviTools.FIND_PEOPLE, WaviTools.GET_PAYROLL_READINESS,
+                    "JOINED", "JOB_TITLE", "REPORTS_TO", "MISSING_DETAILS", "NOT_READY", "CUTOFF", "ORGANIZATION_CODE",
+                    "ORGANIZATION_EMAIL", "ACCOUNT_EMAIL", "START_DATE");
+        }
+        // The registry restricts both new tools to HR and Company Admin.
+        List<WaviTool> catalog = new Conversation(WaviEvaluationWorld.EMPLOYEE, true).world.service.toolLayer().registry().all();
+        for (String name : List.of(WaviTools.FIND_PEOPLE, WaviTools.GET_PAYROLL_READINESS)) {
+            assertThat(catalog.stream().filter(tool -> tool.name().equals(name)).findFirst().orElseThrow().allowedRoles())
+                    .as(name).containsExactlyInAnyOrder(UserRole.HR, UserRole.COMPANY_ADMIN);
+        }
+    }
+
+    @Test
+    void aRouterChoiceOfTheNewToolsIsAnsweredEndToEndWithinTheUsersRoleAndScope() {
+        Conversation admin = routed(WaviEvaluationWorld.ADMIN, "{\"decision\":{\"tool\":\"find_people\",\"arguments\":"
+                + "{\"filter\":\"JOINED\",\"joined\":\"2026-01-01/2026-12-31\"}},\"confidence\":\"HIGH\",\"language\":\"english\"}");
+        stubDirectory(admin);
+        assertThat(admin.ask("anyone new this year?").text()).contains("Neha New", "Ivan Incomplete").doesNotContain("Olga Old");
+
+        Conversation payroll = routed(WaviEvaluationWorld.ADMIN, "{\"decision\":{\"tool\":\"get_payroll_readiness\",\"arguments\":"
+                + "{\"ask\":\"NOT_READY\"}},\"confidence\":\"HIGH\",\"language\":\"english\"}");
+        stubReadiness(payroll);
+        assertThat(payroll.ask("who's holding up payroll?").text()).startsWith("2 people are not ready for payroll");
+
+        // Even if the router picks a reviewer tool for an employee, the employee gets the fixed refusal and no data.
+        Conversation employee = routed(WaviEvaluationWorld.EMPLOYEE, "{\"decision\":{\"tool\":\"find_people\",\"arguments\":"
+                + "{\"filter\":\"ALL\"}},\"confidence\":\"HIGH\",\"language\":\"english\"}");
+        assertThat(employee.ask("show me everyone who works here").text()).doesNotContain("Ravi Teja", "Hari Kumar");
+        verify(employee.world.employees, never()).list(anyString());
+    }
+
+    @Test
+    void theNewToolsAndFieldsNeverReachAnExternalProviderAsSharableHistory() {
+        assertThat(WaviExternalDisclosure.classify(WaviTools.FIND_PEOPLE, Map.of(), UserRole.COMPANY_ADMIN))
+                .isEqualTo(WaviExternalDisclosure.Level.NAMED);
+        assertThat(WaviExternalDisclosure.classify(WaviTools.GET_PAYROLL_READINESS, Map.of(), UserRole.HR))
+                .isEqualTo(WaviExternalDisclosure.Level.NAMED);
+        for (String field : List.of("ORGANIZATION_NAME", "ORGANIZATION_CODE", "ORGANIZATION_EMAIL", "ACCOUNT_EMAIL")) {
+            assertThat(WaviExternalDisclosure.classify(WaviTools.GET_MY_PROFILE_FIELD, Map.of("field", field), UserRole.EMPLOYEE))
+                    .as(field).isEqualTo(WaviExternalDisclosure.Level.LOCAL_ONLY);
+        }
+        assertThat(WaviExternalDisclosure.classify(WaviTools.GET_TEAM_MEMBER, Map.of("field", "START_DATE"), UserRole.HR))
+                .isEqualTo(WaviExternalDisclosure.Level.LOCAL_ONLY);
+    }
+
+    /** A conversation whose semantic router (Claude) returns exactly this decision; no provider is called. */
+    private static Conversation routed(WaviEvaluationWorld.Person person, String decisionJson) {
+        WaviEvaluationWorld.Options options = new WaviEvaluationWorld.Options();
+        options.semanticRouter = WaviEvaluationWorld.RouterBehaviour.ABSTAIN;
+        Conversation chat = new Conversation(person, options);
+        Mockito.doReturn(WaviEvaluationWorld.routed(decisionJson)).when(chat.world.claude)
+                .routeJsonWithUsage(anyString(), anyString(), Mockito.anyMap(), Mockito.anyInt(), anyString());
+        return chat;
+    }
+
+    private static void stubDirectory(Conversation chat) {
+        Mockito.when(chat.world.employees.list(chat.actor.userId())).thenReturn(List.of(
+                summary("emp-n", "WPT-5001", "Neha New", "Analyst", java.time.LocalDate.of(2026, 10, 5), "Hari Kumar"),
+                summary("emp-o", "WPT-5002", "Olga Old", "QA Engineer", java.time.LocalDate.of(2019, 4, 1), "Priya Nair"),
+                summary("emp-i", null, "Ivan Incomplete", null, java.time.LocalDate.of(2026, 2, 2), null)));
+    }
+
+    private void stubReadiness(Conversation chat) {
+        readiness = Mockito.mock(PayrollReadinessService.class);
+        var period = new com.waypoint.dto.myhr.PayrollReadinessPeriodResponse(java.time.LocalDate.of(2026, 11, 1),
+                "November 2026", java.time.LocalDate.of(2026, 11, 1), java.time.LocalDate.of(2026, 11, 30),
+                java.time.LocalDate.of(2026, 11, 25), 20);
+        var summary = new com.waypoint.dto.myhr.PayrollReadinessSummaryResponse(3, 1, 0, 0, 2, 1, 0, 1, 0,
+                java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO);
+        List<com.waypoint.dto.myhr.PayrollReadinessRowResponse> rows = List.of(
+                row("Neha New", com.waypoint.enums.PayrollReadinessState.READY),
+                row("Asha Rao", com.waypoint.enums.PayrollReadinessState.AWAITING_APPROVAL),
+                row("Ravi Teja", com.waypoint.enums.PayrollReadinessState.MISSING_TIMESHEET));
+        Mockito.when(readiness.getReadiness(anyString(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+                Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt(), Mockito.anyInt()))
+                .thenReturn(new com.waypoint.dto.myhr.PayrollReadinessResponse(period, summary, rows, 0, 100, 3, 1));
+        chat.world.service.usePayrollReadinessService(readiness);
+    }
+
+    private PayrollReadinessService readiness;
+
+    private Conversation payroll(WaviEvaluationWorld.Person person) {
+        Conversation chat = new Conversation(person, true);
+        readiness = Mockito.mock(PayrollReadinessService.class);
+        var period = new com.waypoint.dto.myhr.PayrollReadinessPeriodResponse(java.time.LocalDate.of(2026, 11, 1),
+                "November 2026", java.time.LocalDate.of(2026, 11, 1), java.time.LocalDate.of(2026, 11, 30),
+                java.time.LocalDate.of(2026, 11, 25), 20);
+        var summary = new com.waypoint.dto.myhr.PayrollReadinessSummaryResponse(3, 1, 0, 0, 2, 1, 0, 1, 0,
+                java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO);
+        List<com.waypoint.dto.myhr.PayrollReadinessRowResponse> rows = List.of(
+                row("Neha New", com.waypoint.enums.PayrollReadinessState.READY),
+                row("Asha Rao", com.waypoint.enums.PayrollReadinessState.AWAITING_APPROVAL),
+                row("Ravi Teja", com.waypoint.enums.PayrollReadinessState.MISSING_TIMESHEET));
+        Mockito.when(readiness.getReadiness(anyString(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+                Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt(), Mockito.anyInt()))
+                .thenReturn(new com.waypoint.dto.myhr.PayrollReadinessResponse(period, summary, rows, 0, 100, 3, 1));
+        chat.world.service.usePayrollReadinessService(readiness);
+        return chat;
+    }
+
+    private static com.waypoint.dto.myhr.PayrollReadinessRowResponse row(String name,
+                                                                          com.waypoint.enums.PayrollReadinessState state) {
+        var row = Mockito.mock(com.waypoint.dto.myhr.PayrollReadinessRowResponse.class);
+        Mockito.when(row.employeeName()).thenReturn(name);
+        Mockito.when(row.readinessState()).thenReturn(state);
+        return row;
+    }
+
+    /** A reviewer's synthetic scope with join dates, titles, managers and one incomplete record. */
+    private static Conversation directory(WaviEvaluationWorld.Person person) {
+        Conversation chat = new Conversation(person, true);
+        Mockito.when(chat.world.employees.list(person.userId())).thenReturn(List.of(
+                summary("emp-n", "WPT-5001", "Neha New", "Analyst", java.time.LocalDate.of(2026, 10, 5), "Hari Kumar"),
+                summary("emp-o", "WPT-5002", "Olga Old", "QA Engineer", java.time.LocalDate.of(2019, 4, 1), "Priya Nair"),
+                summary("emp-i", null, "Ivan Incomplete", null, java.time.LocalDate.of(2026, 2, 2), null)));
+        return chat;
+    }
+
+    private static com.waypoint.dto.myhr.EmployeeSummaryResponse summary(String id, String employeeId, String name,
+                                                                         String title, java.time.LocalDate start,
+                                                                         String manager) {
+        return new com.waypoint.dto.myhr.EmployeeSummaryResponse(id, employeeId, name, "EMPLOYEE", null, null, title,
+                null, start, manager, null);
+    }
+
+    private static com.waypoint.dto.myhr.MyHrOwnProfileResponse ownProfile(UserRole role, String accountEmail,
+                                                                           String organizationEmail) {
+        return new com.waypoint.dto.myhr.MyHrOwnProfileResponse("user-x", "login.x", null, role,
+                com.waypoint.enums.AccountStatus.ACTIVE, null, null, null, accountEmail, null, null, null, null, null,
+                null, null, null, null, WaviEvaluationWorld.ORG, "Acme Demo Org", "ACME", organizationEmail, null, null,
+                null, null, null, null, null, null, null, null, null, null, null);
+    }
+
+    /** A Company Admin as production creates one: an account and organization, no employee profile. */
+    private static com.waypoint.dto.myhr.MyHrOwnProfileResponse adminProfile(String loginId, String accountEmail,
+                                                                             String organizationAdminName,
+                                                                             String organizationAdminEmail) {
+        return new com.waypoint.dto.myhr.MyHrOwnProfileResponse(WaviEvaluationWorld.ADMIN.userId(), loginId, null,
+                UserRole.COMPANY_ADMIN, com.waypoint.enums.AccountStatus.ACTIVE, null, null, null, accountEmail, null,
+                null, null, null, null, null, null, null, null, WaviEvaluationWorld.ORG, "Acme Demo Org", "ACME", null,
+                null, null, null, null, null, organizationAdminName, organizationAdminEmail, null, null, null, null,
+                null, null);
+    }
+
+    @Test
+    void timesheetSubmissionGuidanceDescribesTheRealWorkflowInOrder() {
+        for (WaviEvaluationWorld.Person person : List.of(WaviEvaluationWorld.EMPLOYEE, WaviEvaluationWorld.HR)) {
+            String guidance = new Conversation(person).ask("How do I submit my timesheet?").text();
+            // The steps of the Timesheets page, in the order the employee meets them.
+            assertThat(guidance).as(person.role().name()).containsSubsequence(
+                    "Open Timesheets", "Enter Timesheet", "Start entry",
+                    "Upload your timesheet document", "enter hours manually",
+                    "Dates, Hours and Review",
+                    "supporting timesheet document is required before you can submit",
+                    "save a draft", "Saved drafts",
+                    "reporting manager", "Submitted Timesheets");
+        }
+        assertThat(new Conversation(WaviEvaluationWorld.HR).ask("How do I submit my timesheet?").text())
+                .startsWith("Open Timesheets, stay on the My Timesheets tab, and choose Enter Timesheet");
+    }
+
+    @Test
+    void aCompanyAdminIsStillToldTheyReviewButCannotSubmitTimesheets() {
+        String guidance = new Conversation(WaviEvaluationWorld.ADMIN).ask("How do I submit my timesheet?").text();
+
+        assertThat(guidance).contains("can review timesheets but can't submit one")
+                .doesNotContain("Start entry", "Saved drafts");
+    }
+
+    @Test
+    void aMissingTimesheetReplyNeverSuggestsSubmittingWithoutTheSupportingDocument() {
+        String reply = new Conversation(WaviEvaluationWorld.EMPLOYEE)
+                .ask("Did I submit my Mar 3, 2026 timesheet?").text();
+
+        assertThat(reply).contains("choose Enter Timesheet", "attach a supporting timesheet document and submit")
+                .doesNotContain("to add and submit");
+    }
+
+    @Test
+    void afterAManagerAnswerThirdPersonNameQuestionsStillMeanTheManager() {
+        Conversation chat = new Conversation(WaviEvaluationWorld.EMPLOYEE);
+        chat.ask("who is my reporting manager?");
+
+        Answer last = chat.ask("What is his last name?");
+        assertThat(last.text()).contains("Nair").doesNotContain("Rao");
+
+        Answer first = chat.ask("and her first name?");
+        assertThat(first.text()).contains("Priya").doesNotContain("Asha");
     }
 
     @Test

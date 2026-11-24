@@ -870,28 +870,182 @@ public class MyHrChatService {
                 historyProvenance.stamp(actor, session, turnId, "assistant", response.message(), turn.use)));
     }
 
+    // --- Payroll readiness (get_payroll_readiness): the existing readiness service, HR and Company Admin only ------
+
+    static final String PAYROLL_REVIEWERS_ONLY = "Payroll readiness is available only to HR and Company Admin accounts.";
+    private static final String PAYROLL_UNAVAILABLE = "Payroll readiness information is unavailable right now.";
+
+    /** Readiness summary, cutoff or the people not yet ready, for the current or a named payroll month. */
+    String payrollReadinessReply(VerifiedMyHrActor actor, WaviTools.PayrollReadinessAsk ask, java.time.YearMonth month) {
+        if (!isReviewer(actor)) return PAYROLL_REVIEWERS_ONLY;
+        if (payrollReadinessService == null) return PAYROLL_UNAVAILABLE;
+        boolean list = ask == WaviTools.PayrollReadinessAsk.NOT_READY;
+        var data = payrollReadinessService.getReadiness(actor.userId(), month == null ? null : month.atDay(1), null, null,
+                "ALL", null, null, "EMPLOYEE_ASC", 0, list ? 100 : 1);
+        log.info("{} provider=none payroll-readiness={}", PROVIDER_USED_MARKER, ask);
+        if (data == null || data.period() == null) return PAYROLL_UNAVAILABLE;
+        String label = data.period().payrollMonthLabel() == null ? "the current period" : data.period().payrollMonthLabel();
+        if (ask == WaviTools.PayrollReadinessAsk.CUTOFF) {
+            return data.period().payrollCutoffDate() == null ? "No payroll cutoff date is set for " + label + "."
+                    : "The payroll cutoff for " + label + " is " + data.period().payrollCutoffDate() + ".";
+        }
+        if (list) {
+            List<com.waypoint.dto.myhr.PayrollReadinessRowResponse> notReady = (data.content() == null
+                    ? List.<com.waypoint.dto.myhr.PayrollReadinessRowResponse>of() : data.content()).stream()
+                    .filter(row -> row != null && row.readinessState() != com.waypoint.enums.PayrollReadinessState.READY)
+                    .toList();
+            if (notReady.isEmpty()) return "Everyone in scope is ready for payroll for " + label + ".";
+            StringBuilder reply = new StringBuilder().append(notReady.size()).append(notReady.size() == 1
+                    ? " person is" : " people are").append(" not ready for payroll for ").append(label).append(':');
+            for (var row : notReady.subList(0, Math.min(10, notReady.size()))) {
+                reply.append("\n- ").append(displayName(row.employeeName())).append(": ")
+                        .append(humanize(row.readinessState() == null ? null : row.readinessState().name()));
+            }
+            if (notReady.size() > 10) reply.append("\n...and ").append(notReady.size() - 10)
+                    .append(" more. Open Payroll Readiness to see everyone.");
+            return reply.toString();
+        }
+        var summary = data.summary();
+        if (summary == null) return PAYROLL_UNAVAILABLE;
+        StringBuilder reply = new StringBuilder(data.period().payrollMonthLabel() == null
+                ? "Payroll readiness: " : "Payroll readiness for " + label + ": ")
+                .append(summary.readyForPayroll()).append(" of ").append(summary.totalEmployees())
+                .append(" employees are ready for payroll");
+        List<String> details = new ArrayList<>();
+        if (summary.awaitingApproval() > 0) details.add(summary.awaitingApproval() + " are awaiting approval");
+        if (summary.missingTimesheet() > 0) details.add(summary.missingTimesheet() + " are missing a timesheet");
+        if (summary.incompleteTimesheet() > 0) details.add(summary.incompleteTimesheet() + " have an incomplete timesheet");
+        if (summary.correctionRequired() > 0) details.add(summary.correctionRequired() + " need a correction");
+        if (!details.isEmpty()) reply.append("; ").append(String.join(", ", details));
+        reply.append('.');
+        if (data.period().payrollCutoffDate() != null) reply.append(" The cutoff is ").append(data.period().payrollCutoffDate()).append('.');
+        return reply.toString();
+    }
+
+    // --- Employee directory (find_people): the reviewer's existing people scope, filtered -------------------------
+
+    /**
+     * People in the reviewer's existing authorized scope (HR: active direct reports; Company Admin: the organization's
+     * HR and Employee accounts), all or filtered. A job title or manager is matched against the scope's own recorded
+     * titles and manager names as they appear in the message; join dates come from a structured date range.
+     */
+    String findPeopleReply(VerifiedMyHrActor actor, WaviTools.PeopleFilter filter, String range, String message) {
+        if (!isReviewer(actor)) return "The employee directory is available only to HR and Company Admin accounts.";
+        WaviTools.PeopleFilter applied = filter == null ? WaviTools.PeopleFilter.ALL : filter;
+        if (applied == WaviTools.PeopleFilter.DEPARTMENT) {
+            return "Waypoint doesn't record departments, so I can't filter people by department. You can ask by job "
+                    + "title, reporting manager or join date instead.";
+        }
+        List<com.waypoint.dto.myhr.EmployeeSummaryResponse> people = teamScope(actor);
+        String said = " " + normalizeQuestion(message == null ? "" : message) + " ";
+        java.util.function.Predicate<com.waypoint.dto.myhr.EmployeeSummaryResponse> keep = person -> true;
+        String described = "";
+        switch (applied) {
+            case JOINED -> {
+                LocalDate[] span = parseRange(range);
+                if (span == null) return "Which period do you mean? Ask with a month or a year, for example \"Who joined "
+                        + "in October 2026?\"";
+                keep = person -> person.startDate() != null && !person.startDate().isBefore(span[0])
+                        && !person.startDate().isAfter(span[1]);
+                described = " who joined between " + span[0] + " and " + span[1];
+            }
+            case JOB_TITLE -> {
+                // A recorded title, or its last word ("analyst" for "Senior Data Analyst"), named in the message.
+                java.util.Set<String> titles = new java.util.LinkedHashSet<>();
+                for (var person : people) {
+                    if (person.designation() == null || person.designation().isBlank()) continue;
+                    String title = person.designation().toLowerCase(java.util.Locale.ROOT).strip();
+                    String last = title.substring(title.lastIndexOf(' ') + 1);
+                    if (said.contains(" " + title + " ") || said.contains(" " + title + "s ")) titles.add(title);
+                    else if (last.length() > 2 && (said.contains(" " + last + " ") || said.contains(" " + last + "s "))) titles.add(last);
+                }
+                if (titles.isEmpty()) return "I couldn't match that job title to anyone " + scopeLabel(actor) + ".";
+                keep = person -> person.designation() != null && titles.stream().anyMatch(title ->
+                        person.designation().toLowerCase(java.util.Locale.ROOT).contains(title));
+                described = " with the job title " + String.join(" or ", titles);
+            }
+            case REPORTS_TO -> {
+                java.util.Set<String> managers = new java.util.LinkedHashSet<>();
+                for (var person : people) {
+                    String manager = person.reportingManagerName();
+                    if (manager == null || manager.isBlank()) continue;
+                    String lower = manager.toLowerCase(java.util.Locale.ROOT).strip();
+                    String first = lower.contains(" ") ? lower.substring(0, lower.indexOf(' ')) : lower;
+                    if (said.contains(" " + lower + " ") || (first.length() > 2 && said.contains(" " + first + " "))) {
+                        managers.add(manager.strip());
+                    }
+                }
+                if (managers.isEmpty()) return "I couldn't match that manager to anyone's reporting manager " + scopeLabel(actor) + ".";
+                keep = person -> person.reportingManagerName() != null && managers.contains(person.reportingManagerName().strip());
+                described = " reporting to " + String.join(" or ", managers);
+            }
+            case MISSING_DETAILS -> {
+                keep = person -> !missingProfileDetails(person).isEmpty();
+                described = " with missing profile details";
+            }
+            default -> { }
+        }
+        List<com.waypoint.dto.myhr.EmployeeSummaryResponse> matching = people.stream().filter(keep)
+                .sorted(applied == WaviTools.PeopleFilter.JOINED
+                        ? java.util.Comparator.comparing(com.waypoint.dto.myhr.EmployeeSummaryResponse::startDate,
+                        java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()))
+                        : java.util.Comparator.comparing(person -> displayName(person.name())))
+                .toList();
+        log.info("{} provider=none find-people filter={} size={}", PROVIDER_USED_MARKER, applied, matching.size());
+        if (matching.isEmpty()) return "I don't see anyone" + described + " " + scopeLabel(actor) + ".";
+        StringBuilder reply = new StringBuilder().append(matching.size()).append(matching.size() == 1 ? " person" : " people")
+                .append(described).append(' ').append(scopeLabel(actor)).append(':');
+        for (var person : matching.subList(0, Math.min(10, matching.size()))) {
+            reply.append("\n- ").append(displayName(person.name()));
+            List<String> facts = new ArrayList<>();
+            if (person.designation() != null && !person.designation().isBlank()) facts.add(person.designation());
+            if (applied == WaviTools.PeopleFilter.JOINED && person.startDate() != null) facts.add("joined " + person.startDate());
+            if (applied == WaviTools.PeopleFilter.REPORTS_TO) facts.add("reports to " + person.reportingManagerName());
+            if (applied == WaviTools.PeopleFilter.MISSING_DETAILS) facts.add("missing " + String.join(", ", missingProfileDetails(person)));
+            if (!facts.isEmpty()) reply.append(" (").append(String.join("; ", facts)).append(')');
+        }
+        if (matching.size() > 10) reply.append("\n...and ").append(matching.size() - 10).append(" more. Open Employees to see everyone.");
+        return reply.toString();
+    }
+
+    private static String scopeLabel(VerifiedMyHrActor actor) {
+        return actor.role() == UserRole.HR ? "among your active direct reports" : "in your organization";
+    }
+
+    /** "YYYY-MM-DD/YYYY-MM-DD" from a validated date-range argument; null when absent or unreadable. */
+    private static LocalDate[] parseRange(String range) {
+        if (range == null || range.indexOf('/') < 0) return null;
+        try {
+            LocalDate from = LocalDate.parse(range.substring(0, range.indexOf('/')).strip());
+            LocalDate to = LocalDate.parse(range.substring(range.indexOf('/') + 1).strip());
+            return to.isBefore(from) ? null : new LocalDate[] {from, to};
+        } catch (java.time.DateTimeException invalid) {
+            return null;
+        }
+    }
+
+    /** The employee-list fields a complete record has and this one lacks; the employee-management summary only. */
+    private static List<String> missingProfileDetails(com.waypoint.dto.myhr.EmployeeSummaryResponse person) {
+        List<String> missing = new ArrayList<>();
+        if (person.employeeId() == null || person.employeeId().isBlank()) missing.add("employee ID");
+        if (person.designation() == null || person.designation().isBlank()) missing.add("job title");
+        if (person.startDate() == null) missing.add("start date");
+        if ("EMPLOYEE".equalsIgnoreCase(String.valueOf(person.personType()))
+                && (person.reportingManagerName() == null || person.reportingManagerName().isBlank())) {
+            missing.add("reporting manager");
+        }
+        return missing;
+    }
+
     private MyHrChatResponse conversationalIntentResponse(String message, VerifiedMyHrActor actor, Turn turn) {
         String normalized = normalizeQuestion(message).replace('\u2019', '\'');
         String payrollQuestion = normalized.replaceAll("[?.!]+$", "").trim();
         boolean cutoff = payrollQuestion.matches("(?:when is|what is|when's|what's) (?:the |my )?payroll cutoff(?: date)?");
         boolean readiness = payrollQuestion.matches("(?:check|show|what is|what's) (?:the )?payroll (?:status|readiness)");
         if (cutoff || readiness) {
-            if (actor.role() != UserRole.HR && actor.role() != UserRole.COMPANY_ADMIN) {
-                return new MyHrChatResponse("Payroll readiness is available only to HR and Company Admin accounts.").withActions(List.of());
-            }
-            if (payrollReadinessService == null) {
-                return new MyHrChatResponse("Payroll readiness information is unavailable right now.");
-            }
-            var data = payrollReadinessService.getReadiness(actor.userId(), null, null, null, "ALL", null, null,
-                    "EMPLOYEE_ASC", 0, 1);
-            if (data == null || (cutoff && (data.period() == null || data.period().payrollCutoffDate() == null))
-                    || (readiness && data.summary() == null)) {
-                return new MyHrChatResponse("Payroll readiness information is unavailable right now.");
-            }
-            String answer = cutoff ? "The payroll cutoff for the current period is " + data.period().payrollCutoffDate() + "."
-                    : "Payroll readiness: " + data.summary().readyForPayroll() + " of " + data.summary().totalEmployees()
-                    + " employees are ready for payroll; " + data.summary().awaitingApproval() + " are awaiting approval.";
-            return new MyHrChatResponse(answer).withActions(List.of(MyHrConversationIntents.Page.PAYROLL_READINESS.name()));
+            return new MyHrChatResponse(payrollReadinessReply(actor, cutoff ? WaviTools.PayrollReadinessAsk.CUTOFF
+                    : WaviTools.PayrollReadinessAsk.SUMMARY, null))
+                    .withActions(isReviewer(actor) ? List.of(MyHrConversationIntents.Page.PAYROLL_READINESS.name()) : List.of());
         }
         MyHrConversationIntents.Page page = MyHrConversationIntents.navigationTarget(normalized);
         if (page != null) {
@@ -1162,7 +1316,8 @@ public class MyHrChatService {
         if (records.isEmpty()) {
             return new MyHrChatResponse("I don't see a timesheet of yours covering " + label
                     + (period.includesToday() || future ? " yet" : "") + ". If you worked those days, open Timesheets "
-                    + "and choose Enter Timesheet to add and submit them.").withActions(actions);
+                    + "and choose Enter Timesheet to add them, then attach a supporting timesheet document and submit.")
+                    .withActions(actions);
         }
         StringBuilder reply = new StringBuilder("For " + label + ": ");
         for (int index = 0; index < records.size(); index++) {
@@ -1862,7 +2017,8 @@ public class MyHrChatService {
                 RECORD_SCOPE, "RECORD"));
         if (covering.isEmpty()) {
             return new MyHrChatResponse("I don't see a timesheet of yours whose period covers " + formatDay(date)
-                    + ". If you worked that day, open Timesheets and choose Enter Timesheet to add and submit it.")
+                    + ". If you worked that day, open Timesheets and choose Enter Timesheet to add it, then attach a "
+                    + "supporting timesheet document and submit.")
                     .withActions(actions);
         }
         String title = covering.size() == 1 ? "Your timesheet covering " + formatDay(date) + ":"
@@ -2535,7 +2691,8 @@ public class MyHrChatService {
     private String directReportsReply(VerifiedMyHrActor actor) {
         String withoutLookup = directReportsOutsideRoleReply(actor.role());
         if (withoutLookup != null) return withoutLookup;
-        List<com.waypoint.dto.myhr.EmployeeSummaryResponse> reports = employeeManagementService.list(actor.userId());
+        // Only active primary reporting assignments naming this user, in their organization (HR and Company Admin).
+        List<com.waypoint.dto.myhr.EmployeeSummaryResponse> reports = employeeManagementService.listDirectReports(actor.userId());
         List<String> names = (reports == null ? List.<com.waypoint.dto.myhr.EmployeeSummaryResponse>of() : reports)
                 .stream().filter(java.util.Objects::nonNull)
                 .map(report -> (report.name() == null || report.name().isBlank() ? "an unnamed employee" : report.name())
@@ -2551,17 +2708,11 @@ public class MyHrChatService {
                 + (names.size() > shown ? ", and " + (names.size() - shown) + " more. Open Employees to see everyone." : ".");
     }
 
-    /** The reply for a role without a direct-reports lookup (all but HR); null for HR. Never reads a record. */
+    /** The reply for a role without a direct-reports lookup; null for HR and Company Admin. Never reads a record. */
     private static String directReportsOutsideRoleReply(UserRole role) {
-        if (role == UserRole.EMPLOYEE) {
-            return "Employee accounts don't have direct reports in Waypoint. To see who you report to, ask "
-                    + "\"Who is my reporting manager?\"";
-        }
-        if (role != UserRole.HR) {
-            return "I can't list who reports directly to you: Waypoint doesn't offer a direct-reports lookup for "
-                    + "Company Admin accounts yet. Open Employees to see each person's reporting manager.";
-        }
-        return null;
+        if (role == UserRole.HR || role == UserRole.COMPANY_ADMIN) return null;
+        return "Employee accounts don't have direct reports in Waypoint. To see who you report to, ask "
+                + "\"Who is my reporting manager?\"";
     }
 
     /** Tests only: a fixed "today". */
@@ -4899,9 +5050,12 @@ public class MyHrChatService {
                     ? "Company Admin accounts can review timesheets but can't submit one. Open Timesheets to review "
                     + "submissions across the organization."
                     : "Open Timesheets" + (employee ? "" : ", stay on the My Timesheets tab,")
-                    + " and choose Enter Timesheet: pick the date range, enter your daily hours, review the period and "
-                    + "submit it to your reporting manager. You can keep changing a draft until you submit it, and "
-                    + "Submitted Timesheets shows the status of each period you've submitted.";
+                    + " and choose Enter Timesheet, then Start entry. Upload your timesheet document to prefill the "
+                    + "dates and hours, or enter hours manually. Then go through Dates, Hours and Review: pick the "
+                    + "period, check each day's hours and entry type, and review it. A supporting timesheet document "
+                    + "is required before you can submit; until then you can save a draft and resume it later from "
+                    + "Saved drafts. Once submitted, the timesheet goes to your reporting manager for review, and "
+                    + "Submitted Timesheets shows its status.";
             case TIMESHEET_CORRECTION -> admin
                     ? "Company Admin accounts don't correct timesheets themselves. To have hours corrected, reject the "
                     + "submitted timesheet with a reason on Timesheets; the employee can then correct the hours and "
@@ -5045,6 +5199,10 @@ public class MyHrChatService {
     }
 
     private String formatProfileAnswer(MyHrOwnProfileResponse profile, ProfileQuestion question) {
+        if (profile.role() == UserRole.COMPANY_ADMIN) {
+            String admin = companyAdminProfileAnswer(profile, question);
+            if (admin != null) return admin;
+        }
         return switch (question) {
             case EMPLOYEE_ID -> answerForField("Your employee ID", profile.employeeId());
             case JOB_TITLE -> answerForField("Your job title", profile.designation());
@@ -5061,6 +5219,16 @@ public class MyHrChatService {
             case REPORTING_MANAGER_FIRST_NAME, REPORTING_MANAGER_LAST_NAME -> managerNamePart(profile,
                     question == ProfileQuestion.REPORTING_MANAGER_FIRST_NAME);
             case REPORTING_RELATIONSHIP -> reportingRelationship(profile, null);
+            // The Organization card of My Profile shows the name and code to every role.
+            case ORGANIZATION_NAME -> answerForField("Your organization", profile.organizationName());
+            case ORGANIZATION_CODE -> answerForField("Your organization code", profile.organizationCode());
+            // My Profile shows the organization and account emails only to Company Admin accounts.
+            case ORGANIZATION_EMAIL -> profile.role() == UserRole.COMPANY_ADMIN
+                    ? answerForField("Your organization's email", profile.organizationEmail())
+                    : "Your organization's email isn't shown in your profile. Please ask HR or your Company Admin.";
+            case ACCOUNT_EMAIL -> profile.role() == UserRole.COMPANY_ADMIN
+                    ? answerForField("Your account email", profile.accountEmail())
+                    : "Your sign-in email isn't shown in chat. Please contact HR if it needs to change.";
             case PROFILE -> "Your profile: "
                     + displayField("Name", profile.name()) + "; "
                     + displayField("Employee ID", profile.employeeId()) + "; "
@@ -5106,6 +5274,54 @@ public class MyHrChatService {
                 : "Waypoint records " + manager + " as your reporting manager. ";
         return confirmed + "It records the assignment itself, not the reason it was made, so I can't tell you why. HR or "
                 + "your Company Admin manages reporting assignments and can explain it.";
+    }
+
+    /**
+     * A Company Admin's identity, as the My Profile page shows it: usually there is no employee profile, so the account
+     * login ID stands in for an employee ID. Null for questions whose ordinary answer already applies.
+     */
+    private String companyAdminProfileAnswer(MyHrOwnProfileResponse profile, ProfileQuestion question) {
+        String loginId = isBlank(profile.loginId()) ? null : profile.loginId().strip();
+        String name = companyAdminName(profile);
+        return switch (question) {
+            case NAME -> name != null ? "Your name in Waypoint is " + name + "."
+                    : "No name is recorded for your account" + (loginId == null ? "." : "; your Admin / Login ID is "
+                    + loginId + ".");
+            case EMPLOYEE_ID -> !isBlank(profile.employeeId()) ? null
+                    : "Company Admin accounts don't have an employee ID" + (loginId == null ? "."
+                    : ". Your Admin / Login ID is " + loginId + ".");
+            case PROFILE -> {
+                StringBuilder reply = new StringBuilder("Your profile: ")
+                        .append(displayField("Name", name == null ? loginId : name)).append("; ")
+                        .append(displayField("Admin / Login ID", loginId)).append("; ")
+                        .append("Role: Company Admin; ")
+                        .append(displayField("Account status", profile.accountStatus() == null ? null
+                                : humanize(profile.accountStatus().name()))).append("; ")
+                        .append(displayField("Organization", profile.organizationName()));
+                if (!isBlank(profile.employeeId())) reply.append("; ").append(displayField("Employee ID", profile.employeeId()));
+                if (!isBlank(profile.designation())) reply.append("; ").append(displayField("Job title", profile.designation()));
+                yield reply.append('.').toString();
+            }
+            default -> null;
+        };
+    }
+
+    /**
+     * The employee-profile name when there is one; otherwise the organization's recorded admin name, but only when that
+     * record's admin email is this account's own email (another admin of the same organization never gets it);
+     * otherwise null.
+     */
+    private String companyAdminName(MyHrOwnProfileResponse profile) {
+        if (!isBlank(profile.name())) return profile.name().strip();
+        boolean sameAdmin = !isBlank(profile.organizationAdminEmail()) && !isBlank(profile.accountEmail())
+                && profile.organizationAdminEmail().strip().equalsIgnoreCase(profile.accountEmail().strip());
+        return sameAdmin && !isBlank(profile.organizationAdminName()) ? profile.organizationAdminName().strip() : null;
+    }
+
+    private static String humanize(String constant) {
+        if (constant == null || constant.isBlank()) return null;
+        String words = constant.toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
+        return Character.toUpperCase(words.charAt(0)) + words.substring(1);
     }
 
     private String answerForField(String label, String value) {
@@ -5287,7 +5503,11 @@ public class MyHrChatService {
         LAST_NAME,
         REPORTING_MANAGER_FIRST_NAME,
         REPORTING_MANAGER_LAST_NAME,
-        REPORTING_RELATIONSHIP
+        REPORTING_RELATIONSHIP,
+        ORGANIZATION_NAME,
+        ORGANIZATION_CODE,
+        ORGANIZATION_EMAIL,
+        ACCOUNT_EMAIL
     }
 
     // --- Question frame: answer type + concept + scope + selection -> capability ----------------------------------
@@ -5326,8 +5546,10 @@ public class MyHrChatService {
         }
         WaviQuestionFrame frame = WaviQuestionFrame.of(message);
         WaviDialogueStore.State previous = turn.previousState;
+        // An explicit question about the user's own profile ("who am I?", "what is my employee ID?") is never a
+        // follow-up to the previous answer, whatever that answer was about.
         if (phase == FramePhase.FOLLOW_UP && previous != null && frame.contextual() && previous.tool() != null
-                && !WaviDialogueStore.NO_STATE.equals(previous.tool())) {
+                && !WaviDialogueStore.NO_STATE.equals(previous.tool()) && classifyProfileQuestion(message) == null) {
             MyHrChatResponse followUp = frameFollowUp(frame, message, conversation, actor, turn, previous);
             if (followUp != null) {
                 log.info("{} provider=none frame=follow-up answer={} previous={}", PROVIDER_USED_MARKER, frame.answer(),
@@ -5359,8 +5581,9 @@ public class MyHrChatService {
         boolean ownRequests = WaviTools.GET_MY_REQUESTS.equals(tool) || WaviTools.LIST_MY_REQUESTS.equals(tool);
         MyHrConversationIntents.TimesheetRange period = ownTimesheet || teamTimesheets ? periodOf(previous) : null;
 
-        // "What's their first name?" after the manager: one part of the same recorded name.
-        if (manager && (frame.namePart() == WaviQuestionFrame.NamePart.FIRST
+        // "What's their first name?" after the manager: one part of the same recorded name. A first-person question
+        // ("what is my last name?") is about the signed-in user, never the manager just discussed.
+        if (manager && frame.scope() != WaviQuestionFrame.Scope.SELF && (frame.namePart() == WaviQuestionFrame.NamePart.FIRST
                 || frame.namePart() == WaviQuestionFrame.NamePart.LAST)) {
             return managerAnswer(actor, turn, frame.namePart() == WaviQuestionFrame.NamePart.FIRST
                     ? ProfileQuestion.REPORTING_MANAGER_FIRST_NAME : ProfileQuestion.REPORTING_MANAGER_LAST_NAME, null);
@@ -6414,6 +6637,10 @@ public class MyHrChatService {
         List<String> tokens = List.of(normalizeQuestion(message).replace('\u2019', '\'').replaceAll("'s\\b", "")
                 .split("[^a-z0-9]+"));
         if (tokens.contains("role")) return WaviTools.TeamField.ROLE.name();
+        if (tokens.contains("join") || tokens.contains("joined") || tokens.contains("joining") || tokens.contains("hired")
+                || tokens.contains("started") || (tokens.contains("start") && tokens.contains("date"))) {
+            return WaviTools.TeamField.START_DATE.name();
+        }
         // Each short phrase of the message, longest first, asked in the existing anchored own-profile forms ("what is
         // my <phrase>", "who is my <phrase>"): the field vocabulary stays the profile route's, nothing new is added.
         for (int size = 3; size >= 1; size--) {
@@ -6491,6 +6718,8 @@ public class MyHrChatService {
                     : ", with the job title " + person.designation() + ".");
             case "REPORTING_MANAGER" -> blankOr(person.reportingManagerName(), name
                     + " has no active reporting manager recorded.", name + " reports to " + person.reportingManagerName() + ".");
+            case "START_DATE" -> person.startDate() == null ? name + " has no start date recorded."
+                    : name + " joined on " + person.startDate() + ".";
             case "WORK_EMAIL" -> blankOr(person.workEmail(), name + " has no work email recorded.",
                     name + "'s work email is " + person.workEmail() + ".");
             default -> name + ": " + displayField("Employee ID", person.employeeId()) + "; "
@@ -8245,6 +8474,16 @@ public class MyHrChatService {
             return asked == MyHrConversationIntents.AskedRole.ANY
                     ? MyHrConversationIntents.roleAndTitleReply(actor.role(), ownJobTitle(actor))
                     : MyHrConversationIntents.roleReply(asked, actor.role());
+        }
+
+        @Override
+        public String payrollReadiness(VerifiedMyHrActor actor, WaviTools.PayrollReadinessAsk ask, java.time.YearMonth month) {
+            return payrollReadinessReply(actor, ask, month);
+        }
+
+        @Override
+        public String findPeople(VerifiedMyHrActor actor, WaviTools.PeopleFilter filter, String joined, String message) {
+            return findPeopleReply(actor, filter, joined, message);
         }
 
         @Override

@@ -69,6 +69,16 @@ interface WaviRecordAnswers {
     /** One person in the reviewer's own scope (HR: active direct reports; Company Admin: the organization). */
     MyHrChatResponse teamMember(VerifiedMyHrActor actor, String field, Integer ordinal, String message);
 
+    /** Payroll readiness from the existing readiness service; HR and Company Admin only. */
+    default String payrollReadiness(VerifiedMyHrActor actor, WaviTools.PayrollReadinessAsk ask, java.time.YearMonth month) {
+        return null;
+    }
+
+    /** People in the reviewer's existing scope, all or filtered. */
+    default String findPeople(VerifiedMyHrActor actor, WaviTools.PeopleFilter filter, String joined, String message) {
+        return null;
+    }
+
     /** Timesheets of people in the reviewer's review scope, optionally one named person and one status. */
     MyHrChatResponse teamTimesheets(VerifiedMyHrActor actor, String status, String message);
 

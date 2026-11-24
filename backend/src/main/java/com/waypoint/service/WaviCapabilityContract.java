@@ -30,7 +30,11 @@ record WaviCapabilityContract(List<Binding> backends, String result, String cont
                     bind(TimesheetService.class, "getOwnStatusesOverlapping"), bind(TimesheetService.class, "getOwnDailyHours"),
                     bind(TimesheetService.class, "listForUser"));
             case WaviTools.GET_DIRECT_REPORTS -> contract("Active direct-report list", "List order is not permanent identity", scoped,
-                    "List your active direct reports.", bind(EmployeeManagementService.class, "list"));
+                    "List your active direct reports.", bind(EmployeeManagementService.class, "listDirectReports"));
+            case WaviTools.FIND_PEOPLE -> contract("People in the authorized scope, optionally filtered", "Filter and join range",
+                    scoped, null, bind(EmployeeManagementService.class, "list"));
+            case WaviTools.GET_PAYROLL_READINESS -> contract("Payroll readiness summary, cutoff or not-ready people",
+                    "Payroll month and requested detail", scoped, null, bind(PayrollReadinessService.class, "getReadiness"));
             case WaviTools.GET_TEAM_MEMBER -> contract("Permitted work fields of one currently authorized person", "Selected person and requested field", scoped,
                     role == UserRole.HR ? "Look up permitted work details for an active direct report."
                             : "Look up permitted work details for people in your organization.", bind(EmployeeManagementService.class, "list"));
