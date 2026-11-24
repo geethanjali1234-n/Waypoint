@@ -63,7 +63,7 @@ function levenshtein(a, b) {
         matrix[i][j] = Math.min(
           matrix[i - 1][j - 1] + 1,
           matrix[i][j - 1] + 1,
-          matrix[i - 1] + 1
+          matrix[i - 1][j] + 1
         );
       }
     }
@@ -92,7 +92,7 @@ function normalizeInput(text) {
     .replace(/\brejections\b|\brejecting\b|\brejected\b/g, 'reject')
     .replace(/\bdocuments\b|\bdoc\b|\bdocs\b/g, 'document')
     .replace(/\bprofiles\b/g, 'profile')
-    .replace(/\baddresses\b|\baddres\b/g, 'address')
+    .replace(/\baddresses\b|\baddres\b|\badrreess\b/g, 'address')
     .replace(/\bpasswords\b|\bpasscode\b/g, 'password')
     .replace(/\bovertimes\b|\bot\b/g, 'overtime')
     .replace(/\bresumes\b|\bcv\b/g, 'resume')

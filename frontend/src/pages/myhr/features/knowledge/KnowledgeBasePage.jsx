@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card, ConfirmationDialog, Dropdown, EmptyState, StatusBadge, TextInput, ValidationMessage } from '../../../../components';
 import myHrKnowledgeApi from '../../../../api/myHrKnowledgeApi';
 import { formatDateOnly } from '../../../../utils/dateFormat';
 import MyHrFeaturePage from '../MyHrFeaturePage';
 import { policyFileAccept, validatePolicyFile } from './policyFileValidation';
 import ContentReviewPanel from './ContentReviewPanel';
+import AiProcessingPermissions from './AiProcessingPermissions';
+import { getMyHrSession } from '../../../../auth/myHrSession';
 import './knowledgeBase.css';
 
 const ACCESS_LEVEL_OPTIONS = [
@@ -13,11 +15,11 @@ const ACCESS_LEVEL_OPTIONS = [
 ];
 const ACCESS_LABELS = { COMPANY_WIDE: 'Company-wide', HR_ONLY: 'HR only' };
 const STAGES = {
-  APPROVED: { label: 'Approved · ready to ingest', badge: 'pending' },
-  NEEDS_REVIEW: { label: 'Needs review · some pages have no text', badge: 'pending' },
-  INGESTING: { label: 'Ingesting', badge: 'pending' },
-  INDEXED: { label: 'Indexed · ready to activate', badge: 'approved' },
-  FAILED: { label: 'Ingestion failed', badge: 'rejected' },
+  APPROVED: { label: 'Ready for processing', badge: 'pending' },
+  NEEDS_REVIEW: { label: 'Awaiting review · some pages have no text', badge: 'pending' },
+  INGESTING: { label: 'Processing', badge: 'pending' },
+  INDEXED: { label: 'Ready for publication', badge: 'approved' },
+  FAILED: { label: 'Processing failed', badge: 'rejected' },
 };
 const errorMessage = (error, fallback) => error?.response?.data?.message || fallback;
 
@@ -26,8 +28,8 @@ function stageInfo(version) {
   if (version.stage !== 'NEEDS_REVIEW') return STAGES[version.stage];
   const contentPending = version.contentReview?.required && !version.contentReview?.satisfied;
   const textPending = version.pagesWithoutText > 0 && !version.incompleteTextAccepted;
-  if (contentPending && textPending) return { label: 'Needs review · flagged content and pages without text', badge: 'pending' };
-  if (contentPending) return { label: 'Needs review · flagged content', badge: 'pending' };
+  if (contentPending && textPending) return { label: 'Awaiting review · flagged content and pages without text', badge: 'pending' };
+  if (contentPending) return { label: 'Awaiting review · flagged content', badge: 'pending' };
   return STAGES.NEEDS_REVIEW;
 }
 
@@ -38,9 +40,18 @@ const CONTENT_DECISION_LABELS = {
 };
 
 function documentBadge(document) {
-  if (document.status === 'REVOKED') return { status: 'inactive', label: 'Revoked' };
-  if (document.activeVersion) return { status: 'active', label: 'Live' };
-  return { status: 'pending', label: 'Not yet active' };
+  if (document.status === 'REVOKED') return { status: 'inactive', label: 'Retired' };
+  if (document.activeVersion) return { status: 'active', label: 'Published' };
+  return { status: 'pending', label: document.pendingVersion ? 'In review' : 'Not published' };
+}
+
+function wavyStatus(document, settings) {
+  if (document.status === 'REVOKED' || !document.activeVersion) return 'Not published for Wavy';
+  if (!settings?.retrievalEnabled || !settings?.chatGroundingEnabled) return 'Published; Wavy policy answers are unavailable';
+  if (document.activeVersion.stage !== 'INDEXED' || !(document.activeVersion.indexedSectionCount > 0)) {
+    return 'Published; search readiness cannot be confirmed';
+  }
+  return 'Published and indexed; Wavy availability depends on search readiness and access';
 }
 
 function PolicyFileInput({ inputKey, settings, onChange }) {
@@ -75,7 +86,7 @@ function AddPolicyForm({ settings, busy, onSubmit }) {
       onChange={(event) => setAccessLevel(event.target.value)} options={ACCESS_LEVEL_OPTIONS} />
     <PolicyFileInput inputKey={inputKey} settings={settings} onChange={setFile} />
     <p className="knowledge-base__hint">PDF, DOCX, XLSX, TXT or Markdown, up to 5 MB. The file is checked locally when you add it;
-      its text is sent for indexing only when you choose Ingest.</p>
+      its text is sent for indexing only when you choose Process for AI Search.</p>
     <ValidationMessage variant="error" message={error} />
     <div className="knowledge-base__form-actions"><Button type="submit" loading={busy} disabled={busy}>Add policy</Button></div>
   </form>;
@@ -157,6 +168,7 @@ function KnowledgeDocumentItem({ document, settings, busy, feedback, onRun, onCo
       <h3>{document.title}</h3>
       <StatusBadge status={badge.status} label={badge.label} />
     </div>
+    <p className="knowledge-base__availability">{wavyStatus(document, settings)}</p>
     {!document.activeVersion && document.status !== 'REVOKED'
       && <p className="knowledge-base__hint">The assistant does not use this policy until a version is activated.</p>}
     <div className="knowledge-base__versions">
@@ -203,25 +215,25 @@ function KnowledgeDocumentItem({ document, settings, busy, feedback, onRun, onCo
       })}>Accept incomplete text</Button>}
       {actions.ingest && pending && <Button disabled={busy} loading={busy}
         onClick={() => onRun(document.id, () => myHrKnowledgeApi.ingest(document.id))}>
-        {pending.stage === 'APPROVED' ? 'Ingest' : 'Retry ingestion'}</Button>}
+        {pending.stage === 'APPROVED' ? 'Process for AI Search' : 'Retry processing'}</Button>}
       {actions.activate && pending && <Button disabled={busy} onClick={() => onConfirm({
         id: document.id,
-        title: 'Activate this version?',
+        title: 'Publish this policy version?',
         message: document.activeVersion
           ? `${pending.fileName} will replace ${document.activeVersion.fileName} as the source for assistant answers.`
           : `${pending.fileName} will become a source for assistant answers (${ACCESS_LABELS[pending.accessLevel] || 'restricted'}).`,
-        confirmLabel: 'Activate',
+        confirmLabel: 'Publish policy',
         action: () => myHrKnowledgeApi.activate(document.id, pending.ingestionId),
-      })}>Activate</Button>}
+      })}>Publish policy</Button>}
       {actions.replace && <Button variant="secondary" disabled={busy} onClick={() => setReplacing((value) => !value)}
         aria-expanded={replacing}>{replacing ? 'Close replacement' : 'Replace file'}</Button>}
       {actions.revoke && <Button variant="secondary" disabled={busy} onClick={() => onConfirm({
         id: document.id,
-        title: 'Revoke this policy?',
+        title: 'Retire this policy?',
         message: `"${document.title}" will immediately stop informing assistant answers and its indexed sections will be removed.`,
-        confirmLabel: 'Revoke',
+        confirmLabel: 'Retire policy',
         action: () => myHrKnowledgeApi.revoke(document.id),
-      })}>Revoke</Button>}
+      })}>Retire policy</Button>}
       {actions.retryCleanup && <Button variant="secondary" disabled={busy}
         onClick={() => onRun(document.id, () => myHrKnowledgeApi.revoke(document.id))}>Retry cleanup</Button>}
     </div>
@@ -234,10 +246,6 @@ function KnowledgeDocumentItem({ document, settings, busy, feedback, onRun, onCo
   </li>;
 }
 
-function SwitchStatus({ label, on }) {
-  return <li><StatusBadge status={on ? 'active' : 'inactive'} label={on ? 'On' : 'Off'} /><span>{label}</span></li>;
-}
-
 export default function KnowledgeBasePage() {
   const [settings, setSettings] = useState(null);
   const [documents, setDocuments] = useState([]);
@@ -246,6 +254,10 @@ export default function KnowledgeBasePage() {
   const [feedback, setFeedback] = useState(null);
   const [busyId, setBusyId] = useState('');
   const [confirmation, setConfirmation] = useState(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const requestInFlight = useRef(false);
 
   const load = useCallback(async () => {
     try {
@@ -265,6 +277,8 @@ export default function KnowledgeBasePage() {
 
   /** Runs one request, shows its message next to the policy, then reloads; resolves true on success. */
   const run = async (id, action) => {
+    if (requestInFlight.current) return false;
+    requestInFlight.current = true;
     setBusyId(id);
     setFeedback(null);
     let succeeded = false;
@@ -278,8 +292,9 @@ export default function KnowledgeBasePage() {
         setFeedback({ id, variant: 'error', message: errorMessage(error, 'The request could not be completed.') });
       }
     } finally {
-      setBusyId('');
       await load();
+      setBusyId('');
+      requestInFlight.current = false;
     }
     return succeeded;
   };
@@ -290,44 +305,54 @@ export default function KnowledgeBasePage() {
     if (pending) await run(pending.id, pending.action);
   };
 
-  const live = documents.filter((document) => document.status !== 'REVOKED');
-  const revoked = documents.filter((document) => document.status === 'REVOKED');
+  const visibleDocuments = useMemo(() => documents.filter((document) => {
+    const matchesSearch = (document.title || '').toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
+    const status = document.status === 'REVOKED' ? 'retired' : document.activeVersion ? 'published'
+      : document.pendingVersion ? 'review' : 'unpublished';
+    return matchesSearch && (statusFilter === 'all' || statusFilter === status);
+  }), [documents, search, statusFilter]);
   const renderItem = (document) => <KnowledgeDocumentItem key={document.id} document={document} settings={settings}
-    busy={busyId === document.id} feedback={feedback?.id === document.id ? feedback : null}
+    busy={Boolean(busyId)} feedback={feedback?.id === document.id ? feedback : null}
     onRun={run} onConfirm={setConfirmation} />;
 
   return <MyHrFeaturePage title="Knowledge Base"
-    description="Approve the company policies the MyHR assistant may use to answer questions." hideBack
+    description="Manage company policies and prepare approved documents for Wavy." hideBack
     className="knowledge-base-page">
     {loading ? <p className="myhr-feature__notice" role="status">Loading knowledge base…</p>
       : loadError ? <ValidationMessage message={loadError} variant="error" />
       : <div className="knowledge-base">
-        <Card title="Status">
-          <ul className="knowledge-base__switches" aria-label="Knowledge base switches">
-            <SwitchStatus label="Adding and replacing policies" on={Boolean(settings?.managementEnabled)} />
-            <SwitchStatus label="Ingestion (indexing for search)" on={Boolean(settings?.ingestionEnabled)} />
-            <SwitchStatus label="Activation" on={Boolean(settings?.activationEnabled)} />
-            <SwitchStatus label="Assistant answers from policies" on={Boolean(settings?.retrievalEnabled && settings?.chatGroundingEnabled)} />
-          </ul>
-          {!settings?.managementEnabled && <ValidationMessage
-            message="Knowledge base management is not enabled in this environment. You can still review and revoke existing policies." />}
-        </Card>
-
-        {settings?.managementEnabled && <Card title="Add a company policy">
+        <div className="knowledge-base__toolbar">
+          <div><h2>Company policies</h2><p>Review, publish and manage your organization's policy documents.</p></div>
+          {settings?.managementEnabled && <Button disabled={Boolean(busyId)} onClick={() => setShowAdd((value) => !value)} aria-expanded={showAdd}>
+            {showAdd ? 'Close' : 'Add policy'}</Button>}
+        </div>
+        {!settings?.managementEnabled && <ValidationMessage message="Adding policies is currently unavailable. Existing policies can still be reviewed." />}
+        {settings?.managementEnabled && !settings?.ingestionEnabled && <ValidationMessage
+          message="Processing for AI Search is currently turned off for this environment, so new or replaced policies cannot be processed yet." />}
+        {settings?.managementEnabled && !settings?.activationEnabled && <ValidationMessage
+          message="Publishing is currently turned off for this environment, so processed policies cannot be published to Wavy yet." />}
+        {settings?.managementEnabled && showAdd && <Card title="Add a company policy">
           <AddPolicyForm settings={settings} busy={busyId === 'new'}
             onSubmit={(values) => run('new', () => myHrKnowledgeApi.addPolicy(values))} />
           {feedback?.id === 'new' && <ValidationMessage variant={feedback.variant} message={feedback.message} />}
         </Card>}
 
         <Card title="Policies">
-          {live.length === 0
-            ? <EmptyState title="No policies yet" description="Approved company policies appear here." />
-            : <ul className="knowledge-base__list">{live.map(renderItem)}</ul>}
+          <div className="knowledge-base__filters">
+            <TextInput name="policySearch" label="Search policies" value={search} onChange={(event) => setSearch(event.target.value)} />
+            <Dropdown name="policyStatus" label="Status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} options={[
+              { value: 'all', label: 'All policies' }, { value: 'published', label: 'Published' },
+              { value: 'review', label: 'In review' }, { value: 'unpublished', label: 'Not published' },
+              { value: 'retired', label: 'Retired' },
+            ]} />
+          </div>
+          {visibleDocuments.length === 0
+            ? <EmptyState title={documents.length ? 'No matching policies' : 'No policies yet'} description={documents.length ? 'Try another search or status.' : 'Add a policy to begin the review process.'} />
+            : <ul className="knowledge-base__list">{visibleDocuments.map(renderItem)}</ul>}
         </Card>
 
-        {revoked.length > 0 && <Card title="Revoked policies">
-          <ul className="knowledge-base__list">{revoked.map(renderItem)}</ul>
-        </Card>}
+        {/* Shown to Company Admins only; the backend authorizes every request regardless. */}
+        {getMyHrSession()?.role === 'COMPANY_ADMIN' && <AiProcessingPermissions documents={documents} />}
       </div>}
 
     <ConfirmationDialog isOpen={Boolean(confirmation)} title={confirmation?.title} message={confirmation?.message}

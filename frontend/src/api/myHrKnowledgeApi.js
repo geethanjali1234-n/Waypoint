@@ -2,6 +2,9 @@ import apiClient from './apiClient';
 
 const BASE = '/myhr/knowledge';
 const documentPath = (id, action) => `${BASE}/documents/${encodeURIComponent(id)}/${action}`;
+const EXTERNAL = `${BASE}/external-processing`;
+const CLAUDE = 'ANTHROPIC_CLAUDE';
+const externalDocumentPath = (id, action) => `${EXTERNAL}/documents/${encodeURIComponent(id)}/${action}`;
 
 /**
  * The content-review decisions this client may send. EXCLUDE_FLAGGED_TEXT is deliberately absent:
@@ -54,6 +57,25 @@ const myHrKnowledgeApi = {
   ingest: (id) => apiClient.post(documentPath(id, 'ingest')),
   activate: (id, expectedVersionId) => apiClient.post(documentPath(id, 'activate'), { expectedVersionId }),
   revoke: (id) => apiClient.post(documentPath(id, 'revoke')),
+
+  // External AI processing approvals (Claude). Company Admin only; every decision is enforced by the backend.
+  getExternalProcessing: () => apiClient.get(EXTERNAL),
+  /** Records the organization's Claude approval. approvalReference must be the admin's genuine decision reference. */
+  approveClaudeOrganization: ({ approvalReference, coverage }) => apiClient.post(`${EXTERNAL}/organization/approve`, {
+    provider: CLAUDE, accessLevels: ['COMPANY_WIDE'], approvalReference, acknowledgeExternalTransmission: true, coverage,
+  }),
+  /**
+   * Atomically replaces the active organization approval (expectedApprovalId, the one shown to the admin) with one of
+   * the given coverage. On any failure the backend keeps the previous approval in force.
+   */
+  replaceClaudeOrganizationCoverage: ({ expectedApprovalId, coverage, approvalReference, reason }) =>
+    apiClient.post(`${EXTERNAL}/organization/replace`, {
+      provider: CLAUDE, expectedApprovalId, coverage, approvalReference, acknowledgeExternalTransmission: true, reason,
+    }),
+  revokeClaudeOrganization: (reason) => apiClient.post(`${EXTERNAL}/organization/revoke`, { provider: CLAUDE, reason }),
+  excludeFromClaude: (id, reason) => apiClient.post(externalDocumentPath(id, 'exclude'), { provider: CLAUDE, reason }),
+  liftClaudeExclusion: (id, reason) =>
+    apiClient.post(externalDocumentPath(id, 'exclusion/revoke'), { provider: CLAUDE, reason }),
 };
 
 export default myHrKnowledgeApi;

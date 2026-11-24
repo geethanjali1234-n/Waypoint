@@ -9,6 +9,7 @@ import com.waypoint.enums.AuditActionType;
 import com.waypoint.enums.ChunkAccessLevel;
 import com.waypoint.enums.DocumentType;
 import com.waypoint.enums.ExternalAiProvider;
+import com.waypoint.enums.ExternalProcessingApprovalCoverage;
 import com.waypoint.enums.ExternalProcessingApprovalScope;
 import com.waypoint.enums.ExternalProcessingApprovalStatus;
 import com.waypoint.enums.KnowledgeDocumentStatus;
@@ -23,7 +24,10 @@ import com.waypoint.repository.KnowledgeDocumentRepository;
 import com.waypoint.security.VerifiedMyHrActor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.TransientDataAccessException;
+import org.springframework.transaction.TransactionException;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -42,7 +46,10 @@ import java.util.Set;
  * approved for COMPANY_WIDE content; Voyage may be approved for COMPANY_WIDE and HR_ONLY policy text. A document
  * approval covers exactly one activated version of a LIVE company-wide policy and requires the organization's own
  * approval for the same provider first. Internal read permission and knowledge-base approval are not external
- * approval: nothing here is ever granted automatically.
+ * approval: nothing here is ever granted without a Company Admin's recorded decision. The one broader decision is an
+ * organization approval recorded with ALL_PUBLISHED_COMPANY_WIDE coverage, which covers each policy's published
+ * company-wide version for Claude unless the policy is excluded (DOCUMENT_EXCLUSION) or its approval was revoked
+ * without a later decision. Existing records without a coverage keep per-version approval.
  *
  * <p>Only a Company Admin may approve or revoke; HR may view. Every change is written to the audit trail.
  */
@@ -75,6 +82,15 @@ public class ExternalProcessingApprovalService {
             "Only company-wide policies can be approved for Claude; HR-only policies always stay on the local model";
     static final String VERSION_CHANGED = "The policy's active version changed; reload it and review the new version";
     static final String DOCUMENT_ALREADY_APPROVED = "This policy version is already approved for Claude";
+    static final String DOCUMENT_EXCLUDED = "This policy is excluded from Claude; lift the exclusion first";
+    static final String DOCUMENT_ALREADY_EXCLUDED = "This policy is already excluded from Claude";
+    static final String COVERAGE_REQUIRED = "Choose the coverage for the new approval";
+    static final String COVERAGE_UNCHANGED = "The organization approval already has this coverage";
+    static final String APPROVAL_CHANGED =
+            "The organization approval changed while you were editing it; reload and try again";
+    static final String REPLACEMENT_UNAVAILABLE = "Replacing the organization approval is not available right now";
+    static final String AUTOMATIC_COVERAGE_CLAUDE_ONLY =
+            "Coverage of every published company-wide policy applies to Claude only";
 
     static final int MAX_REFERENCE_CHARS = 200;
     static final int MAX_REASON_CHARS = 500;
@@ -90,14 +106,29 @@ public class ExternalProcessingApprovalService {
     private final Clock clock;
     private final boolean claudeSwitch;
     private final boolean ingestionSwitch;
+    /** Needed only to replace an organization approval atomically; without it replacement is refused. */
+    private final ExternalProcessingApprovalTransactions transactions;
 
     public ExternalProcessingApprovalService(
             ExternalProcessingApprovalRepository approvals,
             KnowledgeDocumentRepository knowledgeDocuments,
             AuditService auditService,
             Clock clock,
+            boolean claudeSwitch,
+            boolean ingestionSwitch) {
+        this(approvals, knowledgeDocuments, auditService, clock, claudeSwitch, ingestionSwitch, null);
+    }
+
+    @Autowired
+    public ExternalProcessingApprovalService(
+            ExternalProcessingApprovalRepository approvals,
+            KnowledgeDocumentRepository knowledgeDocuments,
+            AuditService auditService,
+            Clock clock,
             @Value("${waypoint.myhr.chat.knowledge-grounding.allow-external-provider:false}") boolean claudeSwitch,
-            @Value("${waypoint.myhr.knowledge.ingestion.enabled:false}") boolean ingestionSwitch) {
+            @Value("${waypoint.myhr.knowledge.ingestion.enabled:false}") boolean ingestionSwitch,
+            ExternalProcessingApprovalTransactions transactions) {
+        this.transactions = transactions;
         this.approvals = approvals;
         this.knowledgeDocuments = knowledgeDocuments;
         this.auditService = auditService;
@@ -129,11 +160,29 @@ public class ExternalProcessingApprovalService {
     public ExternalProcessingApprovalResponse approveOrganization(VerifiedMyHrActor actor, ExternalAiProvider provider,
                                                                   Set<ChunkAccessLevel> accessLevels,
                                                                   String approvalReference, boolean acknowledged) {
+        return approveOrganization(actor, provider, accessLevels, approvalReference, acknowledged, null);
+    }
+
+    /**
+     * coverage: REVIEWED_VERSIONS (the default when null) keeps per-version approval; ALL_PUBLISHED_COMPANY_WIDE lets
+     * Claude use the published version of every company-wide policy that is not excluded. Only Claude supports the
+     * automatic coverage, and changing coverage needs a fresh approval (revoke, then approve again).
+     */
+    public ExternalProcessingApprovalResponse approveOrganization(VerifiedMyHrActor actor, ExternalAiProvider provider,
+                                                                  Set<ChunkAccessLevel> accessLevels,
+                                                                  String approvalReference, boolean acknowledged,
+                                                                  ExternalProcessingApprovalCoverage coverage) {
         requireAdmin(actor);
         requireProvider(provider);
         requireAcknowledged(acknowledged);
         String reference = requireText(approvalReference, MAX_REFERENCE_CHARS, REFERENCE_REQUIRED, REFERENCE_INVALID);
         Set<ChunkAccessLevel> levels = requireApprovableLevels(provider, accessLevels);
+        ExternalProcessingApprovalCoverage scopeOfDocuments =
+                coverage == null ? ExternalProcessingApprovalCoverage.REVIEWED_VERSIONS : coverage;
+        if (scopeOfDocuments == ExternalProcessingApprovalCoverage.ALL_PUBLISHED_COMPANY_WIDE
+                && provider != ExternalAiProvider.ANTHROPIC_CLAUDE) {
+            throw new BusinessException(AUTOMATIC_COVERAGE_CLAUDE_ONLY);
+        }
         boolean alreadyActive = approvals.findByOrganizationIdAndProviderAndStatus(
                         actor.organizationId(), provider, ExternalProcessingApprovalStatus.ACTIVE).stream()
                 .anyMatch(record -> record.getScope() == ExternalProcessingApprovalScope.ORGANIZATION
@@ -147,14 +196,92 @@ public class ExternalProcessingApprovalService {
                 .scope(ExternalProcessingApprovalScope.ORGANIZATION)
                 .status(ExternalProcessingApprovalStatus.ACTIVE)
                 .accessLevels(levels)
+                .coverage(scopeOfDocuments == ExternalProcessingApprovalCoverage.REVIEWED_VERSIONS ? null : scopeOfDocuments)
                 .approvalReference(reference)
                 .approvedByUserId(actor.userId())
                 .approvedAt(LocalDateTime.now(clock))
                 .build());
         audit(actor, AuditActionType.EXTERNAL_AI_PROCESSING_APPROVED, saved,
-                label(provider) + " approved for " + levels + " content at organization level");
-        log.info("External AI processing approved: provider={} scope=ORGANIZATION accessLevels={}", provider, levels);
+                label(provider) + " approved for " + levels + " content at organization level"
+                        + (scopeOfDocuments == ExternalProcessingApprovalCoverage.ALL_PUBLISHED_COMPANY_WIDE
+                        ? ", covering every published company-wide policy that is not excluded" : ""));
+        log.info("External AI processing approved: provider={} scope=ORGANIZATION accessLevels={} coverage={}",
+                provider, levels, scopeOfDocuments);
         return toResponse(saved, List.of(saved), new LinkedHashMap<>(), actor.organizationId());
+    }
+
+    /**
+     * Replaces the organization's active Claude approval with one of a different coverage in a single transaction:
+     * the old record is revoked (with reason) and the new one recorded, or - on any failure, including a concurrent
+     * change - neither, so the previous approval stays in force. expectedApprovalId is the approval the admin was
+     * looking at; if it is no longer the active one the request is refused (duplicate or concurrent change).
+     * Audit events are written after commit, so a rolled-back replacement is never audited as done.
+     */
+    public ExternalProcessingApprovalResponse replaceOrganizationCoverage(
+            VerifiedMyHrActor actor, ExternalAiProvider provider, String expectedApprovalId,
+            ExternalProcessingApprovalCoverage coverage, String approvalReference, boolean acknowledged, String reason) {
+        requireAdmin(actor);
+        requireProvider(provider);
+        if (provider != ExternalAiProvider.ANTHROPIC_CLAUDE) {
+            throw new BusinessException(AUTOMATIC_COVERAGE_CLAUDE_ONLY);
+        }
+        if (coverage == null) {
+            throw new BusinessException(COVERAGE_REQUIRED);
+        }
+        requireAcknowledged(acknowledged);
+        String reference = requireText(approvalReference, MAX_REFERENCE_CHARS, REFERENCE_REQUIRED, REFERENCE_INVALID);
+        String why = requireText(reason, MAX_REASON_CHARS, REASON_INVALID, REASON_INVALID);
+        if (isBlank(expectedApprovalId)) {
+            throw new BusinessException(APPROVAL_CHANGED);
+        }
+        if (transactions == null) {
+            throw new BusinessException(REPLACEMENT_UNAVAILABLE);
+        }
+        ExternalProcessingApproval[] result;
+        try {
+            result = transactions.inTransaction(() -> {
+                List<ExternalProcessingApproval> active = approvals.findByOrganizationIdAndProviderAndStatus(
+                                actor.organizationId(), provider, ExternalProcessingApprovalStatus.ACTIVE).stream()
+                        .filter(record -> record.getScope() == ExternalProcessingApprovalScope.ORGANIZATION
+                                && actor.organizationId().equals(record.getOrganizationId()))
+                        .toList();
+                if (active.size() != 1 || !expectedApprovalId.equals(active.get(0).getId())) {
+                    throw new BusinessException(APPROVAL_CHANGED);
+                }
+                ExternalProcessingApproval previous = active.get(0);
+                if (previous.effectiveCoverage() == coverage) {
+                    throw new BusinessException(COVERAGE_UNCHANGED);
+                }
+                LocalDateTime now = LocalDateTime.now(clock);
+                previous.setStatus(ExternalProcessingApprovalStatus.REVOKED);
+                previous.setRevokedByUserId(actor.userId());
+                previous.setRevokedAt(now);
+                previous.setRevocationReason(why);
+                ExternalProcessingApproval revoked = approvals.save(previous);
+                ExternalProcessingApproval replacement = approvals.save(ExternalProcessingApproval.builder()
+                        .organizationId(actor.organizationId())
+                        .provider(provider)
+                        .scope(ExternalProcessingApprovalScope.ORGANIZATION)
+                        .status(ExternalProcessingApprovalStatus.ACTIVE)
+                        .accessLevels(EnumSet.copyOf(previous.getAccessLevels()))
+                        .coverage(coverage == ExternalProcessingApprovalCoverage.REVIEWED_VERSIONS ? null : coverage)
+                        .approvalReference(reference)
+                        .approvedByUserId(actor.userId())
+                        .approvedAt(now)
+                        .build());
+                return new ExternalProcessingApproval[] {revoked, replacement};
+            });
+        } catch (TransientDataAccessException | TransactionException concurrent) {
+            // Optimistic-lock and MongoDB write conflicts (a concurrent change); the transaction rolled back.
+            throw new BusinessException(APPROVAL_CHANGED);
+        }
+        audit(actor, AuditActionType.EXTERNAL_AI_PROCESSING_REVOKED, result[0],
+                label(provider) + " organization approval revoked to change its coverage");
+        audit(actor, AuditActionType.EXTERNAL_AI_PROCESSING_APPROVED, result[1],
+                label(provider) + " approved for " + result[1].getAccessLevels() + " content at organization level with "
+                        + coverage + " coverage, replacing approval " + result[0].getId());
+        log.info("External AI processing coverage replaced: provider={} coverage={}", provider, coverage);
+        return toResponse(result[1], List.of(result[1]), new LinkedHashMap<>(), actor.organizationId());
     }
 
     /** Revokes the provider's organization approval; every document approval under it stops taking effect too. */
@@ -209,6 +336,9 @@ public class ExternalProcessingApprovalService {
         if (!expectedIngestionId.equals(version.getIngestionId())) {
             throw new BusinessException(VERSION_CHANGED);
         }
+        if (RecordedExternalPolicyProcessingAuthorization.isExcluded(active, entry.getId())) {
+            throw new BusinessException(DOCUMENT_EXCLUDED);
+        }
         boolean alreadyApproved = active.stream().anyMatch(record ->
                 record.getScope() == ExternalProcessingApprovalScope.DOCUMENT_VERSION
                         && entry.getId().equals(record.getKnowledgeDocumentId())
@@ -256,6 +386,68 @@ public class ExternalProcessingApprovalService {
                         && knowledgeDocumentId.equals(record.getKnowledgeDocumentId()))
                 .toList();
         return revokeAll(actor, active, why, label(provider) + " policy approval revoked");
+    }
+
+    // --- Document exclusions --------------------------------------------------------------------------------
+
+    /**
+     * Excludes one policy (every version) from Claude. It overrides both automatic coverage and version approvals
+     * until lifted. reason is recorded as the exclusion's reference. Any document of the organization may be excluded,
+     * whatever its state, so a policy can be excluded before it is published.
+     */
+    public ExternalProcessingApprovalResponse excludeDocument(VerifiedMyHrActor actor, ExternalAiProvider provider,
+                                                              String knowledgeDocumentId, String reason) {
+        requireAdmin(actor);
+        requireProvider(provider);
+        if (provider != ExternalAiProvider.ANTHROPIC_CLAUDE) {
+            throw new BusinessException(DOCUMENTS_CLAUDE_ONLY);
+        }
+        if (isBlank(knowledgeDocumentId)) {
+            throw new BusinessException(DOCUMENT_ID_REQUIRED);
+        }
+        String why = requireText(reason, MAX_REASON_CHARS, REASON_INVALID, REASON_INVALID);
+        KnowledgeDocument entry = knowledgeDocuments.findByIdAndOrganizationId(knowledgeDocumentId, actor.organizationId())
+                .filter(found -> actor.organizationId().equals(found.getOrganizationId()))
+                .orElseThrow(() -> new ResourceNotFoundException(DOCUMENT_NOT_FOUND));
+        List<ExternalProcessingApproval> active = approvals.findByOrganizationIdAndProviderAndStatus(
+                actor.organizationId(), provider, ExternalProcessingApprovalStatus.ACTIVE).stream()
+                .filter(record -> actor.organizationId().equals(record.getOrganizationId())).toList();
+        if (RecordedExternalPolicyProcessingAuthorization.isExcluded(active, entry.getId())) {
+            throw new BusinessException(DOCUMENT_ALREADY_EXCLUDED);
+        }
+        ExternalProcessingApproval saved = approvals.save(ExternalProcessingApproval.builder()
+                .organizationId(actor.organizationId())
+                .provider(provider)
+                .scope(ExternalProcessingApprovalScope.DOCUMENT_EXCLUSION)
+                .status(ExternalProcessingApprovalStatus.ACTIVE)
+                .knowledgeDocumentId(entry.getId())
+                .documentTitle(entry.getTitle())
+                .approvalReference(why)
+                .approvedByUserId(actor.userId())
+                .approvedAt(LocalDateTime.now(clock))
+                .build());
+        audit(actor, AuditActionType.EXTERNAL_AI_PROCESSING_EXCLUDED, saved,
+                label(provider) + " excluded for every version of a policy");
+        log.info("External AI processing excluded: provider={} knowledgeDocumentId={}", provider, entry.getId());
+        return toResponse(saved, List.of(saved), new LinkedHashMap<>(), actor.organizationId());
+    }
+
+    /** Lifts the policy's active exclusion; recorded and audited as a revocation of the exclusion record. */
+    public List<ExternalProcessingApprovalResponse> liftExclusion(VerifiedMyHrActor actor, ExternalAiProvider provider,
+                                                                  String knowledgeDocumentId, String reason) {
+        requireAdmin(actor);
+        requireProvider(provider);
+        if (isBlank(knowledgeDocumentId)) {
+            throw new BusinessException(DOCUMENT_ID_REQUIRED);
+        }
+        String why = requireText(reason, MAX_REASON_CHARS, REASON_INVALID, REASON_INVALID);
+        List<ExternalProcessingApproval> active = approvals.findByOrganizationIdAndProviderAndStatus(
+                        actor.organizationId(), provider, ExternalProcessingApprovalStatus.ACTIVE).stream()
+                .filter(record -> record.getScope() == ExternalProcessingApprovalScope.DOCUMENT_EXCLUSION
+                        && actor.organizationId().equals(record.getOrganizationId())
+                        && knowledgeDocumentId.equals(record.getKnowledgeDocumentId()))
+                .toList();
+        return revokeAll(actor, active, why, label(provider) + " policy exclusion lifted");
     }
 
     // --- Shared ---------------------------------------------------------------------------------------------
@@ -312,7 +504,10 @@ public class ExternalProcessingApprovalService {
                     && Objects.equals(entry.getActiveVersion().getIngestionId(), record.getIngestionId())
                     && entry.getActiveVersion().getAccessLevel() == ChunkAccessLevel.COMPANY_WIDE
                     && activeOrganizationApproval(organizationRecords, record.getProvider(),
-                    ChunkAccessLevel.COMPANY_WIDE) != null;
+                    ChunkAccessLevel.COMPANY_WIDE) != null
+                    && !RecordedExternalPolicyProcessingAuthorization.isExcluded(organizationRecords.stream()
+                    .filter(other -> other.getStatus() == ExternalProcessingApprovalStatus.ACTIVE).toList(),
+                    record.getKnowledgeDocumentId());
         }
         return ExternalProcessingApprovalResponse.of(record, effective);
     }
@@ -324,6 +519,7 @@ public class ExternalProcessingApprovalService {
         value.put("scope", record.getScope());
         value.put("status", record.getStatus());
         if (record.getAccessLevels() != null) value.put("accessLevels", record.getAccessLevels());
+        if (record.getScope() == ExternalProcessingApprovalScope.ORGANIZATION) value.put("coverage", record.effectiveCoverage());
         if (record.getKnowledgeDocumentId() != null) {
             value.put("knowledgeDocumentId", record.getKnowledgeDocumentId());
             value.put("ingestionId", record.getIngestionId());

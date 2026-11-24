@@ -42,9 +42,20 @@ public class MyHrExternalProcessingController {
     @PostMapping("/organization/approve")
     public ApiResponse<ExternalProcessingApprovalResponse> approveOrganization(
             HttpServletRequest request, @Valid @RequestBody ExternalProcessingApprovalRequests.OrganizationApproval body) {
-        return new ApiResponse<>(true, "External AI processing approved", approvalService.approveOrganization(
-                actorResolver.resolveKnowledgeManager(request), body.provider(), body.accessLevels(),
-                body.approvalReference(), body.acknowledgeExternalTransmission()));
+        var actor = actorResolver.resolveKnowledgeManager(request);
+        return new ApiResponse<>(true, "External AI processing approved", body.coverage() == null
+                ? approvalService.approveOrganization(actor, body.provider(), body.accessLevels(),
+                        body.approvalReference(), body.acknowledgeExternalTransmission())
+                : approvalService.approveOrganization(actor, body.provider(), body.accessLevels(),
+                        body.approvalReference(), body.acknowledgeExternalTransmission(), body.coverage()));
+    }
+
+    @PostMapping("/organization/replace")
+    public ApiResponse<ExternalProcessingApprovalResponse> replaceOrganizationCoverage(
+            HttpServletRequest request, @Valid @RequestBody ExternalProcessingApprovalRequests.CoverageReplacement body) {
+        return new ApiResponse<>(true, "External AI processing approval replaced", approvalService.replaceOrganizationCoverage(
+                actorResolver.resolveKnowledgeManager(request), body.provider(), body.expectedApprovalId(), body.coverage(),
+                body.approvalReference(), body.acknowledgeExternalTransmission(), body.reason()));
     }
 
     @PostMapping("/organization/revoke")
@@ -69,6 +80,22 @@ public class MyHrExternalProcessingController {
             HttpServletRequest request, @PathVariable String knowledgeDocumentId,
             @Valid @RequestBody ExternalProcessingApprovalRequests.Revocation body) {
         return new ApiResponse<>(true, "Policy approval revoked", approvalService.revokeDocument(
+                actorResolver.resolveKnowledgeManager(request), body.provider(), knowledgeDocumentId, body.reason()));
+    }
+
+    @PostMapping("/documents/{knowledgeDocumentId}/exclude")
+    public ApiResponse<ExternalProcessingApprovalResponse> excludeDocument(
+            HttpServletRequest request, @PathVariable String knowledgeDocumentId,
+            @Valid @RequestBody ExternalProcessingApprovalRequests.Revocation body) {
+        return new ApiResponse<>(true, "Policy excluded from external AI processing", approvalService.excludeDocument(
+                actorResolver.resolveKnowledgeManager(request), body.provider(), knowledgeDocumentId, body.reason()));
+    }
+
+    @PostMapping("/documents/{knowledgeDocumentId}/exclusion/revoke")
+    public ApiResponse<List<ExternalProcessingApprovalResponse>> liftExclusion(
+            HttpServletRequest request, @PathVariable String knowledgeDocumentId,
+            @Valid @RequestBody ExternalProcessingApprovalRequests.Revocation body) {
+        return new ApiResponse<>(true, "Policy exclusion lifted", approvalService.liftExclusion(
                 actorResolver.resolveKnowledgeManager(request), body.provider(), knowledgeDocumentId, body.reason()));
     }
 }

@@ -2,6 +2,7 @@ package com.waypoint.entity;
 
 import com.waypoint.enums.ChunkAccessLevel;
 import com.waypoint.enums.ExternalAiProvider;
+import com.waypoint.enums.ExternalProcessingApprovalCoverage;
 import com.waypoint.enums.ExternalProcessingApprovalScope;
 import com.waypoint.enums.ExternalProcessingApprovalStatus;
 import lombok.AllArgsConstructor;
@@ -48,6 +49,9 @@ public class ExternalProcessingApproval {
     /** ORGANIZATION scope: the content access levels approved. Never EMPLOYEE_PRIVATE. */
     private Set<ChunkAccessLevel> accessLevels;
 
+    /** ORGANIZATION scope: which documents the approval covers. Absent (older records) means REVIEWED_VERSIONS. */
+    private ExternalProcessingApprovalCoverage coverage;
+
     /** DOCUMENT_VERSION scope: the exact version approved. */
     private String knowledgeDocumentId;
     private String ingestionId;
@@ -66,4 +70,9 @@ public class ExternalProcessingApproval {
 
     @Version
     private Long version;
+
+    /** The coverage this record grants; an older record without one means REVIEWED_VERSIONS. */
+    public ExternalProcessingApprovalCoverage effectiveCoverage() {
+        return coverage == null ? ExternalProcessingApprovalCoverage.REVIEWED_VERSIONS : coverage;
+    }
 }

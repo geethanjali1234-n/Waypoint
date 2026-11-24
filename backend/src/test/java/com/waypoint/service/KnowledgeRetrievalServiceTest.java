@@ -494,6 +494,30 @@ class KnowledgeRetrievalServiceTest {
         assertThat(logText).doesNotContain(POLICY_TEXT, QUESTION);
     }
 
+    @Test
+    void theRelevanceDiagnosticLogsIdentifiersScoresAndStatusesButNeverPolicyTextOrUserData() {
+        givenEmbedding();
+        String otherPolicyText = "Annual leave is fifteen working days for full-time staff.";
+        when(vectorSearch.search(any(SearchRequest.class))).thenReturn(List.of(
+                new Row().index(0).score(0.86).text(POLICY_TEXT).build(),
+                new Row().index(1).score(0.74).text(otherPolicyText).build(),
+                new Row().index(2).score(0.61).text(POLICY_TEXT + " low").build()));
+        givenLiveEntries(entry(active(), null));
+
+        RetrievalResult result = new KnowledgeRetrievalService(embeddingService, vectorSearch, mongoOperations,
+                true, 5, 8000, 0.70, 0.05).retrieve(employee, QUESTION);
+
+        // Selection is unchanged by the diagnostic.
+        assertThat(result.chunks()).extracting(RetrievedChunk::chunkIndex).containsExactly(0);
+        List<String> lines = logs.list.stream().map(ILoggingEvent::getFormattedMessage)
+                .filter(line -> line.startsWith(KnowledgeRetrievalService.RELEVANCE_MARKER)).toList();
+        assertThat(lines).hasSize(1);
+        assertThat(lines.getFirst()).contains("minScore=0.7000", "relativeMargin=0.0500", "selected=1",
+                        "#0 score=0.8600 SELECTED", "#1 score=0.7400 BELOW_RELATIVE_MARGIN",
+                        "#2 score=0.6100 BELOW_MIN_SCORE")
+                .doesNotContain(POLICY_TEXT, otherPolicyText, "fifteen", QUESTION, ORG, "employee-71");
+    }
+
     // --- Stage timings --------------------------------------------------------------------------
 
     @Test

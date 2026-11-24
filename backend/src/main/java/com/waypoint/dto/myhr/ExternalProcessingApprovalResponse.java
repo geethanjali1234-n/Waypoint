@@ -3,6 +3,7 @@ package com.waypoint.dto.myhr;
 import com.waypoint.entity.ExternalProcessingApproval;
 import com.waypoint.enums.ChunkAccessLevel;
 import com.waypoint.enums.ExternalAiProvider;
+import com.waypoint.enums.ExternalProcessingApprovalCoverage;
 import com.waypoint.enums.ExternalProcessingApprovalScope;
 import com.waypoint.enums.ExternalProcessingApprovalStatus;
 
@@ -28,13 +29,16 @@ public record ExternalProcessingApprovalResponse(
         LocalDateTime approvedAt,
         String revokedByUserId,
         LocalDateTime revokedAt,
-        String revocationReason) {
+        String revocationReason,
+        /** ORGANIZATION records: which documents they cover (REVIEWED_VERSIONS for older records); otherwise null. */
+        ExternalProcessingApprovalCoverage coverage) {
 
     public static ExternalProcessingApprovalResponse of(ExternalProcessingApproval record, boolean effective) {
         return new ExternalProcessingApprovalResponse(record.getId(), record.getProvider(), record.getScope(),
                 record.getStatus(), effective, record.getAccessLevels() == null ? null : Set.copyOf(record.getAccessLevels()),
                 record.getKnowledgeDocumentId(), record.getIngestionId(), record.getDocumentTitle(),
                 record.getApprovalReference(), record.getApprovedByUserId(), record.getApprovedAt(),
-                record.getRevokedByUserId(), record.getRevokedAt(), record.getRevocationReason());
+                record.getRevokedByUserId(), record.getRevokedAt(), record.getRevocationReason(),
+                record.getScope() == ExternalProcessingApprovalScope.ORGANIZATION ? record.effectiveCoverage() : null);
     }
 }

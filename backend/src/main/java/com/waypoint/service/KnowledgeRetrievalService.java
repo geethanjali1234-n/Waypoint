@@ -336,32 +336,83 @@ public class KnowledgeRetrievalService {
 
         List<RetrievedChunk> accepted = new ArrayList<>();
         Set<String> acceptedIds = new LinkedHashSet<>();
+        List<RelevanceDecision> decisions = new ArrayList<>();
         int contextChars = 0;
         double bestScore = Double.NaN;
         for (CandidateChunk candidate : ranked) {
             if (accepted.size() == maxResults) {
-                break;
+                decisions.add(RelevanceDecision.of(candidate, RelevanceStatus.RESULT_LIMIT));
+                continue;
             }
             KnowledgeDocument entry = liveEntries.get(candidate.knowledgeDocumentId());
-            if (!isServable(candidate, entry, organizationId, allowedAccessLevels, model)
-                    || candidate.score() < minScore
-                    || acceptedIds.contains(candidate.id())) {
+            // The same checks, in the same order, as before; each now records why a candidate was skipped.
+            if (!isServable(candidate, entry, organizationId, allowedAccessLevels, model)) {
+                decisions.add(RelevanceDecision.notServable(candidate));
+                continue;
+            }
+            if (candidate.score() < minScore) {
+                decisions.add(RelevanceDecision.of(candidate, RelevanceStatus.BELOW_MIN_SCORE));
+                continue;
+            }
+            if (acceptedIds.contains(candidate.id())) {
+                decisions.add(RelevanceDecision.of(candidate, RelevanceStatus.DUPLICATE));
                 continue;
             }
             // Ranked best first, so the first servable candidate sets the bar for the rest.
             if (relativeScoreMargin > 0.0 && !Double.isNaN(bestScore) && candidate.score() < bestScore - relativeScoreMargin) {
+                decisions.add(RelevanceDecision.of(candidate, RelevanceStatus.BELOW_RELATIVE_MARGIN));
                 continue;
             }
             int length = candidate.chunkText().length();
             if (contextChars + length > maxContextChars) {
+                decisions.add(RelevanceDecision.of(candidate, RelevanceStatus.CONTEXT_LIMIT));
                 continue;
             }
             contextChars += length;
             if (Double.isNaN(bestScore)) bestScore = candidate.score();
             acceptedIds.add(candidate.id());
             accepted.add(RetrievedChunk.of(candidate, entry));
+            decisions.add(RelevanceDecision.of(candidate, RelevanceStatus.SELECTED));
         }
+        log.info(relevanceDiagnostic(minScore, relativeScoreMargin, decisions));
         return List.copyOf(accepted);
+    }
+
+    static final String RELEVANCE_MARKER = "MYHR_RAG_RELEVANCE";
+
+    /** Why a retrieval candidate was or was not used. Diagnostic only; selection does not read it. */
+    enum RelevanceStatus { SELECTED, NOT_SERVABLE, BELOW_MIN_SCORE, DUPLICATE, BELOW_RELATIVE_MARGIN, CONTEXT_LIMIT, RESULT_LIMIT }
+
+    /**
+     * One candidate's outcome for the relevance log: identifiers, score and status only - never text, embeddings or
+     * user data. A candidate this user may not use (NOT_SERVABLE) is logged without its document id.
+     */
+    record RelevanceDecision(String knowledgeDocumentId, int chunkIndex, double score, RelevanceStatus status) {
+        static RelevanceDecision of(CandidateChunk candidate, RelevanceStatus status) {
+            return new RelevanceDecision(candidate.knowledgeDocumentId(), candidate.chunkIndex(), candidate.score(), status);
+        }
+
+        static RelevanceDecision notServable(CandidateChunk candidate) {
+            return new RelevanceDecision(null, -1, candidate.score(), RelevanceStatus.NOT_SERVABLE);
+        }
+    }
+
+    /** One line per retrieval, e.g. MYHR_RAG_RELEVANCE minScore=0.7000 ... candidates=[doc=a#0 score=0.8312 SELECTED]. */
+    static String relevanceDiagnostic(double minScore, double relativeScoreMargin, List<RelevanceDecision> decisions) {
+        StringBuilder line = new StringBuilder(RELEVANCE_MARKER)
+                .append(" minScore=").append(String.format(java.util.Locale.ROOT, "%.4f", minScore))
+                .append(" relativeMargin=").append(String.format(java.util.Locale.ROOT, "%.4f", relativeScoreMargin))
+                .append(" selected=").append(decisions.stream().filter(d -> d.status() == RelevanceStatus.SELECTED).count())
+                .append(" candidates=[");
+        for (int i = 0; i < decisions.size(); i++) {
+            RelevanceDecision decision = decisions.get(i);
+            if (i > 0) line.append(", ");
+            line.append("doc=").append(decision.knowledgeDocumentId() == null ? "-"
+                            : decision.knowledgeDocumentId() + "#" + decision.chunkIndex())
+                    .append(" score=").append(String.format(java.util.Locale.ROOT, "%.4f", decision.score()))
+                    .append(' ').append(decision.status());
+        }
+        return line.append(']').toString();
     }
 
     /**

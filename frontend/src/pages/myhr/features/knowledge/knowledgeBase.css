@@ -1,4 +1,10 @@
 .knowledge-base { display:flex; flex-direction:column; gap:24px; }
+.knowledge-base__toolbar { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; }
+.knowledge-base__toolbar h2 { margin:0 0 4px; font-size:1.125rem; color:var(--wp-color-text); }
+.knowledge-base__toolbar p { margin:0; color:var(--wp-color-text-muted); font-size:.875rem; }
+.knowledge-base__filters { display:grid; grid-template-columns:minmax(0, 2fr) minmax(160px, 1fr); gap:16px; margin-bottom:20px; }
+.knowledge-base__availability { margin:0; padding:10px 12px; border-left:3px solid var(--wp-color-border); background:var(--wp-color-surface); color:var(--wp-color-text-muted); font-size:.875rem; line-height:1.45; }
+@media (max-width:600px) { .knowledge-base__filters { grid-template-columns:minmax(0, 1fr); } .knowledge-base__toolbar { align-items:stretch; } .knowledge-base__toolbar > button { width:100%; } }
 .knowledge-base__switches { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:8px 16px; margin:0 0 8px; padding:0; list-style:none; }
 .knowledge-base__switches li { display:flex; align-items:center; gap:8px; color:var(--wp-color-text); }
 .knowledge-base__form { display:grid; gap:16px; max-width:640px; }
@@ -12,7 +18,7 @@
 .knowledge-base__item.is-revoked { opacity:.75; }
 .knowledge-base__item-header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
 .knowledge-base__item-header h3 { margin:0; font-size:1rem; overflow-wrap:anywhere; }
-.knowledge-base__versions { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; }
+.knowledge-base__versions { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap:16px; }
 .knowledge-base__version { display:flex; flex-direction:column; gap:4px; }
 .knowledge-base__version-label { margin:0; color:var(--wp-color-text-muted); font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
 .knowledge-base__file { margin:0; font-weight:600; overflow-wrap:anywhere; }
@@ -21,6 +27,12 @@
 .knowledge-base__facts dt { min-width:120px; color:var(--wp-color-text-muted); }
 .knowledge-base__facts dd { margin:0; }
 .knowledge-base__actions { display:flex; flex-wrap:wrap; gap:8px; }
+.knowledge-base__ai-permissions { display:flex; flex-direction:column; gap:12px; }
+.knowledge-base__ai-mode { display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-weight:600; }
+.knowledge-base__ai-ack { display:flex; align-items:flex-start; gap:8px; font-size:.875rem; line-height:1.45; }
+.knowledge-base__ai-heading { margin:8px 0 0; font-size:1rem; }
+.knowledge-base__ai-exclusions { display:grid; gap:8px; margin:0; padding:0; list-style:none; }
+.knowledge-base__ai-exclusions li { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; overflow-wrap:anywhere; }
 .knowledge-base__history { display:grid; gap:8px; border-top:1px solid var(--wp-color-border); padding-top:12px; }
 .knowledge-base__history ul { display:grid; gap:8px; margin:0; padding:0; list-style:none; }
 .knowledge-base__history li { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; font-size:.875rem; }
