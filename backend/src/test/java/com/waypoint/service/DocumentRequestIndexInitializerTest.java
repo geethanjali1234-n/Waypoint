@@ -5,6 +5,7 @@ import com.waypoint.entity.DocumentRequestReminder;
 import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.index.IndexOperations;
@@ -17,6 +18,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class DocumentRequestIndexInitializerTest {
+
+    @Test
+    void disabledConfigurationDoesNotRegisterOrRunTheInitializer() {
+        MongoTemplate mongo = mock(MongoTemplate.class);
+        new ApplicationContextRunner().withBean(MongoTemplate.class, () -> mongo)
+                .withUserConfiguration(DocumentRequestIndexInitializer.class)
+                .withPropertyValues("waypoint.startup.document-request-index-initializer.enabled=false")
+                .run(context -> {
+                    assertThat(context).doesNotHaveBean(DocumentRequestIndexInitializer.class);
+                    verify(mongo, never()).indexOps(any(Class.class));
+                });
+    }
+
+    @Test
+    void initializerIsRegisteredByDefaultAndWhenEnabled() {
+        MongoTemplate mongo = mock(MongoTemplate.class);
+        ApplicationContextRunner runner = new ApplicationContextRunner()
+                .withBean(MongoTemplate.class, () -> mongo)
+                .withUserConfiguration(DocumentRequestIndexInitializer.class);
+        runner.run(context -> assertThat(context).hasSingleBean(DocumentRequestIndexInitializer.class));
+        runner.withPropertyValues("waypoint.startup.document-request-index-initializer.enabled=true")
+                .run(context -> assertThat(context).hasSingleBean(DocumentRequestIndexInitializer.class));
+    }
 
     @Test
     void createsTheReminderIndexesAlongsideTheExistingWorklistIndexes() {

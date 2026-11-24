@@ -54,6 +54,9 @@ class KnowledgeChunkSearchReadinessProbeTest {
     @Test
     void reportsReadyOnlyWhenEverySampleIsDiscoverable() {
         givenReadyIndex();
+        Document readyDefinition = readyIndex();
+        readyDefinition.get("latestDefinition", Document.class).append("numPartitions", 1);
+        when(searchIndexes.first()).thenReturn(readyDefinition);
         AtomicInteger searchCall = new AtomicInteger();
         when(collection.aggregate(anyList())).thenAnswer(invocation -> {
             List<Document> pipeline = invocation.getArgument(0);

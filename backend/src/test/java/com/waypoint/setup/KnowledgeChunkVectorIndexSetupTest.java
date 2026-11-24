@@ -31,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.mongodb.core.index.Indexed;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -305,6 +306,14 @@ class KnowledgeChunkVectorIndexSetupTest {
         assertThat(KnowledgeChunkVectorIndexSetup.definitionMismatches(index)).isEmpty();
     }
 
+    @Test
+    void acceptsExplicitDefaultPartitionCount() {
+        for (Number partitions : List.of(1, 1L, 1.0)) {
+            Document definition = withAllFilters(VECTOR_FIELD).append("numPartitions", partitions);
+            assertThat(KnowledgeChunkVectorIndexSetup.definitionMismatches(vectorIndex(definition))).isEmpty();
+        }
+    }
+
     @ParameterizedTest(name = "{1}")
     @MethodSource("mismatchedDefinitions")
     void reportsEachConfigurationMismatch(Document definition, String expectedMismatch) {
@@ -335,7 +344,15 @@ class KnowledgeChunkVectorIndexSetupTest {
                 Arguments.of(withAllFilters(VECTOR_FIELD + ", " + VECTOR_FIELD.replace("\"embedding\"", "\"other\"")),
                         "expected exactly one vector field, found 2"),
                 Arguments.of(withAllFilters(VECTOR_FIELD).append("storedSource", true),
-                        "unexpected index option 'storedSource'"));
+                        "unexpected index option 'storedSource'"),
+                Arguments.of(withAllFilters(VECTOR_FIELD).append("numPartitions", 2),
+                        "numPartitions is 2, expected 1"),
+                Arguments.of(withAllFilters(VECTOR_FIELD).append("numPartitions", new BigDecimal("1.00000000000000000001")),
+                        "numPartitions is 1.00000000000000000001, expected 1"),
+                Arguments.of(withAllFilters(VECTOR_FIELD).append("numPartitions", "1"),
+                        "numPartitions is '1', expected 1"),
+                Arguments.of(withAllFilters(VECTOR_FIELD).append("numPartitions", null),
+                        "numPartitions is missing, expected 1"));
     }
 
     @Test

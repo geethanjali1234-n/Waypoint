@@ -6,7 +6,9 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.SearchIndexModel;
 import com.mongodb.client.model.SearchIndexType;
 import org.bson.Document;
+import org.bson.types.Decimal128;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -170,7 +172,7 @@ public class KnowledgeChunkVectorIndexSetup {
 
     /**
      * Compares a $listSearchIndexes entry with the expected definition. Field order is ignored and
-     * numDimensions is compared numerically; any option this setup did not ask for is reported.
+     * numDimensions is compared numerically; the default partition count may be reported explicitly.
      */
     static List<String> definitionMismatches(Document indexInfo) {
         List<String> mismatches = new ArrayList<>();
@@ -183,8 +185,14 @@ public class KnowledgeChunkVectorIndexSetup {
             return mismatches;
         }
         definition.keySet().stream()
-                .filter(key -> !key.equals("fields"))
+                .filter(key -> !key.equals("fields") && !key.equals("numPartitions"))
                 .forEach(key -> mismatches.add("unexpected index option '" + key + "'"));
+        if (definition.containsKey("numPartitions")) {
+            Object partitions = definition.get("numPartitions");
+            if (!isOne(partitions)) {
+                mismatches.add("numPartitions is " + describe(partitions) + ", expected 1");
+            }
+        }
         if (!(definition.get("fields") instanceof List<?> fields)) {
             mismatches.add("index definition has no fields list");
             return mismatches;
@@ -221,6 +229,16 @@ public class KnowledgeChunkVectorIndexSetup {
                 .filter(path -> !FILTER_PATHS.contains(path))
                 .forEach(path -> mismatches.add("unexpected filter field " + describe(path)));
         return mismatches;
+    }
+
+    private static boolean isOne(Object value) {
+        try {
+            BigDecimal number = value instanceof Decimal128 decimal ? decimal.bigDecimalValue()
+                    : value instanceof Number ? new BigDecimal(value.toString()) : null;
+            return number != null && number.compareTo(BigDecimal.ONE) == 0;
+        } catch (NumberFormatException | ArithmeticException invalid) {
+            return false;
+        }
     }
 
     private static void addVectorFieldMismatches(Document field, List<String> mismatches) {

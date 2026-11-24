@@ -5,6 +5,7 @@ import com.waypoint.entity.DocumentRequestReminder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.Index;
@@ -13,6 +14,8 @@ import org.springframework.stereotype.Component;
 /** Ensures the worklist indexes exist even when automatic Mongo index creation is disabled. */
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "waypoint.startup.document-request-index-initializer.enabled", havingValue = "true",
+        matchIfMissing = true)
 class DocumentRequestIndexInitializer implements ApplicationRunner {
     private final MongoTemplate mongoTemplate;
 
