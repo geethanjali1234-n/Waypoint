@@ -951,14 +951,18 @@ public class MyHrChatService {
             }
             case JOB_TITLE -> {
                 // A recorded title, or its last word ("analyst" for "Senior Data Analyst"), named in the message.
+                // A full recorded title named in the message wins; only when none is named does a title's last word
+                // ("engineers") match, so "Software Engineer" never widens to every engineer.
                 java.util.Set<String> titles = new java.util.LinkedHashSet<>();
+                java.util.Set<String> lastWords = new java.util.LinkedHashSet<>();
                 for (var person : people) {
                     if (person.designation() == null || person.designation().isBlank()) continue;
                     String title = person.designation().toLowerCase(java.util.Locale.ROOT).strip();
                     String last = title.substring(title.lastIndexOf(' ') + 1);
                     if (said.contains(" " + title + " ") || said.contains(" " + title + "s ")) titles.add(title);
-                    else if (last.length() > 2 && (said.contains(" " + last + " ") || said.contains(" " + last + "s "))) titles.add(last);
+                    else if (last.length() > 2 && (said.contains(" " + last + " ") || said.contains(" " + last + "s "))) lastWords.add(last);
                 }
+                if (titles.isEmpty()) titles.addAll(lastWords);
                 if (titles.isEmpty()) return "I couldn't match that job title to anyone " + scopeLabel(actor) + ".";
                 keep = person -> person.designation() != null && titles.stream().anyMatch(title ->
                         person.designation().toLowerCase(java.util.Locale.ROOT).contains(title));
@@ -1857,6 +1861,7 @@ public class MyHrChatService {
         boolean peopleContext = previous != null && PERSON_TOOLS.contains(previous.tool());
         // "Who are they from?" / "which ones?" about the waiting work just listed: the same list again, which names them.
         if (previous != null && WaviTools.GET_MY_PENDING_WORK.equals(previous.tool()) && words <= 6
+                && !WaviQuestionFrame.of(message).independent()
                 && !WaviContinuation.hasNameShapedToken(message) && !WaviContinuation.refersToSpecificPerson(normalized)
                 && (WaviContinuation.asksWhichOnes(normalized) || (WaviContinuation.asksForPeople(normalized)
                     && WaviContinuation.refersBack(normalized)))) {
@@ -1956,7 +1961,11 @@ public class MyHrChatService {
         }
         String field = teamFieldIn(message);
         boolean ownQuestion = !WaviTools.TeamField.SUMMARY.name().equals(field)
-                || WaviContinuation.timesheetStatusFilter(normalized) != null || words > 6;
+                || WaviContinuation.timesheetStatusFilter(normalized) != null || words > 6
+                || whoIsName(message) != null
+                // "Who is sowmya?", "who's she?": asking who someone is asks for their summary, never the previous
+                // question's field, however the name is capitalised.
+                || normalized.startsWith("who ");
         if (!ownQuestion && previous != null) {
             // No question of its own ("and Ravi?", "what about her?"): the previous question, for this person.
             switch (previous.tool()) {
@@ -3098,8 +3107,10 @@ public class MyHrChatService {
             // "Which one do you mean?" answered with a record named by its subject ("my offer letter", "the salary
             // certificate"): the status of that record, asked as the full question the clarification was about.
             String asked = normalizeQuestion(message);
+            // An explicit question of its own ("what is my last name") is never a slot answer to the pending
+            // clarification, even when it shares a request-kind word ("name" is also a profile-change field).
             if (resolved == null && WaviContinuation.words(asked) <= 6 && WaviContinuation.requestKindOf(asked) != null
-                    && !WaviContinuation.isHowTo(asked)) {
+                    && !WaviContinuation.isHowTo(asked) && !independentQuestion(message)) {
                 List<String> words = new ArrayList<>(List.of(asked.split("\\s+")));
                 while (!words.isEmpty() && List.of("it's", "its", "i", "mean", "the", "my").contains(words.getFirst())) {
                     words.removeFirst();
@@ -3108,7 +3119,11 @@ public class MyHrChatService {
                 resolved = "what is the status of my " + subject + (subject.contains("request") ? "" : " request");
             }
             if (resolved != null) {
-                MyHrChatResponse answer = deterministicResponse(resolved, actor.userId(), actor, false, turn);
+                // A clarified how-to ("how do I approve profile change requests") is the workflow's guidance, before
+                // any own-record lookup that shares its nouns.
+                MyHrChatResponse answer = WaviContinuation.isHowTo(normalizeQuestion(resolved))
+                        ? workflowResponse(resolved, actor, turn) : null;
+                if (answer == null) answer = deterministicResponse(resolved, actor.userId(), actor, false, turn);
                 if (answer == null) answer = referenceResponse(resolved, actor, turn);
                 if (answer != null) return turn.routedBy(RouteStage.CONTINUATION, answer);
             }
@@ -3148,13 +3163,21 @@ public class MyHrChatService {
         // References to the person, record, period or kind of work the previous verified answer selected ("he",
         // "this employee", "it", "all", "timesheets") are resolved from the server-side state before any route can
         // restart intent selection. Each person is re-resolved in the actor's current authorized scope.
+        // "Who is <Name>?" naming the signed-in user: about themselves, never someone in a previous list.
+        MyHrChatResponse self = actor == null ? null : selfNamedResponse(message, actor);
+        if (self != null) return turn.routedBy(RouteStage.PRECISE, self);
+        // An independent question (its own subject, no pronoun back) is never resolved against the previous answer.
+        boolean independent = independentQuestion(message);
         MyHrChatResponse referenced = actor == null ? null : referenceResponse(message, actor, turn);
         if (referenced != null) return turn.routedBy(RouteStage.CONTINUATION, referenced);
         // A stamped prior tool result is server-side context, not text supplied by the browser. When semantic routing
         // is explicitly enabled, let that context resolve a continuation before broad deterministic classifiers can
         // mistake it for a new personal lookup or a generic workflow question. A low-confidence or unavailable
         // router still falls through to the exact deterministic path below.
+        // A question that names its own subject (the user's own profile, their direct reports, or a named person) is a
+        // new question, not a continuation: the previous answer's context must not be offered to resolve it.
         SemanticOutcome contextual = actor == null || semanticRouting == null || turn.previousState == null
+                || independent
                 ? SemanticOutcome.NONE : semanticResponse(message, conversation, actor, turn);
         if (contextual.response() != null) return turn.routedBy(RouteStage.ROUTER_CONTEXT, contextual.response());
         MyHrChatResponse people = peopleReferenceResponse(message, conversation, actor, turn);
@@ -3207,11 +3230,11 @@ public class MyHrChatService {
                 // answer types, then a follow-up continuation, then the heuristics as before.
                 MyHrChatResponse framedFresh = frameResponse(message, conversation, actor, turn, FramePhase.FRESH);
                 if (framedFresh != null) return turn.routedBy(RouteStage.FRAME, framedFresh);
-                MyHrChatResponse continued = continuationResponse(message, conversation, actor, turn);
+                MyHrChatResponse continued = independent ? null : continuationResponse(message, conversation, actor, turn);
                 if (continued != null) return turn.routedBy(RouteStage.CONTINUATION, continued);
                 MyHrChatResponse namedFirst = namedPersonResponse(message, actor, turn);
                 if (namedFirst != null) return turn.routedBy(RouteStage.PEOPLE_REFERENCE, namedFirst);
-                MyHrChatResponse unresolved = unresolvedContextResponse(message, conversation, actor, turn);
+                MyHrChatResponse unresolved = independent ? null : unresolvedContextResponse(message, conversation, actor, turn);
                 if (unresolved != null) return turn.routedBy(RouteStage.CLARIFY_REFERENCE, unresolved);
                 MyHrChatResponse broad = deterministicResponse(message, authenticatedUserId, actor, true, turn,
                         RouteTier.BROAD);
@@ -3223,13 +3246,14 @@ public class MyHrChatService {
             }
         } else {
             // A short follow-up to the previous answer, continued from the server-side dialogue state.
-            MyHrChatResponse continued = actor == null ? null : continuationResponse(message, conversation, actor, turn);
+            MyHrChatResponse continued = actor == null || independent ? null
+                    : continuationResponse(message, conversation, actor, turn);
             if (continued != null) return turn.routedBy(RouteStage.CONTINUATION, continued);
             MyHrChatResponse namedFirst = actor == null ? null : namedPersonResponse(message, actor, turn);
             if (namedFirst != null) return turn.routedBy(RouteStage.PEOPLE_REFERENCE, namedFirst);
             // A context-dependent message with no usable earlier turn is clarified before the interpreter can invent
             // a question for it ("and profile changes?" must not become "what is my profile").
-            MyHrChatResponse unresolved = unresolvedContextResponse(message, conversation, actor, turn);
+            MyHrChatResponse unresolved = independent ? null : unresolvedContextResponse(message, conversation, actor, turn);
             if (unresolved != null) return turn.routedBy(RouteStage.CLARIFY_REFERENCE, unresolved);
             // Natural, indirect, misspelled or follow-up wording the routes above did not recognise; verified actors
             // only. No provider is called; the reply may be a personal record, so the turn stays restricted.
@@ -3251,7 +3275,8 @@ public class MyHrChatService {
             if (framedFallback != null) return turn.routedBy(RouteStage.FRAME, framedFallback);
         }
         // After a router handoff (or when nothing above answered): the same unresolved-context check.
-        MyHrChatResponse unresolved = unresolvedContextResponse(message, conversation, actor, turn);
+        MyHrChatResponse unresolved = independentQuestion(message) ? null
+                : unresolvedContextResponse(message, conversation, actor, turn);
         if (unresolved != null) return turn.routedBy(RouteStage.CLARIFY_REFERENCE, unresolved);
         turn.routedBy(RouteStage.PROVIDER_PATH, null);
 
@@ -3797,6 +3822,14 @@ public class MyHrChatService {
                     () -> new MyHrChatResponse(new ToolAnswers().role(actor, MyHrConversationIntents.AskedRole.ANY)
                             + WaviCapabilities.WORK_CONTEXT_NOTE));
         }
+        // The user's own first or last name, in any wording: the frame keeps the name part the canonical question
+        // would drop ("my last name" must never be answered with the full name).
+        WaviQuestionFrame ownName = WaviQuestionFrame.of(message);
+        if (ownName.scope() == WaviQuestionFrame.Scope.SELF && ownName.concepts().isEmpty()
+                && (ownName.namePart() == WaviQuestionFrame.NamePart.FIRST || ownName.namePart() == WaviQuestionFrame.NamePart.LAST)) {
+            return profileFieldViaTools(actor, turn, ownName.namePart() == WaviQuestionFrame.NamePart.FIRST
+                    ? WaviTools.ProfileField.FIRST_NAME : WaviTools.ProfileField.LAST_NAME);
+        }
         String canonical = MyHrQuestionInterpreter.interpret(message, history);
         MyHrQuestionInterpreter.UnsupportedField field = unsupportedFieldOf(canonical == null ? message : canonical);
         if (field != null) return unsupportedFieldResponse(field, actor, turn);
@@ -3894,7 +3927,7 @@ public class MyHrChatService {
         boolean onProfile = field != MyHrQuestionInterpreter.UnsupportedField.PAY
                 && field != MyHrQuestionInterpreter.UnsupportedField.LEAVE_BALANCE;
         return viaTools(actor, turn.restrictedChild(), WaviRouterDecision.Intent.UNSUPPORTED, WaviTools.UNSUPPORTED_FIELD,
-                Map.of("field", field.name()), () -> new MyHrChatResponse(unsupportedFieldReply(field))
+                Map.of("field", field.name()), () -> new MyHrChatResponse(ownSensitiveFieldReply(actor, field))
                         .withActions(onProfile ? List.of(MyHrConversationIntents.Page.MY_PROFILE.name()) : List.of()));
     }
 
@@ -3966,6 +3999,105 @@ public class MyHrChatService {
                     + "HR for your balance. I can look up the leave policy in the approved company policies if you ask "
                     + "about it, for example \"What is the annual leave policy?\"";
         };
+    }
+
+    /** The self-profile fields answered with the signed-in user's own recorded value (pay and leave balance are not). */
+    static boolean ownValueField(MyHrQuestionInterpreter.UnsupportedField field) {
+        return field != null && field != MyHrQuestionInterpreter.UnsupportedField.PAY
+                && field != MyHrQuestionInterpreter.UnsupportedField.LEAVE_BALANCE;
+    }
+
+    static final String OWN_DETAILS_ONLY = "I can only show your own contact and employment details. For someone "
+            + "else's details, please check with HR.";
+
+    /**
+     * The signed-in user's OWN phone, email, address, start date or employment type, read through the verified actor
+     * (never a name in the message). The value is returned to that user only: the answer is LOCAL_ONLY for external
+     * disclosure, kept out of provider history, and no value is logged. A field that is not recorded is said so.
+     * A Company Admin without an employee profile gets account and organization values only where they are theirs.
+     */
+    String ownSensitiveFieldReply(VerifiedMyHrActor actor, MyHrQuestionInterpreter.UnsupportedField field) {
+        if (!ownValueField(field)) return unsupportedFieldReply(field);
+        MyHrOwnProfileResponse profile = employeeManagementService.getOwnDetail(actor.userId());
+        if (profile == null) return "Your profile details are unavailable right now. Open My Profile to see them.";
+        // getOwnDetail reads the verified actor; a record that names a different user is never shown.
+        if (profile.userId() != null && !actor.userId().equals(profile.userId())) {
+            return "I can't confirm that profile is yours, so I won't show its details. Open My Profile to see them.";
+        }
+        boolean admin = profile.role() == UserRole.COMPANY_ADMIN;
+        log.info("{} provider=none own-sensitive-field={}", PROVIDER_USED_MARKER, field);
+        return switch (field) {
+            case PHONE_NUMBER -> {
+                if (!isBlank(profile.phoneNumber())) yield "Your phone number in Waypoint is " + profile.phoneNumber().strip() + ".";
+                // A Company Admin without an employee profile: the organization's admin phone, only when that admin
+                // record is this account (same email) - never another administrator's number.
+                if (admin && ownsOrganizationAdminRecord(profile) && !isBlank(profile.organizationAdminPhoneNumber())) {
+                    yield "Your phone number on your organization's admin record is "
+                            + profile.organizationAdminPhoneNumber().strip() + ".";
+                }
+                yield "No phone number is recorded for your account. To add one, submit a profile change request"
+                        + (admin ? " or update your organization settings." : ".");
+            }
+            case PERSONAL_EMAIL -> {
+                List<String> parts = new ArrayList<>();
+                if (!isBlank(profile.personalEmail())) parts.add("Your personal email is " + profile.personalEmail().strip() + ".");
+                if (!isBlank(profile.accountEmail())) parts.add("Your sign-in (account) email is " + profile.accountEmail().strip() + ".");
+                yield parts.isEmpty() ? "No email address is recorded for your account." : String.join(" ", parts);
+            }
+            case HOME_ADDRESS -> {
+                List<String> parts = new ArrayList<>();
+                for (String part : List.of(nullToEmptyText(profile.streetAddress()), nullToEmptyText(profile.city()),
+                        (nullToEmptyText(profile.state()) + " " + nullToEmptyText(profile.zipCode())).strip())) {
+                    if (!part.isBlank()) parts.add(part.strip());
+                }
+                yield parts.isEmpty() ? "No home address is recorded for your account."
+                        : "Your address in Waypoint is " + String.join(", ", parts) + ".";
+            }
+            case START_DATE -> profile.startDate() == null ? "No start date is recorded for your account."
+                    : "Your start date in Waypoint is " + profile.startDate() + ".";
+            case EMPLOYMENT_TYPE -> profile.employmentType() == null ? "No employment type is recorded for your account."
+                    : "Your employment type in Waypoint is " + humanize(profile.employmentType().name()) + ".";
+            default -> unsupportedFieldReply(field);
+        };
+    }
+
+    /**
+     * The router path names no person, so it re-checks the message: a question about anyone other than the user
+     * ("Ravi's phone", "my manager's email") gets the own-details-only reply and no value.
+     */
+    String ownSensitiveFieldReply(VerifiedMyHrActor actor, MyHrQuestionInterpreter.UnsupportedField field, String message) {
+        if (ownValueField(field) && message != null && !message.isBlank()) {
+            WaviQuestionFrame frame = WaviQuestionFrame.of(message);
+            if (WaviContinuation.namesThirdParty(message) || frame.has(WaviQuestionFrame.Concept.MANAGER)
+                    || frame.has(WaviQuestionFrame.Concept.PEOPLE) || frame.scope() == WaviQuestionFrame.Scope.TEAM
+                    || frame.scope() == WaviQuestionFrame.Scope.ORGANIZATION) {
+                return OWN_DETAILS_ONLY;
+            }
+        }
+        return ownSensitiveFieldReply(actor, field);
+    }
+
+    /**
+     * Whether the organization's recorded admin contact (name, phone) is this Company Admin account: its admin email is
+     * the account's own email, or this account is the organization's only Company Admin. The organization admin email
+     * is editable in Organization Settings and dev provisioning keeps an older value, so an email mismatch alone does
+     * not mean the record belongs to someone else; with several admins it does.
+     */
+    private boolean ownsOrganizationAdminRecord(MyHrOwnProfileResponse profile) {
+        if (profile == null || profile.role() != UserRole.COMPANY_ADMIN) return false;
+        if (!isBlank(profile.organizationAdminEmail()) && !isBlank(profile.accountEmail())
+                && profile.organizationAdminEmail().strip().equalsIgnoreCase(profile.accountEmail().strip())) {
+            return true;
+        }
+        try {
+            return profile.userId() != null && employeeManagementService.isSoleCompanyAdmin(profile.userId());
+        } catch (RuntimeException unavailable) {
+            return false;
+        }
+    }
+
+    private static String nullToEmptyText(String value) {
+        return value == null ? "" : value;
     }
 
     private String contactFieldReply(String label) {
@@ -4993,7 +5125,8 @@ public class MyHrChatService {
         // Fixing a rejected timesheet is a correction, even though "reject" is also a review verb.
         if (timesheet) return correction ? WorkflowIntent.TIMESHEET_CORRECTION
                 : review ? WorkflowIntent.TIMESHEET_REVIEW : WorkflowIntent.TIMESHEET_ENTRY;
-        if (profile) return WorkflowIntent.PROFILE_CHANGE;
+        // "How do I approve / review profile change requests": the review workflow, not making a change.
+        if (profile) return review ? WorkflowIntent.PROFILE_CHANGE_REVIEW : WorkflowIntent.PROFILE_CHANGE;
         if (offerLetter) {
             // Downloading, viewing or signing an existing letter is not a request for a new one.
             return DOCUMENT_RETRIEVAL_ACTION.matcher(normalized).find()
@@ -5214,21 +5347,23 @@ public class MyHrChatService {
                     : "Your reporting manager is " + profile.reportingManager().name() + ".";
             case NAME -> isBlank(profile.name()) ? "Your name is not available in your profile."
                     : "Your name in Waypoint is " + profile.name() + ".";
-            case FIRST_NAME -> answerForField("Your first name in Waypoint", profile.firstName());
-            case LAST_NAME -> answerForField("Your last name in Waypoint", profile.lastName());
+            case FIRST_NAME -> namePart("first", profile.firstName(), profile.name());
+            case LAST_NAME -> namePart("last", profile.lastName(), profile.name());
             case REPORTING_MANAGER_FIRST_NAME, REPORTING_MANAGER_LAST_NAME -> managerNamePart(profile,
                     question == ProfileQuestion.REPORTING_MANAGER_FIRST_NAME);
             case REPORTING_RELATIONSHIP -> reportingRelationship(profile, null);
             // The Organization card of My Profile shows the name and code to every role.
             case ORGANIZATION_NAME -> answerForField("Your organization", profile.organizationName());
             case ORGANIZATION_CODE -> answerForField("Your organization code", profile.organizationCode());
-            // My Profile shows the organization and account emails only to Company Admin accounts.
+            // My Profile shows the organization's email only to Company Admin accounts.
             case ORGANIZATION_EMAIL -> profile.role() == UserRole.COMPANY_ADMIN
                     ? answerForField("Your organization's email", profile.organizationEmail())
                     : "Your organization's email isn't shown in your profile. Please ask HR or your Company Admin.";
-            case ACCOUNT_EMAIL -> profile.role() == UserRole.COMPANY_ADMIN
-                    ? answerForField("Your account email", profile.accountEmail())
-                    : "Your sign-in email isn't shown in chat. Please contact HR if it needs to change.";
+            // The signed-in user's own sign-in email, for every role (LOCAL_ONLY for external disclosure).
+            case ACCOUNT_EMAIL -> answerForField("Your account email", profile.accountEmail());
+            // The signed-in user's own login ID (Admin / Login ID on My Profile), for every role.
+            case LOGIN_ID -> answerForField(profile.role() == UserRole.COMPANY_ADMIN ? "Your Admin / Login ID"
+                    : "Your login ID", profile.loginId());
             case PROFILE -> "Your profile: "
                     + displayField("Name", profile.name()) + "; "
                     + displayField("Employee ID", profile.employeeId()) + "; "
@@ -5277,6 +5412,95 @@ public class MyHrChatService {
     }
 
     /**
+     * A question whose subject is explicit, so it never inherits the previous answer's subject: an own-profile
+     * question ("who am I?", "what is my employee ID?"), "who reports to me?", or "who is &lt;Name&gt;?" where the
+     * name is written as a proper noun. Uses the existing classifiers and plain string checks only.
+     */
+    /** Names its own subject and does not point back: see WaviQuestionFrame#independent and namesItsOwnSubject. */
+    private boolean independentQuestion(String message) {
+        return message != null && (WaviQuestionFrame.of(message).independent() || namesItsOwnSubject(message));
+    }
+
+    private boolean namesItsOwnSubject(String message) {
+        if (message == null || message.isBlank()) return false;
+        if (classifyProfileQuestion(message) != null || selfNamePart(message)
+                || MyHrConversationIntents.isDirectReportsQuestion(normalizeQuestion(message))) return true;
+        return whoIsName(message) != null;
+    }
+
+    /**
+     * The same question as the user's previous verified one (asking again): answered afresh, never read as a
+     * refinement of the previous answer, so repeating a question gives the same kind of answer.
+     */
+    private boolean repeatsPreviousQuestion(String message, Conversation conversation) {
+        // raw: the session-verified turns kept for checks that call no provider (verified() drops personal turns).
+        if (message == null || conversation == null || conversation.raw() == null) return false;
+        List<MyHrChatHistoryMessage> history = conversation.raw();
+        for (int index = history.size() - 1; index >= 0; index--) {
+            MyHrChatHistoryMessage earlier = history.get(index);
+            if (earlier != null && "user".equals(earlier.role())) {
+                return earlier.content() != null && normalizeQuestion(earlier.content()).equals(normalizeQuestion(message));
+            }
+        }
+        return false;
+    }
+
+    /** The user's own first or last name, asked in any wording ("my last name", "what's my surname"). */
+    private static boolean selfNamePart(String message) {
+        WaviQuestionFrame frame = WaviQuestionFrame.of(message);
+        return frame.scope() == WaviQuestionFrame.Scope.SELF && frame.namePart() != WaviQuestionFrame.NamePart.NONE
+                && frame.concepts().isEmpty();
+    }
+
+    /** The name in "who is &lt;Name&gt;?" when it is written as a proper noun; otherwise null. Plain string checks. */
+    private static String whoIsName(String message) {
+        if (message == null) return null;
+        String text = message.strip().replace('’', '\'');
+        while (!text.isEmpty() && "?.!".indexOf(text.charAt(text.length() - 1)) >= 0) {
+            text = text.substring(0, text.length() - 1).strip();
+        }
+        String lower = text.toLowerCase(java.util.Locale.ROOT);
+        String rest = lower.startsWith("who is ") ? text.substring(7) : lower.startsWith("who's ") ? text.substring(6) : null;
+        if (rest == null) return null;
+        rest = rest.strip();
+        // Only a bare name: one to three capitalised words, letters, hyphens or dots only ("who is Ravi Teja's
+        // manager?" asks about a manager, not about a person named in full, and reads no record here).
+        String[] words = rest.split(" ");
+        if (rest.isEmpty() || words.length > 3) return null;
+        for (String word : words) {
+            if (word.isEmpty() || !Character.isUpperCase(word.charAt(0))) return null;
+            for (char c : word.toCharArray()) {
+                if (!Character.isLetter(c) && c != '-' && c != '.') return null;
+            }
+        }
+        return rest;
+    }
+
+    /**
+     * "Who is &lt;Name&gt;?" where the name is the signed-in user's own (full or first) recorded name: their own profile,
+     * from the same self-profile lookup and wording as "Who am I?". Null for anyone else.
+     */
+    private MyHrChatResponse selfNamedResponse(String message, VerifiedMyHrActor actor) {
+        String named = whoIsName(message);
+        if (named == null) return null;
+        MyHrOwnProfileResponse profile;
+        try {
+            profile = employeeManagementService.getOwnDetail(actor.userId());
+        } catch (RuntimeException unavailable) {
+            return null;
+        }
+        if (profile == null) return null;
+        String own = profile.role() == UserRole.COMPANY_ADMIN ? companyAdminName(profile)
+                : isBlank(profile.name()) ? null : profile.name().strip();
+        if (own == null) return null;
+        String first = own.contains(" ") ? own.substring(0, own.indexOf(' ')) : own;
+        if (!named.equalsIgnoreCase(own) && !named.equalsIgnoreCase(first)) return null;
+        log.info("{} provider=none self-named=true", PROVIDER_USED_MARKER);
+        return new MyHrChatResponse("That's you. " + formatProfileAnswer(profile, ProfileQuestion.PROFILE))
+                .withActions(List.of(MyHrConversationIntents.Page.MY_PROFILE.name()));
+    }
+
+    /**
      * A Company Admin's identity, as the My Profile page shows it: usually there is no employee profile, so the account
      * login ID stands in for an employee ID. Null for questions whose ordinary answer already applies.
      */
@@ -5287,12 +5511,15 @@ public class MyHrChatService {
             case NAME -> name != null ? "Your name in Waypoint is " + name + "."
                     : "No name is recorded for your account" + (loginId == null ? "." : "; your Admin / Login ID is "
                     + loginId + ".");
+            // The same identity source as the full name above.
+            case FIRST_NAME -> isBlank(profile.firstName()) ? namePart("first", null, name) : null;
+            case LAST_NAME -> isBlank(profile.lastName()) ? namePart("last", null, name) : null;
             case EMPLOYEE_ID -> !isBlank(profile.employeeId()) ? null
                     : "Company Admin accounts don't have an employee ID" + (loginId == null ? "."
                     : ". Your Admin / Login ID is " + loginId + ".");
             case PROFILE -> {
                 StringBuilder reply = new StringBuilder("Your profile: ")
-                        .append(displayField("Name", name == null ? loginId : name)).append("; ")
+                        .append(name == null ? "Name: not recorded for this account" : "Name: " + name).append("; ")
                         .append(displayField("Admin / Login ID", loginId)).append("; ")
                         .append("Role: Company Admin; ")
                         .append(displayField("Account status", profile.accountStatus() == null ? null
@@ -5307,15 +5534,14 @@ public class MyHrChatService {
     }
 
     /**
-     * The employee-profile name when there is one; otherwise the organization's recorded admin name, but only when that
-     * record's admin email is this account's own email (another admin of the same organization never gets it);
-     * otherwise null.
+     * The employee-profile name when there is one; otherwise the organization's recorded admin name, the same value My
+     * Profile shows, but only when that admin record is this account's (see ownsOrganizationAdminRecord): another admin
+     * of the same organization never gets it. Otherwise null.
      */
     private String companyAdminName(MyHrOwnProfileResponse profile) {
         if (!isBlank(profile.name())) return profile.name().strip();
-        boolean sameAdmin = !isBlank(profile.organizationAdminEmail()) && !isBlank(profile.accountEmail())
-                && profile.organizationAdminEmail().strip().equalsIgnoreCase(profile.accountEmail().strip());
-        return sameAdmin && !isBlank(profile.organizationAdminName()) ? profile.organizationAdminName().strip() : null;
+        return ownsOrganizationAdminRecord(profile) && !isBlank(profile.organizationAdminName())
+                ? profile.organizationAdminName().strip() : null;
     }
 
     private static String humanize(String constant) {
@@ -5326,6 +5552,17 @@ public class MyHrChatService {
 
     private String answerForField(String label, String value) {
         return isBlank(value) ? label + " is not available in your profile." : label + " is " + value + ".";
+    }
+
+    /**
+     * A stored first or last name; otherwise, when only a full display name is recorded, says so instead of splitting
+     * it (a name string's words are not reliably its first and last names).
+     */
+    private String namePart(String part, String stored, String fullName) {
+        if (!isBlank(stored)) return "Your " + part + " name in Waypoint is " + stored.strip() + ".";
+        if (isBlank(fullName)) return "Your " + part + " name is not available in your profile.";
+        return "Waypoint doesn't store your " + part + " name separately; your name is recorded as one full name: "
+                + fullName.strip() + ".";
     }
 
     private String displayField(String label, String value) {
@@ -5507,7 +5744,8 @@ public class MyHrChatService {
         ORGANIZATION_NAME,
         ORGANIZATION_CODE,
         ORGANIZATION_EMAIL,
-        ACCOUNT_EMAIL
+        ACCOUNT_EMAIL,
+        LOGIN_ID
     }
 
     // --- Question frame: answer type + concept + scope + selection -> capability ----------------------------------
@@ -5549,7 +5787,8 @@ public class MyHrChatService {
         // An explicit question about the user's own profile ("who am I?", "what is my employee ID?") is never a
         // follow-up to the previous answer, whatever that answer was about.
         if (phase == FramePhase.FOLLOW_UP && previous != null && frame.contextual() && previous.tool() != null
-                && !WaviDialogueStore.NO_STATE.equals(previous.tool()) && classifyProfileQuestion(message) == null) {
+                && !WaviDialogueStore.NO_STATE.equals(previous.tool()) && !namesItsOwnSubject(message)
+                && !repeatsPreviousQuestion(message, conversation)) {
             MyHrChatResponse followUp = frameFollowUp(frame, message, conversation, actor, turn, previous);
             if (followUp != null) {
                 log.info("{} provider=none frame=follow-up answer={} previous={}", PROVIDER_USED_MARKER, frame.answer(),
@@ -5806,6 +6045,20 @@ public class MyHrChatService {
                     || frame.selection() == WaviQuestionFrame.Selection.OPEN;
             boolean reviewScope = scope == WaviQuestionFrame.Scope.TEAM || scope == WaviQuestionFrame.Scope.ORGANIZATION
                     || (scope == WaviQuestionFrame.Scope.UNSPECIFIED && waiting);
+            // "Requests" with no kind named: a reviewer's own requests and the requests waiting for their review are
+            // different records, and approving is a different workflow per kind. Ask instead of picking one.
+            if (frame.has(WaviQuestionFrame.Concept.REQUEST) && queue == null && !frame.has(WaviQuestionFrame.Concept.TIMESHEET)) {
+                WaviTools.MissingSlot missing = WaviContinuation.isHowTo(normalized) && frame.has(WaviQuestionFrame.Concept.APPROVAL)
+                        ? WaviTools.MissingSlot.SUBJECT
+                        : (frame.answer() == WaviQuestionFrame.AnswerType.COUNT || frame.answer() == WaviQuestionFrame.AnswerType.LIST)
+                                && scope == WaviQuestionFrame.Scope.SELF && !waiting ? WaviTools.MissingSlot.SCOPE : null;
+                if (missing != null) {
+                    return viaTools(actor, turn, WaviRouterDecision.Intent.CLARIFY, WaviTools.CLARIFY,
+                            Map.of("topic", WaviTools.ClarificationTopic.REQUESTS.name(), "missing", missing.name()),
+                            () -> new MyHrChatResponse(WaviClarification.prompt(WaviTools.ClarificationTopic.REQUESTS,
+                                    missing, actor.role())));
+                }
+            }
             // "How many employees have timesheets awaiting review?": distinct people, not items.
             if (frame.answer() == WaviQuestionFrame.AnswerType.PEOPLE_COUNT && queue != null && waiting) {
                 turn.answeredWith(WaviTools.GET_REVIEW_QUEUE, Map.of("queue", queue.name(), "detail", "LIST"));
@@ -6258,7 +6511,15 @@ public class MyHrChatService {
             Integer ordinal = WaviContinuation.ordinal(normalized);
             if (ordinal == null && WaviTools.GET_TEAM_MEMBER.equals(previous.tool())
                     && WaviContinuation.dependsOnContext(normalized) && previous.arguments().get("ordinal") instanceof Number n) {
-                ordinal = n.intValue();
+                if (!WaviQuestionFrame.of(message).independent()) {
+                    ordinal = n.intValue();
+                } else {
+                    // A question stating its own subject ("who joined recently?", "who is sowmya?") never inherits the
+                    // previous person: only a person it names, from the reviewer's current scope, is answered here.
+                    PersonResolution named = resolvePerson(teamScope(actor), message, null);
+                    if (named.problem() != null) return named.problem();
+                    if (named.person() != null) ordinal = named.person().ordinal();
+                }
             }
             if (ordinal != null) {
                 return teamMemberResponse(actor, teamFieldIn(normalized), ordinal, null, turn, true);
@@ -6432,6 +6693,8 @@ public class MyHrChatService {
                 return reviewHistoryResponse(actor, queue, decision);
             }
         }
+        // "my last name", "my first name": the user's own name; "last"/"first" there is a name part, not a position.
+        if (classifyProfileQuestion(message) != null || selfNamePart(message)) return null;
         if (tokens.contains("my") && !tokens.contains("report") && !tokens.contains("reports")) {
             // "my manager", "my timesheet": the user's own record, handled by the own-record routes.
             if (WaviContinuation.ordinal(normalized) == null) return null;
@@ -8339,7 +8602,9 @@ public class MyHrChatService {
     private SemanticOutcome semanticResponse(String message, Conversation conversation, VerifiedMyHrActor actor,
                                              Turn turn) {
         LocalDate today = LocalDate.now(clock);
-        WaviDialogueStore.State previous = turn.previousState;
+        // An independent question is routed exactly as in a fresh conversation: the previous answer's tool and
+        // arguments are not offered, so an unrelated earlier topic can never change the tool chosen for it.
+        WaviDialogueStore.State previous = independentQuestion(message) ? null : turn.previousState;
         WaviSemanticRouting.Result routed = semanticRouting.route(actor, message, previous, today,
                 toolLayer.registry().all().stream().filter(tool -> !(tool instanceof WaviTool.AgentOnly)).toList());
         WaviRouterDecision decision = routed.decision();
@@ -8687,6 +8952,11 @@ public class MyHrChatService {
         @Override
         public String unsupportedField(MyHrQuestionInterpreter.UnsupportedField field) {
             return unsupportedFieldReply(field);
+        }
+
+        @Override
+        public String ownField(VerifiedMyHrActor actor, MyHrQuestionInterpreter.UnsupportedField field, String message) {
+            return ownSensitiveFieldReply(actor, field, message);
         }
     }
 }

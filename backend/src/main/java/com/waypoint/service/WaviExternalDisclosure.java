@@ -33,7 +33,7 @@ final class WaviExternalDisclosure {
     }
 
     private static final Set<String> PUBLIC_TOOLS = Set.of(WaviAgentTools.KNOWLEDGE_BASE_HELP, WaviTools.OPEN_PAGE, WaviTools.WORKFLOW_HELP,
-            WaviTools.EXPLAIN_TERM, WaviTools.GET_PAYROLL_SCHEDULE, WaviTools.UNSUPPORTED_FIELD,
+            WaviTools.EXPLAIN_TERM, WaviTools.GET_PAYROLL_SCHEDULE,
             WaviTools.UNSUPPORTED_REQUEST, WaviTools.GENERAL_HELP, WaviTools.POLICY_QUESTION, WaviTools.CLARIFY,
             WaviTools.OUT_OF_SCOPE);
     private static final Set<String> RECORD_TOOLS = Set.of(WaviAgentTools.CHECK_PERSON_IN_SCOPE, WaviAgentTools.LIST_POLICY_CATALOG,
@@ -50,6 +50,9 @@ final class WaviExternalDisclosure {
                     "REPORTING_MANAGER", Level.NAMED,
                     "EMPLOYEE_ID", Level.LOCAL_ONLY, "WORK_EMAIL", Level.LOCAL_ONLY, "PROFILE", Level.LOCAL_ONLY,
                     "JOB_TITLE", Level.RECORDS, "DEPARTMENT", Level.RECORDS),
+            // The user's own phone, email, address, start date and employment type are LOCAL_ONLY (the default); only
+            // the fixed pay and leave-balance replies, which carry no value, stay public.
+            WaviTools.UNSUPPORTED_FIELD, Map.of("PAY", Level.PUBLIC, "LEAVE_BALANCE", Level.PUBLIC),
             WaviTools.GET_TEAM_MEMBER, Map.of(
                     "JOB_TITLE", Level.NAMED, "ROLE", Level.NAMED, "REPORTING_MANAGER", Level.NAMED,
                     "EMPLOYEE_ID", Level.LOCAL_ONLY, "WORK_EMAIL", Level.LOCAL_ONLY, "SUMMARY", Level.LOCAL_ONLY));

@@ -412,6 +412,16 @@ final class WaviEvaluationWorld {
             when(profile.employeeId()).thenReturn(someone.employeeId());
             when(profile.designation()).thenReturn(someone.jobTitle());
             when(profile.role()).thenReturn(someone.role());
+            // Own contact and employment values are defined (synthetic), never deep-stub placeholders.
+            when(profile.accountEmail()).thenReturn(someone.userId() + "@eval.example");
+            when(profile.phoneNumber()).thenReturn(null);
+            when(profile.personalEmail()).thenReturn(null);
+            when(profile.streetAddress()).thenReturn(null);
+            when(profile.city()).thenReturn(null);
+            when(profile.state()).thenReturn(null);
+            when(profile.zipCode()).thenReturn(null);
+            when(profile.startDate()).thenReturn(java.time.LocalDate.of(2023, 1, 9));
+            when(profile.employmentType()).thenReturn(null);
             // The organization's payroll frequency (Organization Settings): the only pay-timing fact Waypoint records.
             when(profile.organizationPayrollPeriod()).thenReturn(com.waypoint.enums.PayrollPeriod.MONTHLY);
             String manager = options.noManager ? null : someone.manager();

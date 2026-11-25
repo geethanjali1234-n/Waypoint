@@ -26,6 +26,12 @@ record WaviClarification(String question, String subject, boolean submission, bo
             return role == com.waypoint.enums.UserRole.EMPLOYEE ? "Do you mean your latest timesheet or a particular date or period?"
                     : "Do you mean your own timesheets or submissions assigned for your review?";
         }
+        if (topic == WaviTools.ClarificationTopic.REQUESTS) {
+            if (role == com.waypoint.enums.UserRole.EMPLOYEE) return "Do you mean your profile change requests or your document requests?";
+            return missing == WaviTools.MissingSlot.SUBJECT
+                    ? "Which requests do you mean: profile change requests or document requests?"
+                    : "Do you mean requests waiting for your review, or your own profile change or document requests?";
+        }
         if (topic == WaviTools.ClarificationTopic.WORK) return "Do you mean your recorded job information, pending tasks, or completed work?";
         if (topic == WaviTools.ClarificationTopic.PEOPLE) return "Do you want a person count, a list, or one person's permitted work details?";
         return WaviRouterPolicyGate.clarification(role);
@@ -110,8 +116,16 @@ record WaviClarification(String question, String subject, boolean submission, bo
         if (words.contains("no") && subject(words) == null) return null;
         WaviClarification filled = merge(reply);
         String selected = filled.subject;
-        if (selected == null) return null;
         boolean review = words.contains("approval") || words.contains("review");
+        // A clarified question about "requests": approving one kind, or the requests waiting for the user's review.
+        Set<String> original = words(question);
+        if (original.contains("request") || original.contains("requests")) {
+            if (original.contains("how") && original.contains("approve") && selected != null) {
+                return "how do I approve " + (selected.equals("timesheets") ? selected : selected + "s");
+            }
+            if (selected == null && review) return "how many requests are waiting for my approval";
+        }
+        if (selected == null) return null;
         if (review) return "which " + selected + " are waiting for my approval";
         if (!filled.own) return null;
         if (aspect().equals("APPROVED_DATE")) return "when was my latest " + selected + " approved";
@@ -132,7 +146,8 @@ record WaviClarification(String question, String subject, boolean submission, bo
         Set<String> words = words(reply);
         Set<String> vocabulary = Set.of("yes", "no", "the", "my", "own", "mine", "ones", "one", "a", "i", "mean",
                 "meant", "please", "timesheet", "timesheets", "time", "sheet", "sheets", "profile", "change",
-                "changes", "request", "requests", "document", "documents", "for", "awaiting", "approval", "review");
+                "changes", "request", "requests", "document", "documents", "for", "awaiting", "approval", "review",
+                "waiting", "pending");
         return !words.isEmpty() && vocabulary.containsAll(words);
     }
 

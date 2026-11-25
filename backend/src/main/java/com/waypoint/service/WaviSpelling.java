@@ -36,7 +36,9 @@ final class WaviSpelling {
             // Correct words one edit from a domain word ("three"/"there", "these"/"there"): never "corrected".
             "three", "seven", "eight", "eleven", "twelve", "fifteen", "fifty", "hundred", "thirty", "twenty", "forty",
             "their", "thank", "thanks", "while", "whose", "write", "wrote", "times",
-            "leaves", "manage", "reviews", "requires", "submits", "weeks", "months");
+            "leaves", "manage", "reviews", "requires", "submits", "weeks", "months",
+            // A different meaning, not a misspelling: "employers" is never read as "employees".
+            "employer", "employers");
 
     /** The vocabulary indexed by first letter, so each token is compared with a handful of words. */
     private static final java.util.Map<Character, List<String>> BY_FIRST_LETTER = new java.util.HashMap<>();
@@ -53,6 +55,10 @@ final class WaviSpelling {
             "whn", "when", "whr", "where", "pls", "please");
 
     private static final int MIN_LENGTH = 5;
+
+    /** Short question and pronoun words a doubled keystroke can hide ("wwho", "whhat", "myy"). */
+    private static final Set<String> SHORT_WORDS = Set.of("who", "whom", "whose", "what", "when", "where", "which",
+            "why", "how", "my", "me", "is", "are", "can", "the", "please");
 
     /** {@code normalized} (lower case) with each misspelled domain word replaced by the word it is one edit from. */
     static String correct(String normalized) {
@@ -112,7 +118,14 @@ final class WaviSpelling {
         String lower = token.toLowerCase(Locale.ROOT);
         String shortForm = SHORT_FORMS.get(lower);
         if (shortForm != null) return shortForm;
-        if (lower.length() < MIN_LENGTH || VOCABULARY.contains(lower)) return token;
+        if (VOCABULARY.contains(lower) || SHORT_WORDS.contains(lower)) return token;
+        // A doubled keystroke ("wwho", "timmesheet"): one copy of a repeated letter removed gives a known word.
+        for (int i = 1; i < lower.length(); i++) {
+            if (lower.charAt(i) != lower.charAt(i - 1)) continue;
+            String single = lower.substring(0, i) + lower.substring(i + 1);
+            if (SHORT_WORDS.contains(single) || VOCABULARY.contains(single)) return single;
+        }
+        if (lower.length() < MIN_LENGTH) return token;
         List<String> candidates = BY_FIRST_LETTER.get(lower.charAt(0));
         if (candidates == null) return token;
         String match = null;

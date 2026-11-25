@@ -69,6 +69,11 @@ interface WaviRecordAnswers {
     /** One person in the reviewer's own scope (HR: active direct reports; Company Admin: the organization). */
     MyHrChatResponse teamMember(VerifiedMyHrActor actor, String field, Integer ordinal, String message);
 
+    /** The verified user's own phone, email, address, start date or employment type; null when not supported. */
+    default String ownField(VerifiedMyHrActor actor, MyHrQuestionInterpreter.UnsupportedField field, String message) {
+        return null;
+    }
+
     /** Payroll readiness from the existing readiness service; HR and Company Admin only. */
     default String payrollReadiness(VerifiedMyHrActor actor, WaviTools.PayrollReadinessAsk ask, java.time.YearMonth month) {
         return null;

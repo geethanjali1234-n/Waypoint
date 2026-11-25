@@ -135,6 +135,18 @@ public class EmployeeManagementService {
      * has no EmployeeProfile, so the response falls back to User + Organization
      * fields only (see {@link MyHrOwnProfileResponse}).
      */
+    /**
+     * Whether the authenticated user is the only Company Admin account in their own organization. The organization's
+     * recorded admin name and phone describe that account only when no other admin could be meant.
+     */
+    public boolean isSoleCompanyAdmin(String actorUserId) {
+        AuthenticatedMyHrUser actor = authenticatedUserService.require(actorUserId, SELF_SERVICE_ROLES, false);
+        if (actor.role() != UserRole.COMPANY_ADMIN) return false;
+        List<User> admins = userRepository.findByOrganizationIdAndRoleIn(actor.organizationId(), List.of(UserRole.COMPANY_ADMIN));
+        return admins != null && admins.size() == 1 && actor.userId().equals(admins.get(0).getId())
+                && actor.organizationId().equals(admins.get(0).getOrganizationId());
+    }
+
     public MyHrOwnProfileResponse getOwnDetail(String actorUserId) {
         AuthenticatedMyHrUser actor = authenticatedUserService.require(actorUserId, SELF_SERVICE_ROLES, false);
         User target = userRepository.findById(actor.userId())

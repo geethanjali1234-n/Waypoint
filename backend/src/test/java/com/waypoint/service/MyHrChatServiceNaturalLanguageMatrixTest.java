@@ -133,14 +133,14 @@ class MyHrChatServiceNaturalLanguageMatrixTest {
                 row(EMPLOYEE, "Could you please let me know whether my timesheet was approved?", Route.TIMESHEET_STATUS, "Your most recent timesheet"),
 
                 // --- Unsupported personal fields: honest, never a value, never the model ---
-                row(EMPLOYEE, "What is my phone number?", Route.FIXED, "My Profile"),
-                row(EMPLOYEE, "What's my home address on file?", Route.FIXED, "My Profile"),
-                row(EMPLOYEE, "What personal email do you have for me?", Route.FIXED, "My Profile"),
-                row(EMPLOYEE, "When did I start working here?", Route.FIXED, "start date"),
+                row(EMPLOYEE, "What is my phone number?", Route.PROFILE_DETAIL, "phone number"),
+                row(EMPLOYEE, "What's my home address on file?", Route.PROFILE_DETAIL, "address"),
+                row(EMPLOYEE, "What personal email do you have for me?", Route.PROFILE_DETAIL, "email"),
+                row(EMPLOYEE, "When did I start working here?", Route.PROFILE_DETAIL, "start date"),
                 row(EMPLOYEE, "What is my salary?", Route.FIXED, "pay"),
                 row(EMPLOYEE, "How much do I earn?", Route.FIXED, "pay"),
-                row(HR, "What is my phone number?", Route.FIXED, "My Profile"),
-                row(COMPANY_ADMIN, "What's my home address on file?", Route.FIXED, "My Profile"),
+                row(HR, "What is my phone number?", Route.PROFILE_DETAIL, "phone number"),
+                row(COMPANY_ADMIN, "What's my home address on file?", Route.PROFILE_DETAIL, "address"),
 
                 // --- Multi-turn follow-ups: the subject or aspect comes from the user's previous question ---
                 row(EMPLOYEE, List.of("Was my timesheet approved?"), "What about my profile change request?", Route.PROFILE_STATUS, "status is PENDING"),

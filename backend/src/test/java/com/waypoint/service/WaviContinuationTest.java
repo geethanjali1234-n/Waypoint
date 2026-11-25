@@ -338,7 +338,7 @@ class WaviContinuationTest {
         Mockito.when(chat.world.employees.getOwnDetail(WaviEvaluationWorld.ADMIN.userId())).thenReturn(adminProfile(
                 "second.admin", "second@acme.example", "Registered Owner", "owner@acme.example"));
 
-        assertThat(chat.ask("Who am I?").text()).contains("Name: second.admin", "Admin / Login ID: second.admin")
+        assertThat(chat.ask("Who am I?").text()).contains("Name: not recorded", "Admin / Login ID: second.admin")
                 .doesNotContain("Registered Owner");
         assertThat(chat.ask("What is my name?").text())
                 .isEqualTo("No name is recorded for your account; your Admin / Login ID is second.admin.");
@@ -355,12 +355,136 @@ class WaviContinuationTest {
     }
 
     @Test
-    void phoneNumbersStayOutOfChatForEveryRole() {
-        for (WaviEvaluationWorld.Person person : List.of(WaviEvaluationWorld.EMPLOYEE, WaviEvaluationWorld.HR,
-                WaviEvaluationWorld.ADMIN)) {
-            assertThat(new Conversation(person).ask("What is my phone number?").text()).as(person.role().name())
-                    .contains("I don't show your current phone number in chat");
+    void eachRoleSeesOnlyTheirOwnContactAndEmploymentDetails() {
+        for (WaviEvaluationWorld.Person person : List.of(WaviEvaluationWorld.EMPLOYEE, WaviEvaluationWorld.HR)) {
+            Conversation chat = new Conversation(person);
+            Mockito.when(chat.world.employees.getOwnDetail(person.userId())).thenReturn(selfProfile(person,
+                    "+1 555 0100", "me.personal@mail.example", "1 Main St", "Austin", "TX", "73301",
+                    java.time.LocalDate.of(2024, 3, 1), com.waypoint.enums.EmploymentType.values()[0]));
+            String role = person.role().name();
+            assertThat(chat.ask("What is my phone number?").text()).as(role).isEqualTo("Your phone number in Waypoint is +1 555 0100.");
+            assertThat(chat.ask("What is my email?").text()).as(role).isEqualTo(
+                    "Your personal email is me.personal@mail.example. Your sign-in (account) email is " + person.userId() + "@acme.example.");
+            assertThat(chat.ask("What is my address?").text()).as(role).isEqualTo("Your address in Waypoint is 1 Main St, Austin, TX 73301.");
+            assertThat(chat.ask("What is my start date?").text()).as(role).isEqualTo("Your start date in Waypoint is 2024-03-01.");
+            assertThat(chat.ask("What is my employment type?").text()).as(role).startsWith("Your employment type in Waypoint is ");
+            // Unchanged: pay and leave balance are not recorded in Waypoint.
+            assertThat(chat.ask("What is my salary?").text()).as(role).contains("can't see pay or salary information");
         }
+    }
+
+    @Test
+    void missingSelfProfileValuesAreSaidToBeMissingNotInvented() {
+        Conversation chat = new Conversation(WaviEvaluationWorld.EMPLOYEE);
+        Mockito.when(chat.world.employees.getOwnDetail(WaviEvaluationWorld.EMPLOYEE.userId())).thenReturn(selfProfile(
+                WaviEvaluationWorld.EMPLOYEE, null, null, null, null, null, null, null, null));
+        assertThat(chat.ask("What is my phone number?").text()).startsWith("No phone number is recorded for your account.");
+        assertThat(chat.ask("What is my address?").text()).isEqualTo("No home address is recorded for your account.");
+        assertThat(chat.ask("What is my start date?").text()).isEqualTo("No start date is recorded for your account.");
+        assertThat(chat.ask("What is my email?").text()).isEqualTo("Your sign-in (account) email is "
+                + WaviEvaluationWorld.EMPLOYEE.userId() + "@acme.example.");
+    }
+
+    @Test
+    void aCompanyAdminWithoutAnEmployeeProfileGetsOnlyTheirOwnAccountAndAdminRecordValues() {
+        Conversation owner = new Conversation(WaviEvaluationWorld.ADMIN);
+        Mockito.when(owner.world.employees.getOwnDetail(WaviEvaluationWorld.ADMIN.userId())).thenReturn(adminContact(
+                "owner@acme.example", "owner@acme.example", "+1 555 0199"));
+        assertThat(owner.ask("What is my phone number?").text())
+                .isEqualTo("Your phone number on your organization's admin record is +1 555 0199.");
+        assertThat(owner.ask("What is my email?").text()).isEqualTo("Your sign-in (account) email is owner@acme.example.");
+
+        // Another administrator of the same organization never gets the registered admin's phone number.
+        Conversation second = new Conversation(WaviEvaluationWorld.ADMIN);
+        Mockito.when(second.world.employees.getOwnDetail(WaviEvaluationWorld.ADMIN.userId())).thenReturn(adminContact(
+                "second@acme.example", "owner@acme.example", "+1 555 0199"));
+        assertThat(second.ask("What is my phone number?").text()).startsWith("No phone number is recorded for your account")
+                .doesNotContain("0199");
+    }
+
+    @Test
+    void anotherPersonsContactDetailsAreNeverAnsweredWithTheUsersOwnOrAnyoneElses() {
+        Conversation admin = new Conversation(WaviEvaluationWorld.ADMIN, true);
+        Mockito.when(admin.world.employees.getOwnDetail(WaviEvaluationWorld.ADMIN.userId())).thenReturn(adminContact(
+                "owner@acme.example", "owner@acme.example", "+1 555 0199"));
+        // The router path names no person, so the message is re-checked.
+        for (String other : List.of("What is Ravi Teja's phone number?", "what is my manager's phone number?",
+                "show my team's phone numbers")) {
+            assertThat(tool(admin, WaviTools.UNSUPPORTED_FIELD, Map.of("field", "PHONE_NUMBER"), other)).as(other)
+                    .isEqualTo(MyHrChatService.OWN_DETAILS_ONLY);
+        }
+        // The deterministic path never takes a named person's phone question as the user's own.
+        assertThat(admin.ask("What is Ravi Teja's phone number?").text()).doesNotContain("0199");
+        // The directory and person lookups never carry contact details.
+        Mockito.when(admin.world.employees.list(WaviEvaluationWorld.ADMIN.userId())).thenReturn(List.of(new com.waypoint.dto.myhr
+                .EmployeeSummaryResponse("emp-x", "WPT-1", "Xia Example", "EMPLOYEE", "xia.work@acme.example",
+                "xia.personal@mail.example", "Analyst", null, null, "Hari Kumar", null)));
+        assertThat(tool(admin, WaviTools.FIND_PEOPLE, Map.of(), "list all employees")).doesNotContain("xia.personal@mail.example");
+    }
+
+    @Test
+    void aProfileThatIsNotTheSignedInUsersIsNeverShown() {
+        Conversation chat = new Conversation(WaviEvaluationWorld.EMPLOYEE);
+        // A lookup that returned someone else (for example another organization's record) is refused.
+        Mockito.when(chat.world.employees.getOwnDetail(WaviEvaluationWorld.EMPLOYEE.userId())).thenReturn(selfProfile(
+                WaviEvaluationWorld.HR, "+1 555 0177", null, null, null, null, null, null, null));
+        assertThat(chat.ask("What is my phone number?").text()).doesNotContain("0177");
+    }
+
+    @Test
+    void ownSensitiveValuesAreLocalOnlyNeverLoggedAndNeverSentToAProvider() {
+        for (String field : List.of("PHONE_NUMBER", "PERSONAL_EMAIL", "HOME_ADDRESS", "START_DATE", "EMPLOYMENT_TYPE")) {
+            assertThat(WaviExternalDisclosure.classify(WaviTools.UNSUPPORTED_FIELD, Map.of("field", field), UserRole.EMPLOYEE))
+                    .as(field).isEqualTo(WaviExternalDisclosure.Level.LOCAL_ONLY);
+        }
+        assertThat(WaviExternalDisclosure.classify(WaviTools.UNSUPPORTED_FIELD, Map.of("field", "PAY"), UserRole.EMPLOYEE))
+                .isEqualTo(WaviExternalDisclosure.Level.PUBLIC);
+        assertThat(WaviExternalDisclosure.classify(WaviTools.GET_MY_PROFILE_FIELD, Map.of("field", "ACCOUNT_EMAIL"), UserRole.EMPLOYEE))
+                .isEqualTo(WaviExternalDisclosure.Level.LOCAL_ONLY);
+
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(MyHrChatService.class);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> logs = new ch.qos.logback.core.read.ListAppender<>();
+        logs.start();
+        logger.addAppender(logs);
+        try {
+            Conversation chat = new Conversation(WaviEvaluationWorld.EMPLOYEE);
+            Mockito.when(chat.world.employees.getOwnDetail(WaviEvaluationWorld.EMPLOYEE.userId())).thenReturn(selfProfile(
+                    WaviEvaluationWorld.EMPLOYEE, "+1 555 0100", "me.personal@mail.example", "1 Main St", "Austin", "TX",
+                    "73301", null, null));
+            chat.ask("What is my phone number?");
+            chat.ask("What is my email?");
+            chat.ask("What is my address?");
+            chat.ask("Can you write me a short poem about Mondays?");
+            String everythingSentToProviders = Mockito.mockingDetails(chat.world.claude).getInvocations().toString()
+                    + Mockito.mockingDetails(chat.world.ollama).getInvocations().toString();
+            assertThat(everythingSentToProviders).doesNotContain("555 0100", "me.personal@mail.example", "1 Main St");
+            assertThat(logs.list).extracting(ch.qos.logback.classic.spi.ILoggingEvent::getFormattedMessage)
+                    .noneMatch(line -> line.contains("555 0100") || line.contains("me.personal@mail.example")
+                            || line.contains("1 Main St"));
+        } finally {
+            logger.detachAppender(logs);
+        }
+    }
+
+    /** A signed-in Employee/HR user's own profile with the given contact and employment values (synthetic). */
+    private static com.waypoint.dto.myhr.MyHrOwnProfileResponse selfProfile(WaviEvaluationWorld.Person person, String phone,
+                                                                            String personalEmail, String street, String city,
+                                                                            String state, String zip, java.time.LocalDate start,
+                                                                            com.waypoint.enums.EmploymentType type) {
+        return new com.waypoint.dto.myhr.MyHrOwnProfileResponse(person.userId(), person.userId(), person.employeeId(),
+                person.role(), com.waypoint.enums.AccountStatus.ACTIVE, null, null, person.name(),
+                person.userId() + "@acme.example", personalEmail, phone, person.jobTitle(), type, start, street, city, state,
+                zip, WaviEvaluationWorld.ORG, "Acme Demo Org", "ACME", null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null);
+    }
+
+    /** A Company Admin with no employee profile: account email, and the organization's recorded admin contact. */
+    private static com.waypoint.dto.myhr.MyHrOwnProfileResponse adminContact(String accountEmail, String adminEmail,
+                                                                             String adminPhone) {
+        return new com.waypoint.dto.myhr.MyHrOwnProfileResponse(WaviEvaluationWorld.ADMIN.userId(), "admin.login", null,
+                UserRole.COMPANY_ADMIN, com.waypoint.enums.AccountStatus.ACTIVE, null, null, null, accountEmail, null, null,
+                null, null, null, null, null, null, null, WaviEvaluationWorld.ORG, "Acme Demo Org", "ACME", null, null, null,
+                null, null, null, "Registered Owner", adminEmail, adminPhone, null, null, null, null, null);
     }
 
     // --- Direct reports --------------------------------------------------------------------------------------------
@@ -416,10 +540,9 @@ class WaviContinuationTest {
                 .isEqualTo("Your organization code is ACME.");
         assertThat(tool(employee, WaviTools.GET_MY_PROFILE_FIELD, Map.of("field", "ORGANIZATION_EMAIL"), "org email?"))
                 .doesNotContain("hello@acme.example").contains("isn't shown in your profile");
+        // The signed-in user's own sign-in email is theirs to see, for every role.
         assertThat(tool(employee, WaviTools.GET_MY_PROFILE_FIELD, Map.of("field", "ACCOUNT_EMAIL"), "login email?"))
-                .doesNotContain("asha@acme.example");
-        // The existing personal-contact privacy rule is unchanged.
-        assertThat(employee.ask("What is my email?").text()).contains("I don't show your current personal email in chat");
+                .isEqualTo("Your account email is asha@acme.example.");
     }
 
     @Test
@@ -544,6 +667,63 @@ class WaviContinuationTest {
         }
         assertThat(WaviExternalDisclosure.classify(WaviTools.GET_TEAM_MEMBER, Map.of("field", "START_DATE"), UserRole.HR))
                 .isEqualTo(WaviExternalDisclosure.Level.LOCAL_ONLY);
+    }
+
+    // --- Explicit new questions never inherit the approval-queue context -------------------------------------------
+
+    private static final String PENDING_WORK_DECISION = "{\"decision\":{\"tool\":\"get_my_pending_work\",\"arguments\":{}},"
+            + "\"confidence\":\"HIGH\",\"language\":\"english\"}";
+
+    private static void adminWithoutEmployeeProfile(Conversation chat) {
+        Mockito.when(chat.world.employees.getOwnDetail(WaviEvaluationWorld.ADMIN.userId())).thenReturn(adminProfile(
+                "dana.admin", "dana@acme.example", "Dana Admin", "dana@acme.example"));
+    }
+
+    @Test
+    void ownIdentityAndDirectReportsQuestionsAfterPendingApprovalsAnswerThemselvesDeterministicOrRouted() {
+        for (boolean routed : List.of(false, true)) {
+            for (String question : List.of("Who am I?", "What is my name?", "Who reports to me?")) {
+                Conversation fresh = new Conversation(WaviEvaluationWorld.ADMIN);
+                adminWithoutEmployeeProfile(fresh);
+                String expected = fresh.ask(question).text();
+
+                Conversation chat = routed ? routed(WaviEvaluationWorld.ADMIN, PENDING_WORK_DECISION)
+                        : new Conversation(WaviEvaluationWorld.ADMIN);
+                adminWithoutEmployeeProfile(chat);
+                assertThat(chat.ask(routed ? "What are my pending works?" : "what needs my approval?").text())
+                        .startsWith("Waiting for you");
+                assertThat(chat.ask(question).text()).as((routed ? "routed: " : "deterministic: ") + question)
+                        .isEqualTo(expected).doesNotContain("Waiting for you", "waiting for review");
+            }
+        }
+    }
+
+    @Test
+    void whoIsANamedPersonAfterPendingApprovalsIsAboutThatPersonAndTheirOwnNameMeansThemselves() {
+        Conversation chat = new Conversation(WaviEvaluationWorld.ADMIN);
+        adminWithoutEmployeeProfile(chat);
+        chat.ask("what needs my approval?");
+        assertThat(chat.ask("Who is Asha Rao?").text()).startsWith("Asha Rao: Employee ID: WPT-1001")
+                .doesNotContain("waiting for review");
+        assertThat(chat.ask("Who is Dana?").text()).startsWith("That's you. Your profile: Name: Dana Admin; Admin / Login ID: dana.admin");
+
+        Conversation routedChat = routed(WaviEvaluationWorld.ADMIN, PENDING_WORK_DECISION);
+        adminWithoutEmployeeProfile(routedChat);
+        routedChat.ask("What are my pending works?");
+        assertThat(routedChat.ask("Who is Dana Admin?").text()).startsWith("That's you.");
+        // A pronoun is still a follow-up to the person just discussed.
+        Conversation people = new Conversation(WaviEvaluationWorld.HR);
+        people.ask("who is Asha Rao?");
+        assertThat(people.ask("what is her job title?").text()).isEqualTo("Asha Rao's job title is Senior Data Analyst.");
+    }
+
+    @Test
+    void askingTheSameQuestionAgainGivesTheSameKindOfAnswer() {
+        Conversation chat = routed(WaviEvaluationWorld.ADMIN, PENDING_WORK_DECISION);
+        String first = chat.ask("What are my pending works?").text();
+        assertThat(first).startsWith("Waiting for you");
+        assertThat(chat.ask("What are my pending works?").text()).isEqualTo(first);
+        assertThat(chat.ask("what are my pending works").text()).isEqualTo(first);
     }
 
     /** A conversation whose semantic router (Claude) returns exactly this decision; no provider is called. */
@@ -761,5 +941,627 @@ class WaviContinuationTest {
 
         assertThat(chat.ask("and profile changes?").stage()).isNotEqualTo(MyHrChatService.RouteStage.CONTINUATION);
         assertThat(chat.world.service.dialogueStore()).isNull();
+    }
+    // --- Company Admin identity and routing through the real chat entry -------------------------------------------
+
+    private static final String[] ADMIN_CONTEXTS = {null, "what needs my approval?", "show my profile change requests"};
+
+    private static WaviEvaluationWorld.Options routedOptions() {
+        WaviEvaluationWorld.Options options = new WaviEvaluationWorld.Options();
+        options.semanticRouter = WaviEvaluationWorld.RouterBehaviour.ABSTAIN;
+        return options;
+    }
+
+    /** A Company Admin with no employee profile whose organization admin email was edited away from the login email. */
+    private static Conversation adminChat(boolean routed, boolean soleAdmin) {
+        Conversation chat = routed ? new Conversation(WaviEvaluationWorld.ADMIN, routedOptions())
+                : new Conversation(WaviEvaluationWorld.ADMIN);
+        if (routed) routeByMessage(chat);
+        var profile = adminProfile("TARDUADMIN", "login@acme.example", "Vidya Admin Example", "owner@acme.example");
+        Mockito.when(chat.world.employees.getOwnDetail(WaviEvaluationWorld.ADMIN.userId())).thenReturn(profile);
+        Mockito.when(chat.world.employees.isSoleCompanyAdmin(WaviEvaluationWorld.ADMIN.userId())).thenReturn(soleAdmin);
+        stubPeople(chat, WaviEvaluationWorld.ADMIN);
+        return chat;
+    }
+
+    private static void stubPeople(Conversation chat, WaviEvaluationWorld.Person reader) {
+        var people = List.of(
+                summary("e1", "WPT-1", "Sam Coder", "Software Engineer", java.time.LocalDate.of(2026, 10, 20), "Hari Kumar"),
+                summary("e2", "WPT-2", "Olga Old", "QA Engineer", java.time.LocalDate.of(2019, 4, 1), "Hari Kumar"));
+        Mockito.when(chat.world.employees.list(reader.userId())).thenReturn(people);
+    }
+
+    /** Simulated Claude routing: picks the tool a capable router would for each test question. */
+    private static void routeByMessage(Conversation chat) {
+        Mockito.doAnswer(call -> WaviEvaluationWorld.routed(simulatedDecision(call.<String>getArgument(1))))
+                .when(chat.world.claude).routeJsonWithUsage(anyString(), anyString(), Mockito.anyMap(),
+                        Mockito.anyInt(), anyString());
+    }
+
+    private static String simulatedDecision(String prompt) {
+        String text = prompt.toLowerCase(java.util.Locale.ROOT);
+        String question = text.contains("current message") ? text.substring(text.lastIndexOf("current message")) : text;
+        String tool;
+        if (question.contains("approve profile change"))
+            tool = "{\"tool\":\"workflow_help\",\"arguments\":{\"topic\":\"PROFILE_CHANGE_REVIEW\"}}";
+        else if (question.contains("last name")) tool = "{\"tool\":\"get_my_profile_field\",\"arguments\":{\"field\":\"LAST_NAME\"}}";
+        else if (question.contains("employers")) tool = "{\"tool\":\"clarify\",\"arguments\":{}}";
+        else if (question.contains("my employees")) tool = "{\"tool\":\"find_people\",\"arguments\":{\"filter\":\"ALL\"}}";
+        else if (question.contains("employee id") && !question.contains("my employee id"))
+            tool = "{\"tool\":\"get_team_member\",\"arguments\":{\"field\":\"EMPLOYEE_ID\"}}";
+        else if (question.contains("who is ")) tool = "{\"tool\":\"get_team_member\",\"arguments\":{\"field\":\"SUMMARY\"}}";
+        else if (question.contains("who am i")) tool = "{\"tool\":\"get_my_profile_field\",\"arguments\":{\"field\":\"PROFILE\"}}";
+        else if (question.contains("my name")) tool = "{\"tool\":\"get_my_profile_field\",\"arguments\":{\"field\":\"NAME\"}}";
+        else if (question.contains("login id")) tool = "{\"tool\":\"get_my_profile_field\",\"arguments\":{\"field\":\"LOGIN_ID\"}}";
+        else if (question.contains("software engineer")) tool = "{\"tool\":\"find_people\",\"arguments\":{\"filter\":\"JOB_TITLE\"}}";
+        else if (question.contains("timesheets")) tool = "{\"tool\":\"get_team_timesheets\",\"arguments\":{\"status\":\"SUBMITTED\"}}";
+        else if (question.contains("join")) tool = question.contains("she") || question.contains("he ")
+                ? "{\"tool\":\"get_team_member\",\"arguments\":{\"field\":\"START_DATE\"}}"
+                : "{\"tool\":\"find_people\",\"arguments\":{\"filter\":\"JOINED\",\"joined\":\"2026-08-07/2026-11-05\"}}";
+        else if (question.contains("job title")) tool = "{\"tool\":\"get_team_member\",\"arguments\":{\"field\":\"JOB_TITLE\"}}";
+        else if (question.contains("profile change")) tool = "{\"tool\":\"get_my_requests\",\"arguments\":{\"kind\":\"PROFILE_CHANGE\"}}";
+        else tool = "{\"tool\":\"get_my_pending_work\",\"arguments\":{}}";
+        return "{\"decision\":" + tool + ",\"confidence\":\"HIGH\",\"language\":\"english\"}";
+    }
+
+    @Test
+    void aSoleCompanyAdminIsNamedAsMyProfileShowsInEveryContextAndRoutingMode() {
+        for (boolean routed : new boolean[] {false, true}) {
+            for (String context : ADMIN_CONTEXTS) {
+                String where = (routed ? "routed" : "fixed") + " after " + context;
+                Conversation chat = adminChat(routed, true);
+                if (context != null) chat.ask(context);
+                assertThat(chat.ask("Who am I?").text()).as(where).contains("Vidya Admin Example")
+                        .contains("Admin / Login ID: TARDUADMIN").doesNotContain("Name: TARDUADMIN");
+
+                chat = adminChat(routed, true);
+                if (context != null) chat.ask(context);
+                assertThat(chat.ask("What is my name?").text()).as(where)
+                        .isEqualTo("Your name in Waypoint is Vidya Admin Example.");
+                verify(chat.world.claude, never()).chat(anyString(), anyList());
+            }
+        }
+    }
+
+    @Test
+    void oneOfSeveralAdminsNeverGetsTheOrganizationAdminsNameAndNoNameIsInvented() {
+        for (boolean routed : new boolean[] {false, true}) {
+            for (String context : ADMIN_CONTEXTS) {
+                String where = (routed ? "routed" : "fixed") + " after " + context;
+                Conversation chat = adminChat(routed, false);
+                if (context != null) chat.ask(context);
+                assertThat(chat.ask("Who am I?").text()).as(where).doesNotContain("Vidya")
+                        .contains("Name: not recorded").contains("Admin / Login ID: TARDUADMIN");
+                assertThat(chat.ask("What is my name?").text()).as(where).doesNotContain("Vidya")
+                        .contains("No name is recorded").contains("TARDUADMIN")
+                        .doesNotContainIgnoringCase("profile change");
+            }
+        }
+    }
+
+    @Test
+    void theLoginIdIsAnsweredForEveryRoleAfterUnrelatedQuestions() {
+        for (String context : ADMIN_CONTEXTS) {
+            Conversation admin = adminChat(true, true);
+            if (context != null) admin.ask(context);
+            assertThat(admin.ask("What is my login ID?").text()).as("admin after " + context)
+                    .isEqualTo("Your Admin / Login ID is TARDUADMIN.");
+            verify(admin.world.claude, never()).chat(anyString(), anyList());
+        }
+        Conversation employee = new Conversation(WaviEvaluationWorld.EMPLOYEE, routedOptions());
+        routeByMessage(employee);
+        var own = new com.waypoint.dto.myhr.MyHrOwnProfileResponse(WaviEvaluationWorld.EMPLOYEE.userId(), "asha.login",
+                null, UserRole.EMPLOYEE, com.waypoint.enums.AccountStatus.ACTIVE, null, null, null, "asha@acme.example",
+                null, null, null, null, null, null, null, null, null, WaviEvaluationWorld.ORG, "Acme Demo Org", "ACME",
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        Mockito.when(employee.world.employees.getOwnDetail(WaviEvaluationWorld.EMPLOYEE.userId())).thenReturn(own);
+        employee.ask("show my profile change requests");
+        assertThat(employee.ask("What is my login ID?").text()).isEqualTo("Your login ID is asha.login.");
+        verify(employee.world.claude, never()).chat(anyString(), anyList());
+    }
+
+    @Test
+    void directoryQuestionsAreFilteredForReviewersAfterUnrelatedQuestionsAndRefusedForEmployees() {
+        for (String context : ADMIN_CONTEXTS) {
+            for (WaviEvaluationWorld.Person reviewer : List.of(WaviEvaluationWorld.ADMIN, WaviEvaluationWorld.HR)) {
+                String where = reviewer.role() + " after " + context;
+                Conversation chat = new Conversation(reviewer, routedOptions());
+                routeByMessage(chat);
+                stubPeople(chat, reviewer);
+                if (context != null) chat.ask(context);
+                assertThat(chat.ask("Who works as a Software Engineer?").text()).as(where).contains("Sam Coder")
+                        .doesNotContain("Olga Old").doesNotContainIgnoringCase("approval");
+                assertThat(chat.ask("Who joined recently in my organization?").text()).as(where).contains("Sam Coder")
+                        .doesNotContain("Olga Old").doesNotContainIgnoringCase("approval");
+                verify(chat.world.claude, never()).chat(anyString(), anyList());
+            }
+        }
+        Conversation employee = new Conversation(WaviEvaluationWorld.EMPLOYEE, routedOptions());
+        routeByMessage(employee);
+        assertThat(employee.ask("Who works as a Software Engineer?").text())
+                .contains("only to HR and Company Admin").doesNotContain("Sam Coder");
+        verify(employee.world.employees, never()).list(anyString());
+    }
+
+    @Test
+    void anExplicitQuestionAfterPendingApprovalsIsNotTreatedAsAFollowUp() {
+        Conversation chat = adminChat(false, true);
+        chat.ask("what needs my approval?");
+        assertThat(chat.ask("Who works as a Software Engineer?").stage())
+                .isNotEqualTo(MyHrChatService.RouteStage.FRAME);
+    }
+    // --- Explicit new questions outrank the previous answer's context ---------------------------------------------
+
+    private static final boolean[] ROUTING_MODES = {false, true};
+
+    private static Conversation chatAs(WaviEvaluationWorld.Person person, boolean routed) {
+        if (person == WaviEvaluationWorld.ADMIN) {
+            Conversation admin = adminChat(routed, true);
+            Mockito.when(admin.world.employees.list(WaviEvaluationWorld.ADMIN.userId())).thenReturn(List.of(
+                    summary("e1", "WPT-1", "Sowmya Grandhi", "Software Engineer", java.time.LocalDate.of(2026, 10, 20), "Hari Kumar"),
+                    summary("e2", "WPT-2", "Hari Kumar", "HR Business Partner", java.time.LocalDate.of(2019, 4, 1), null)));
+            return admin;
+        }
+        Conversation chat = routed ? new Conversation(person, routedOptions()) : new Conversation(person);
+        if (routed) routeByMessage(chat);
+        return chat;
+    }
+
+    @Test
+    void employersAfterPendingWorkIsANewQuestionNotTheApprovalList() {
+        for (boolean routed : ROUTING_MODES) {
+            for (WaviEvaluationWorld.Person person : List.of(WaviEvaluationWorld.ADMIN, WaviEvaluationWorld.HR,
+                    WaviEvaluationWorld.EMPLOYEE)) {
+                String where = person.role() + (routed ? " routed" : " fixed");
+                Conversation chat = chatAs(person, routed);
+                chat.ask("What are my pending works?");
+                Answer employers = chat.ask("Who are my employers?");
+                assertThat(employers.stage()).as(where).isNotEqualTo(MyHrChatService.RouteStage.FRAME);
+                // Neither the people waiting for review nor an employee list: "employers" is not "employees".
+                assertThat(employers.text()).as(where).doesNotContain("waiting for review", "Sowmya Grandhi",
+                        "Asha Rao: 1 timesheet", "Employee accounts");
+            }
+        }
+    }
+
+    @Test
+    void myLastNameAfterAnEmployeeListIsAboutTheSignedInUser() {
+        for (boolean routed : ROUTING_MODES) {
+            Conversation admin = chatAs(WaviEvaluationWorld.ADMIN, routed);
+            assertThat(admin.ask("Who are my employees?").text()).contains("Hari Kumar");
+            Answer last = admin.ask("What is my last name?");
+            assertThat(last.stage()).as("routed=" + routed).isNotEqualTo(MyHrChatService.RouteStage.PEOPLE_REFERENCE);
+            assertThat(last.text()).as("routed=" + routed).contains("Vidya Admin Example")
+                    .doesNotContain("Hari Kumar", "Sowmya", "WPT-");
+
+            Conversation hr = chatAs(WaviEvaluationWorld.HR, routed);
+            hr.ask("Who reports to me?");
+            assertThat(hr.ask("What is my last name?").text()).as("HR routed=" + routed)
+                    .doesNotContain("Asha", "Ravi", "WPT-").containsIgnoringCase("name");
+        }
+    }
+
+    @Test
+    void anAdminsNamePartsUseTheFullNameSourceAndSayWhenTheyAreNotStoredSeparately() {
+        for (boolean routed : ROUTING_MODES) {
+            for (String ask : List.of("My last name", "What is my last name?")) {
+                Conversation admin = chatAs(WaviEvaluationWorld.ADMIN, routed);
+                assertThat(admin.ask("What is my name?").text()).isEqualTo("Your name in Waypoint is Vidya Admin Example.");
+                String reply = admin.ask(ask).text();
+                assertThat(reply).as(ask + " routed=" + routed)
+                        .isEqualTo("Waypoint doesn't store your last name separately; your name is recorded as one "
+                                + "full name: Vidya Admin Example.")
+                        // Never a surname guessed from the display name's words.
+                        .doesNotContain("last name in Waypoint is Example");
+            }
+            // A second admin with no recorded name: nothing is invented.
+            Conversation other = adminChat(routed, false);
+            assertThat(other.ask("My last name").text()).as("routed=" + routed)
+                    .isEqualTo("Your last name is not available in your profile.");
+        }
+    }
+
+    @Test
+    void whoIsANamedPersonAfterTheirEmployeeIdGivesTheirSummaryNotTheIdAgain() {
+        for (boolean routed : ROUTING_MODES) {
+            for (String who : List.of("Who is Sowmya?", "who is sowmya?")) {
+                Conversation admin = chatAs(WaviEvaluationWorld.ADMIN, routed);
+                assertThat(admin.ask("What is Sowmya's employee ID?").text()).contains("WPT-1");
+                String summary = admin.ask(who).text();
+                assertThat(summary).as(who + " routed=" + routed).contains("Sowmya Grandhi", "Software Engineer",
+                        "Reporting manager: Hari Kumar");
+                // Follow-ups about the same person still continue.
+                assertThat(admin.ask("What is her job title?").text()).as(who).contains("Software Engineer");
+                assertThat(admin.ask("And their reporting manager?").text()).as(who).contains("Hari Kumar");
+            }
+        }
+    }
+    // --- The same explicit question is interpreted the same way after any previous topic --------------------------
+
+    private static final List<String> PREVIOUS_TOPICS = java.util.Arrays.asList(null, "What are my pending works?",
+            "Who are my employees?", "Show submitted timesheets", "What is Sowmya's employee ID?", "Who joined recently?");
+
+    /** The router prompt of the last routed message (what Claude would be shown). */
+    private static String lastRouterPrompt(Conversation chat) {
+        org.mockito.ArgumentCaptor<String> prompt = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(chat.world.claude, Mockito.atLeastOnce()).routeJsonWithUsage(anyString(), prompt.capture(),
+                Mockito.anyMap(), Mockito.anyInt(), anyString());
+        return prompt.getValue();
+    }
+
+    @Test
+    void whoJoinedRecentlyGetsTheSameRouterPromptAndAnswerAfterEveryPreviousTopic() {
+        for (WaviEvaluationWorld.Person reviewer : List.of(WaviEvaluationWorld.ADMIN, WaviEvaluationWorld.HR)) {
+            String freshAnswer = null;
+            String freshPrompt = null;
+            for (String topic : PREVIOUS_TOPICS) {
+                String where = reviewer.role() + " after " + topic;
+                Conversation chat = chatAs(reviewer, true);
+                if (reviewer == WaviEvaluationWorld.HR) stubPeople(chat, reviewer);
+                if (topic != null) chat.ask(topic);
+                Answer answer = chat.ask("Who joined recently?");
+                String prompt = lastRouterPrompt(chat);
+                assertThat(answer.stage()).as(where).isEqualTo(MyHrChatService.RouteStage.ROUTER);
+                assertThat(answer.text()).as(where).contains("joined between").doesNotContainIgnoringCase("timesheet")
+                        .doesNotContain("awaiting review");
+                if (freshAnswer == null) {
+                    freshAnswer = answer.text();
+                    freshPrompt = prompt;
+                }
+                // Byte-identical router input: an unrelated earlier topic cannot change Claude's choice.
+                assertThat(prompt).as(where).isEqualTo(freshPrompt);
+                assertThat(answer.text()).as(where).isEqualTo(freshAnswer);
+            }
+        }
+    }
+
+    @Test
+    void withoutTheRouterWhoJoinedRecentlyNeverBorrowsThePreviousRecordOrPerson() {
+        for (String topic : PREVIOUS_TOPICS) {
+            Conversation chat = chatAs(WaviEvaluationWorld.ADMIN, false);
+            if (topic != null) chat.ask(topic);
+            Answer answer = chat.ask("Who joined recently?");
+            assertThat(answer.stage()).as("after " + topic).isNotIn(MyHrChatService.RouteStage.FRAME,
+                    MyHrChatService.RouteStage.CONTINUATION, MyHrChatService.RouteStage.CLARIFY_REFERENCE);
+            assertThat(answer.text()).as("after " + topic).doesNotContain("Sowmya Grandhi joined on", "Asha Rao's",
+                    "awaiting review", "Which one do you mean");
+        }
+    }
+
+    @Test
+    void anUnsupportedEmployersQuestionIsRoutedIdenticallyAndNeverReturnsPeopleOrApprovals() {
+        String freshPrompt = null;
+        String freshAnswer = null;
+        for (String topic : PREVIOUS_TOPICS) {
+            Conversation chat = chatAs(WaviEvaluationWorld.ADMIN, true);
+            if (topic != null) chat.ask(topic);
+            String answer = chat.ask("Who are my employers?").text();
+            String prompt = lastRouterPrompt(chat);
+            if (freshPrompt == null) {
+                freshPrompt = prompt;
+                freshAnswer = answer;
+            }
+            assertThat(prompt).as("after " + topic).isEqualTo(freshPrompt);
+            assertThat(answer).as("after " + topic).isEqualTo(freshAnswer)
+                    .doesNotContain("Sowmya", "Hari Kumar", "Asha Rao", "waiting for review", "Employee accounts");
+        }
+        for (String topic : PREVIOUS_TOPICS) {
+            Conversation chat = chatAs(WaviEvaluationWorld.ADMIN, false);
+            if (topic != null) chat.ask(topic);
+            assertThat(chat.ask("Who are my employers?").text()).as("fixed after " + topic)
+                    .doesNotContain("Sowmya", "Hari Kumar", "Asha Rao", "waiting for review", "Employee accounts");
+        }
+    }
+
+    @Test
+    void genuineFollowUpsStillUseThePreviousAnswer() {
+        for (boolean routed : ROUTING_MODES) {
+            Conversation chat = chatAs(WaviEvaluationWorld.ADMIN, routed);
+            chat.ask("What is Sowmya's employee ID?");
+            assertThat(chat.ask("When did she join?").text()).as("routed=" + routed)
+                    .contains("Sowmya Grandhi joined on 2026-10-20");
+            assertThat(chat.ask("What is her job title?").text()).contains("Software Engineer");
+        }
+        // Pronoun, omitted-subject and "who else" questions stay follow-ups; questions stating their own subject do not.
+        assertThat(WaviQuestionFrame.of("When did she join?").independent()).isFalse();
+        assertThat(WaviQuestionFrame.of("What about last month?").independent()).isFalse();
+        assertThat(WaviQuestionFrame.of("And their reporting manager?").independent()).isFalse();
+        assertThat(WaviQuestionFrame.of("Who else?").independent()).isFalse();
+        assertThat(WaviQuestionFrame.of("Who joined recently?").independent()).isTrue();
+        assertThat(WaviQuestionFrame.of("Who are my employers?").independent()).isTrue();
+    }
+
+    @Test
+    void anEmployeeAskingWhoJoinedRecentlyGetsNoDirectoryAfterAnyTopic() {
+        for (String topic : java.util.Arrays.asList(null, "What are my pending works?", "Show my timesheets")) {
+            Conversation chat = chatAs(WaviEvaluationWorld.EMPLOYEE, true);
+            if (topic != null) chat.ask(topic);
+            assertThat(chat.ask("Who joined recently?").text()).as("after " + topic)
+                    .contains("only to HR and Company Admin").doesNotContain("Sowmya", "Ravi Teja");
+            verify(chat.world.employees, never()).list(anyString());
+        }
+    }
+    @Test
+    void aNamedPersonQuestionAfterAnotherPersonIsAboutTheNamedPersonNotThePreviousOne() {
+        for (boolean routed : ROUTING_MODES) {
+            Conversation chat = chatAs(WaviEvaluationWorld.ADMIN, routed);
+            assertThat(chat.ask("What is Hari Kumar's employee ID?").text()).contains("WPT-2");
+            assertThat(chat.ask("who is sowmya?").text()).as("routed=" + routed).contains("Sowmya Grandhi")
+                    .doesNotContain("Hari Kumar:");
+        }
+    }
+    // --- "Requests" without a kind: ask which, then answer from the existing review and request tools -------------
+
+    private static final String REQUEST_SCOPE_QUESTION =
+            "Do you mean requests waiting for your review, or your own profile change or document requests?";
+    private static final String REQUEST_KIND_QUESTION =
+            "Which requests do you mean: profile change requests or document requests?";
+
+    @Test
+    void aReviewerAskingHowManyRequestsTheyHaveIsAskedWhichAndTheAnswerResolvesIt() {
+        for (WaviEvaluationWorld.Person reviewer : List.of(WaviEvaluationWorld.ADMIN, WaviEvaluationWorld.HR)) {
+            for (boolean routed : ROUTING_MODES) {
+                for (String topic : java.util.Arrays.asList(null, "What are my pending works?")) {
+                    String where = reviewer.role() + (routed ? " routed" : " fixed") + " after " + topic;
+                    Conversation chat = chatAs(reviewer, routed);
+                    if (topic != null) chat.ask(topic);
+                    String asked = chat.ask("How many requests do I have?").text();
+                    assertThat(asked).as(where).isEqualTo(REQUEST_SCOPE_QUESTION);
+                    // The reply resolves the clarification: the reviewer's queues, from the existing count service.
+                    String review = chat.ask("the ones waiting for my review").text();
+                    assertThat(review).as(where).contains("pending profile change requests")
+                            .doesNotContainIgnoringCase("can't").doesNotContainIgnoringCase("cannot");
+                }
+                Conversation own = chatAs(reviewer, routed);
+                own.ask("How many requests do I have?");
+                assertThat(own.ask("my profile change requests").text()).as(reviewer.role() + " own")
+                        .containsIgnoringCase("profile change request").doesNotContain("awaiting approval in your organization");
+            }
+        }
+    }
+
+    @Test
+    void howToApproveRequestsAsksWhichKindAndThenGivesThatKindsApprovalSteps() {
+        for (boolean routed : ROUTING_MODES) {
+            for (String topic : java.util.Arrays.asList(null, "What are my pending works?")) {
+                String where = (routed ? "routed" : "fixed") + " after " + topic;
+                Conversation chat = chatAs(WaviEvaluationWorld.ADMIN, routed);
+                if (topic != null) chat.ask(topic);
+                assertThat(chat.ask("How to approve requests?").text()).as(where).isEqualTo(REQUEST_KIND_QUESTION);
+                assertThat(chat.ask("profile change requests").text()).as(where)
+                        .contains("select a pending request to review it").doesNotContain("Document Approvals");
+
+                Conversation documents = chatAs(WaviEvaluationWorld.ADMIN, routed);
+                if (topic != null) documents.ask(topic);
+                documents.ask("How to approve requests?");
+                assertThat(documents.ask("document requests").text()).as(where).contains("Open Document Approvals");
+            }
+        }
+    }
+
+    @Test
+    void anEmployeesRequestsAreOnlyTheirOwnAndNeverAReviewQueue() {
+        for (boolean routed : ROUTING_MODES) {
+            Conversation chat = chatAs(WaviEvaluationWorld.EMPLOYEE, routed);
+            String reply = chat.ask("How many requests do I have?").text();
+            assertThat(reply).as("routed=" + routed).doesNotContain(REQUEST_SCOPE_QUESTION, "waiting for your review",
+                    "in your organization", "Ravi Teja");
+            verify(chat.world.employees, never()).list(anyString());
+        }
+    }
+    @Test
+    void hrAskingHowToApproveProfileChangeRequestsGetsTheReviewStepsNotTheSubmissionSteps() {
+        for (boolean routed : ROUTING_MODES) {
+            Conversation chat = chatAs(WaviEvaluationWorld.HR, routed);
+            assertThat(chat.ask("How to approve requests?").text()).isEqualTo(REQUEST_KIND_QUESTION);
+            assertThat(chat.ask("profile change requests").text()).as("routed=" + routed)
+                    .contains("select a pending request to review it").doesNotContain("submit a request");
+            assertThat(chatAs(WaviEvaluationWorld.HR, routed).ask("How do I approve profile change requests?").text())
+                    .contains("select a pending request to review it");
+            assertThat(chatAs(WaviEvaluationWorld.EMPLOYEE, routed).ask("How do I approve profile change requests?").text())
+                    .contains("Employees don't review profile change requests");
+        }
+    }
+    // --- Typos are normalized before framing; failed or ambiguous turns never capture explicit questions ----------
+
+    private static final String CONTEXT_MARKER = "previous answered request in this conversation: ";
+
+    /**
+     * Emulates the live decision observed in manual testing: shown the pending-work context, Claude answered a
+     * person question with a requests clarification; without context it chose the person lookup.
+     */
+    private static void routeLikeObservedLiveClaude(Conversation chat) {
+        Mockito.doAnswer(call -> {
+            String prompt = call.<String>getArgument(1).toLowerCase(java.util.Locale.ROOT);
+            int at = prompt.indexOf(CONTEXT_MARKER);
+            boolean context = at >= 0 && !prompt.startsWith("none", at + CONTEXT_MARKER.length());
+            if (context && prompt.contains("who is")) {
+                return WaviEvaluationWorld.routed("{\"decision\":{\"tool\":\"clarify\",\"arguments\":{\"topic\":\"REQUESTS\","
+                        + "\"missing\":\"SCOPE\"}},\"confidence\":\"HIGH\",\"language\":\"english\"}");
+            }
+            return WaviEvaluationWorld.routed(simulatedDecision(call.<String>getArgument(1)));
+        }).when(chat.world.claude).routeJsonWithUsage(anyString(), anyString(), Mockito.anyMap(), Mockito.anyInt(), anyString());
+    }
+
+    private static final List<String> UNRELATED_TOPICS = java.util.Arrays.asList(null, "What are my pending works?",
+            "Show submitted timesheets", "What is Sowmya's employee ID?");
+
+    @Test
+    void aDoubledKeystrokeIsCorrectedBeforeTheQuestionIsFramed() {
+        assertThat(WaviSpelling.correct("wwho is john")).isEqualTo("who is john");
+        assertThat(WaviSpelling.correct("whhat is myy last name")).isEqualTo("what is my last name");
+        assertThat(WaviSpelling.correct("show my timmesheets")).isEqualTo("show my timesheets");
+        // Names and ordinary words are left alone.
+        assertThat(WaviSpelling.correct("who is anna")).isEqualTo("who is anna");
+        assertThat(WaviQuestionFrame.of("wwho is john").independent()).isTrue();
+        assertThat(WaviQuestionFrame.of("who is john").independent()).isTrue();
+    }
+
+    @Test
+    void aMistypedWhoQuestionAndThenAnOwnNameQuestionAreAnsweredTheSameAfterAnyTopic() {
+        for (WaviEvaluationWorld.Person reviewer : List.of(WaviEvaluationWorld.ADMIN, WaviEvaluationWorld.HR)) {
+            String ownLastName = reviewer == WaviEvaluationWorld.ADMIN
+                    ? "Waypoint doesn't store your last name separately; your name is recorded as one full name: Vidya Admin Example."
+                    : "Your last name in Waypoint is Kumar.";
+            for (boolean routed : ROUTING_MODES) {
+                for (String topic : UNRELATED_TOPICS) {
+                    String where = reviewer.role() + (routed ? " routed" : " fixed") + " after " + topic;
+                    Conversation chat = chatAs(reviewer, false);
+                    if (routed) {
+                        chat = new Conversation(reviewer, routedOptions());
+                        routeLikeObservedLiveClaude(chat);
+                        if (reviewer == WaviEvaluationWorld.ADMIN) {
+                            var profile = adminProfile("TARDUADMIN", "login@acme.example", "Vidya Admin Example",
+                                    "owner@acme.example");
+                            Mockito.when(chat.world.employees.getOwnDetail(WaviEvaluationWorld.ADMIN.userId())).thenReturn(profile);
+                            Mockito.when(chat.world.employees.isSoleCompanyAdmin(WaviEvaluationWorld.ADMIN.userId())).thenReturn(true);
+                        }
+                        Mockito.when(chat.world.employees.list(reviewer.userId())).thenReturn(List.of(
+                                summary("e1", "WPT-1", "Sowmya Grandhi", "Software Engineer", java.time.LocalDate.of(2026, 10, 20), "Hari Kumar")));
+                    }
+                    if (topic != null) chat.ask(topic);
+                    String who = chat.ask("wwho is john").text();
+                    assertThat(who).as(where).doesNotContain("Do you mean requests", "profile change or document",
+                            "waiting for review");
+                    if (routed) assertThat(who).as(where).contains("couldn't find that person");
+                    assertThat(chat.ask("what is my last name").text()).as(where).isEqualTo(ownLastName);
+                    // The verified name is answered locally: never sent to a model, never in a router prompt.
+                    verify(chat.world.claude, never()).chat(anyString(), anyList());
+                    if (routed) {
+                        org.mockito.ArgumentCaptor<String> prompts = org.mockito.ArgumentCaptor.forClass(String.class);
+                        verify(chat.world.claude, Mockito.atLeastOnce()).routeJsonWithUsage(anyString(), prompts.capture(),
+                                Mockito.anyMap(), Mockito.anyInt(), anyString());
+                        assertThat(prompts.getAllValues()).as(where)
+                                .noneMatch(p -> p.contains("Vidya Admin Example") || p.contains("Kumar."));
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    void anExplicitQuestionAfterAnAmbiguousClarificationIsNotTreatedAsItsAnswer() {
+        for (WaviEvaluationWorld.Person person : List.of(WaviEvaluationWorld.ADMIN, WaviEvaluationWorld.HR,
+                WaviEvaluationWorld.EMPLOYEE)) {
+            for (boolean routed : ROUTING_MODES) {
+                Conversation chat = chatAs(person, routed);
+                // A clarification is left pending (the frame's own requests clarification, or for an Employee the
+                // router's), exactly as after the live "wwho is john" turn.
+                String asked = chat.ask("How many requests do I have?").text();
+                if (person != WaviEvaluationWorld.EMPLOYEE) assertThat(asked).isEqualTo(REQUEST_SCOPE_QUESTION);
+                String last = chat.ask("what is my last name").text();
+                assertThat(last).as(person.role() + " routed=" + routed).containsIgnoringCase("last name")
+                        .doesNotContainIgnoringCase("profile change request").doesNotContain("status");
+                // A genuine slot answer still resolves the clarification.
+                if (person != WaviEvaluationWorld.EMPLOYEE) {
+                    Conversation resolving = chatAs(person, routed);
+                    resolving.ask("How many requests do I have?");
+                    assertThat(resolving.ask("the ones waiting for my review").text())
+                            .contains("pending profile change requests");
+                }
+            }
+        }
+    }
+    // --- A MEDIUM-confidence person lookup that names the person runs the scoped lookup -------------------------
+
+    private static String decision(String tool, String arguments, String confidence) {
+        return "{\"decision\":{\"tool\":\"" + tool + "\",\"arguments\":" + arguments + "},\"confidence\":\"" + confidence
+                + "\",\"language\":\"english\"}";
+    }
+
+    /** Person questions get get_team_member at the given confidence; anything else as the usual simulation. */
+    private static Conversation personLookupChat(WaviEvaluationWorld.Person person, String confidence,
+                                                 List<com.waypoint.dto.myhr.EmployeeSummaryResponse> people) {
+        Conversation chat = new Conversation(person, routedOptions());
+        Mockito.doAnswer(call -> {
+            String prompt = call.<String>getArgument(1);
+            String text = prompt.toLowerCase(java.util.Locale.ROOT);
+            String question = text.contains("current message") ? text.substring(text.lastIndexOf("current message")) : text;
+            return WaviEvaluationWorld.routed(question.contains("who is") || question.contains("who's")
+                    ? decision("get_team_member", "{\"field\":\"SUMMARY\"}", confidence) : simulatedDecision(prompt));
+        }).when(chat.world.claude).routeJsonWithUsage(anyString(), anyString(), Mockito.anyMap(), Mockito.anyInt(), anyString());
+        if (people != null) Mockito.when(chat.world.employees.list(person.userId())).thenReturn(people);
+        return chat;
+    }
+
+    private static final List<com.waypoint.dto.myhr.EmployeeSummaryResponse> ADMIN_PEOPLE = List.of(
+            summary("e1", "WPT-1", "Sowmya Grandhi", "Software Engineer", java.time.LocalDate.of(2026, 10, 20), "Hari Kumar"),
+            summary("e2", "WPT-2", "Hari Kumar", "HR Business Partner", java.time.LocalDate.of(2019, 4, 1), null));
+
+    @Test
+    void knownAndUnknownPeopleAreLookedUpAtHighAndMediumConfidenceAfterAnyTopic() {
+        for (String confidence : List.of("HIGH", "MEDIUM")) {
+            for (String topic : java.util.Arrays.asList(null, "What are my pending works?", "Show submitted timesheets",
+                    "What is Sowmya's employee ID?")) {
+                String where = confidence + " after " + topic;
+                for (String known : List.of("who is sowmya", "Who is Sowmya?")) {
+                    Conversation chat = personLookupChat(WaviEvaluationWorld.ADMIN, confidence, ADMIN_PEOPLE);
+                    if (topic != null) chat.ask(topic);
+                    assertThat(chat.ask(known).text()).as(where + " " + known)
+                            .contains("Sowmya Grandhi", "Software Engineer").doesNotContain(MyHrChatService.CLARIFY_ADMIN);
+                }
+                for (String unknown : List.of("who is john", "wwho is john", "Who is John?")) {
+                    Conversation chat = personLookupChat(WaviEvaluationWorld.ADMIN, confidence, ADMIN_PEOPLE);
+                    if (topic != null) chat.ask(topic);
+                    assertThat(chat.ask(unknown).text()).as(where + " " + unknown)
+                            .contains("couldn't find that person").doesNotContain(MyHrChatService.CLARIFY_ADMIN);
+                }
+            }
+        }
+    }
+
+    @Test
+    void hrLooksUpOnlyTheirDirectReportsAtMediumConfidence() {
+        for (String topic : java.util.Arrays.asList(null, "What are my pending works?")) {
+            Conversation chat = personLookupChat(WaviEvaluationWorld.HR, "MEDIUM", null);
+            if (topic != null) chat.ask(topic);
+            assertThat(chat.ask("who is asha").text()).as("after " + topic).contains("Asha Rao")
+                    .doesNotContain(MyHrChatService.CLARIFY_HR);
+            Conversation unknown = personLookupChat(WaviEvaluationWorld.HR, "MEDIUM", null);
+            if (topic != null) unknown.ask(topic);
+            assertThat(unknown.ask("who is john").text()).as("after " + topic)
+                    .contains("couldn't find that person", "your active direct reports")
+                    .doesNotContain(MyHrChatService.CLARIFY_HR);
+        }
+    }
+
+    @Test
+    void anEmployeesMediumConfidencePersonLookupIsStillRefusedWithoutReadingTheDirectory() {
+        for (String confidence : List.of("HIGH", "MEDIUM")) {
+            Conversation chat = personLookupChat(WaviEvaluationWorld.EMPLOYEE, confidence, null);
+            String reply = chat.ask("who is ravi").text();
+            assertThat(reply).as(confidence).isEqualTo(MyHrChatService.OTHER_PERSON_REPLY);
+            verify(chat.world.employees, never()).list(anyString());
+        }
+    }
+
+    @Test
+    void aMediumConfidenceLookupOfSeveralMatchesOrOfAPronounAsksWhichPersonNeverTheRequestsMenu() {
+        List<com.waypoint.dto.myhr.EmployeeSummaryResponse> twoSowmyas = List.of(ADMIN_PEOPLE.get(0),
+                summary("e3", "WPT-3", "Sowmya Rao", "QA Engineer", java.time.LocalDate.of(2025, 1, 6), "Hari Kumar"));
+        String several = personLookupChat(WaviEvaluationWorld.ADMIN, "MEDIUM", twoSowmyas).ask("who is sowmya").text();
+        assertThat(several).contains("Sowmya Grandhi", "Sowmya Rao").doesNotContain("Employee ID:",
+                MyHrChatService.CLARIFY_ADMIN);
+
+        String pronoun = personLookupChat(WaviEvaluationWorld.ADMIN, "MEDIUM", ADMIN_PEOPLE).ask("who is he?").text();
+        assertThat(pronoun).isEqualTo("Which person in your authorized scope do you mean?");
+    }
+
+    @Test
+    void aCompanyAdminNeverReadsAnotherOrganizationsPeopleThroughAMediumConfidenceLookup() {
+        Conversation chat = personLookupChat(WaviEvaluationWorld.ADMIN, "MEDIUM", ADMIN_PEOPLE);
+        // Only the signed-in admin's own organization's list is ever read; a name outside it is simply not found.
+        assertThat(chat.ask("who is zed outsider").text()).contains("couldn't find that person");
+        verify(chat.world.employees, Mockito.atLeastOnce()).list(WaviEvaluationWorld.ADMIN.userId());
+        verify(chat.world.employees, never()).list(org.mockito.ArgumentMatchers.argThat(
+                id -> !WaviEvaluationWorld.ADMIN.userId().equals(id)));
+    }
+
+    @Test
+    void otherToolsKeepTheirMediumConfidenceClarification() {
+        Conversation chat = new Conversation(WaviEvaluationWorld.ADMIN, routedOptions());
+        Mockito.doReturn(WaviEvaluationWorld.routed(decision("get_review_queue", "{\"queue\":\"TIMESHEETS\"}", "MEDIUM")))
+                .when(chat.world.claude).routeJsonWithUsage(anyString(), anyString(), Mockito.anyMap(), Mockito.anyInt(), anyString());
+        assertThat(chat.ask("timesheet things for me to look at maybe").text()).isEqualTo(MyHrChatService.CLARIFY_ADMIN);
     }
 }

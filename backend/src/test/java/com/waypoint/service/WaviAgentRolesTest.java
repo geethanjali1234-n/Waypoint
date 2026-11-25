@@ -364,7 +364,8 @@ class WaviAgentRolesTest {
                 Clock.systemUTC()));
         for (WaviTool tool : world.service.toolLayer().registry().all()) {
             WaviExternalDisclosure.Level level = WaviExternalDisclosure.classify(tool.name(), Map.of(), UserRole.HR);
-            boolean fieldBased = tool.name().equals(WaviTools.GET_MY_PROFILE_FIELD) || tool.name().equals(WaviTools.GET_TEAM_MEMBER);
+            boolean fieldBased = tool.name().equals(WaviTools.GET_MY_PROFILE_FIELD) || tool.name().equals(WaviTools.GET_TEAM_MEMBER)
+                    || tool.name().equals(WaviTools.UNSUPPORTED_FIELD);
             if (!fieldBased) {
                 assertThat(level).as("unclassified tool: " + tool.name()).isNotEqualTo(WaviExternalDisclosure.Level.LOCAL_ONLY);
             } else {

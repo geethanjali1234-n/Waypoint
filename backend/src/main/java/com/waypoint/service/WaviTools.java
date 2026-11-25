@@ -65,7 +65,7 @@ final class WaviTools {
 
     /** The user's own profile details the existing profile route answers. */
     enum ProfileField { PROFILE, NAME, FIRST_NAME, LAST_NAME, EMPLOYEE_ID, JOB_TITLE, DEPARTMENT, WORK_EMAIL,
-        REPORTING_MANAGER, ORGANIZATION_NAME, ORGANIZATION_CODE, ORGANIZATION_EMAIL, ACCOUNT_EMAIL }
+        REPORTING_MANAGER, ORGANIZATION_NAME, ORGANIZATION_CODE, ORGANIZATION_EMAIL, ACCOUNT_EMAIL, LOGIN_ID }
 
     enum PayrollReadinessAsk { SUMMARY, CUTOFF, NOT_READY }
 
@@ -225,7 +225,7 @@ final class WaviTools {
                 }, null));
 
         tools.add(new Definition(GET_MY_PROFILE_FIELD,
-                "One detail of the user's OWN profile (name, employee ID, job title, reporting manager, organization) or a summary. Never "
+                "One detail of the user's OWN profile (name, login ID, employee ID, job title, manager, organization) or a summary. Never "
                         + "another person's profile; not phone, email, address, pay or leave balance (see unsupported_field).",
                 Schema.of(Spec.enumOf("field", true, ProfileField.class, "The detail asked about")),
                 ALL_ROLES, WaviTool.DataClass.PERSONAL, false, null,
@@ -234,17 +234,23 @@ final class WaviTools {
                 null));
 
         tools.add(new Definition(UNSUPPORTED_FIELD,
-                "A personal detail Wavi does not show in chat (phone, personal email, address, start date, employment "
-                        + "type, pay, leave balance): an honest reply saying where to find it.",
+                "The user's OWN phone, email, address, start date or employment type (shown only to them), "
+                        + "or pay/leave balance (not in Waypoint).",
                 Schema.of(Spec.enumOf("field", true, MyHrQuestionInterpreter.UnsupportedField.class, "The detail asked about")),
-                ALL_ROLES, WaviTool.DataClass.PUBLIC_APP, false, null,
+                ALL_ROLES, WaviTool.DataClass.PERSONAL, false, null,
                 (actor, arguments, context) -> {
                     MyHrQuestionInterpreter.UnsupportedField field =
                             arguments.enumValue("field", MyHrQuestionInterpreter.UnsupportedField.class);
                     boolean onProfile = field != MyHrQuestionInterpreter.UnsupportedField.PAY
                             && field != MyHrQuestionInterpreter.UnsupportedField.LEAVE_BALANCE;
-                    return WaviToolResult.notAvailable("FIELD_NOT_SHOWN", answers.unsupportedField(field),
-                            onProfile ? List.of(PROFILE_PAGE) : List.of());
+                    if (!onProfile) {
+                        return WaviToolResult.notAvailable("FIELD_NOT_SHOWN", answers.unsupportedField(field), List.of());
+                    }
+                    // The verified user's own value only; the message is re-checked so no other person is answered.
+                    String own = answers.ownField(actor, field, context.message());
+                    return own == null
+                            ? WaviToolResult.notAvailable("FIELD_NOT_SHOWN", answers.unsupportedField(field), List.of(PROFILE_PAGE))
+                            : WaviToolResult.answer(own, List.of(PROFILE_PAGE));
                 }, null));
 
         tools.add(new Definition(GET_MY_TIMESHEETS,
@@ -473,7 +479,7 @@ final class WaviTools {
 
         tools.add(new Definition(FIND_PEOPLE, "HR/Admin people list, filterable.",
                 Schema.of(Spec.enumOf("filter", false, PeopleFilter.class, ""),
-                        Spec.dateRange("joined", false, 36500, 366, "")),
+                        Spec.dateRange("joined", false, 36500, 366, "Join dates; 'recently' = last 90 days")),
                 REVIEWERS, WaviTool.DataClass.ORG_AGGREGATE, false, null,
                 (actor, arguments, context) -> WaviToolResult.answer(answers.findPeople(actor,
                         arguments.has("filter") ? arguments.enumValue("filter", PeopleFilter.class) : PeopleFilter.ALL,

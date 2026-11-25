@@ -57,8 +57,11 @@ final class WaviRouterPolicyGate {
         if (inconsistent != null) {
             return new Answer(tool, WaviToolResult.rejected(inconsistent, CANNOT_HELP_REPLY));
         }
-        if (needsClarification(decision, tool)) {
-            return new Answer(tool, WaviToolResult.clarify(clarification(role)));
+        if (needsClarification(decision, tool) && !identifiedPersonLookup(decision, tool, context)) {
+            // A person lookup that is not sure WHO is asked about asks for the person, never the generic
+            // requests-and-approvals menu, which is about a different subject altogether.
+            return new Answer(tool, WaviToolResult.clarify(WaviTools.GET_TEAM_MEMBER.equals(tool.name())
+                    ? WaviClarification.prompt(null, WaviTools.MissingSlot.PERSON, role) : clarification(role)));
         }
         if (!tool.allowedRoles().contains(role)) {
             return new Answer(tool, tool.outsideRole(role, validation.arguments(), context));
@@ -79,6 +82,22 @@ final class WaviRouterPolicyGate {
      * The deterministic fast path is always certain. A model's low-confidence decision, or a medium-confidence
      * one that would read a record or a queue, gets a clarifying question instead.
      */
+    /**
+     * A MEDIUM-confidence read-only person lookup whose person the message itself names ("who is john", "Ravi's job
+     * title", or a position in the list just shown): the uncertainty is only whether that person exists, which the
+     * scoped lookup answers exactly (summary, "couldn't find that person", or "which one?" for several matches). The
+     * role check and the authorized-scope read that follow are unchanged. A pronoun-only reference ("who is he?")
+     * still asks which person. Never applies to LOW confidence or any other tool.
+     */
+    private static boolean identifiedPersonLookup(WaviRouterDecision decision, WaviTool tool, WaviTool.Context context) {
+        if (!WaviTools.GET_TEAM_MEMBER.equals(tool.name()) || decision.confidence() != WaviRouterDecision.Confidence.MEDIUM
+                || context.message() == null) return false;
+        String normalized = WaviSpelling.correct(context.message().toLowerCase(java.util.Locale.ROOT).strip());
+        if (WaviContinuation.refersToPerson(normalized)) return false;
+        return decision.arguments().get("ordinal") != null || WaviContinuation.hasNameShapedToken(context.message())
+                || WaviContinuation.mayNamePersonInLowerCase(normalized);
+    }
+
     private static boolean needsClarification(WaviRouterDecision decision, WaviTool tool) {
         if (decision.source() == WaviRouterDecision.Source.FAST_PATH) return false;
         if (decision.confidence() == WaviRouterDecision.Confidence.LOW) return true;

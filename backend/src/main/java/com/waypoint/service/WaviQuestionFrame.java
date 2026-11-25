@@ -20,7 +20,7 @@ import java.util.Set;
  * it is what keeps unfamiliar wording answerable.
  */
 record WaviQuestionFrame(AnswerType answer, Set<Concept> concepts, Scope scope, Selection selection,
-                         NamePart namePart, boolean contextual, int words) {
+                         NamePart namePart, boolean contextual, int words, boolean independent) {
 
     /** The shape of the answer the user asked for. */
     enum AnswerType {
@@ -69,6 +69,9 @@ record WaviQuestionFrame(AnswerType answer, Set<Concept> concepts, Scope scope, 
 
     /** At most this many words for a message that is only a follow-up. */
     static final int FOLLOW_UP_WORDS = 9;
+    /** Longest question that continues the previous answer without a back-reference word (an ellipsis). */
+    static final int ELLIPTICAL_WORDS = 5;
+    static final int SELF_ELLIPSIS_WORDS = 3;
 
     // --- The concept lexicon: business nouns and their inflections, one table -------------------------------------
 
@@ -111,7 +114,10 @@ record WaviQuestionFrame(AnswerType answer, Set<Concept> concepts, Scope scope, 
             "have", "had", "can", "could", "will", "would", "should", "am");
 
     static WaviQuestionFrame of(String message) {
-        String text = message == null ? "" : message.toLowerCase(Locale.ROOT).replace('’', '\'').strip();
+        // Spelling is normalized before the frame is read, as for every route: "wwho is john" is framed as "who is
+        // john", so a typo never changes whether a question is independent of the previous answer.
+        String text = message == null ? ""
+                : WaviSpelling.correct(message.toLowerCase(Locale.ROOT).replace('’', '\'').strip());
         List<String> tokens = new ArrayList<>();
         for (String token : text.split("[^a-z0-9']+")) {
             if (token.isBlank()) continue;
@@ -156,7 +162,22 @@ record WaviQuestionFrame(AnswerType answer, Set<Concept> concepts, Scope scope, 
                 && !concepts.contains(Concept.POLICY) && namePart == NamePart.NONE && answer != AnswerType.PEOPLE_COUNT));
         // A follow-up's own business noun outranks a pronoun: "which timesheets were approved?" is self-contained.
         if (contextual && !named.isEmpty() && !refers) contextual = false;
-        return new WaviQuestionFrame(answer, concepts, scope, selection, namePart, contextual, tokens.size());
+        // Without a back-reference, only an elliptical (short) question continues the previous answer ("and
+        // rejected?", "what about last week?"); a complete question of its own ("who works as a software engineer?")
+        // is a new question even when it names no business noun.
+        if (contextual && !refers && tokens.size() > ELLIPTICAL_WORDS) contextual = false;
+        // "my", "me", "I" bind to the signed-in user: a complete question about the user's own things ("who are my
+        // employers?") names its own subject and never inherits the previous answer's records. Only a bare elliptical
+        // "and mine?" / "what about me?" continues it.
+        if (contextual && !refers && scope == Scope.SELF && tokens.size() > SELF_ELLIPSIS_WORDS) contextual = false;
+        // A question that states whom it is about ("who joined recently?", "who are my employers?") and does not point
+        // back with a pronoun is independent of the previous answer: "recently" or "last" in it is never "the latest"
+        // of the previous result, and the router decides it exactly as in a fresh conversation. "Who else?" and
+        // pronoun questions ("who approved it?") stay follow-ups.
+        boolean asksWho = !tokens.isEmpty() && tokens.get(0).equals("who") && !tokens.contains("else");
+        boolean independent = !refers && (asksWho || (scope == Scope.SELF && tokens.size() > SELF_ELLIPSIS_WORDS));
+        if (independent) contextual = false;
+        return new WaviQuestionFrame(answer, concepts, scope, selection, namePart, contextual, tokens.size(), independent);
     }
 
     private static AnswerType answerType(String text, List<String> tokens, Set<Concept> concepts) {

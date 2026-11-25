@@ -92,7 +92,7 @@ class WaviCapabilityRoutingMatrixTest {
                     List.of("Timesheets"), List.of("approved it for you")),
             new Capability(WaviEvaluationWorld.EMPLOYEE, "unsupported_field", "{\"field\":\"HOME_ADDRESS\"}",
                     List.of("what home address do you store", "show my residential address"),
-                    List.of("don't show"), List.of("General guidance")),
+                    List.of("address"), List.of("General guidance")),
             new Capability(WaviEvaluationWorld.EMPLOYEE, "unsupported_request", "{\"reason\":\"WRITE_ACTION\"}",
                     List.of("change my address for me", "submit these hours now"),
                     List.of("can't"), List.of("completed")),
